@@ -19,8 +19,9 @@ from .costs import tracked_local_call
 from .director import DirectorConfig, MODEL_ID, QwenDirector, _multimodal_json
 from .episodes import LOCAL_SYSTEM, LocalProposal, Observation
 from .execution import restore_config
-from .inspiration import _save_evidence, model_call, source_filename
-from .ledger import BudgetExceeded, Ledger
+from .inspiration import (_save_evidence, model_call, source_filename,
+                          preflight_model_load, require_charged_invocation)
+from .ledger import BudgetExceeded, Ledger, SpecMismatch
 from .reviews import ReviewNotFound
 from .resources import SessionBudget, canonical
 
@@ -151,6 +152,34 @@ def _director_config(spec, tokens):
                           precision='bf16', local_files_only=True, max_new_tokens=tokens, max_image_pixels=262144)
 
 
+def _saved_call(ledger, budget, job_id, index, directory, filename):
+    """Validate both charge ledgers before loading a model or admitting a replay."""
+    key = f'{job_id}:reasoning:{index}'
+    if ledger.get_attempt(job_id, index) is not None:
+        require_charged_invocation(ledger, job_id, index, budget, key, 'reasoning')
+        return True
+    if (directory/filename).exists() or budget.db.execute('SELECT 1 FROM calls WHERE key=?', (key,)).fetchone():
+        raise SpecMismatch('Finishing response/global reservation lacks its charged local attempt; reconcile without model loading')
+    return False
+
+
+def _charged_proposal(ledger, budget, job_id, directory, spec):
+    """The mutable job summary cannot independently authorize an image action."""
+    def response(index, name):
+        if not _saved_call(ledger, budget, job_id, index, directory, name) or not (directory/name).is_file():
+            raise SpecMismatch('A saved charged finishing proposal response is required before preparing a continuation')
+        record = next((row for row in ledger.artifacts(job_id) if row['path'] == name and row['kind'] == 'response'), None)
+        if record is None or sha256(directory/name) != record['sha256']:
+            raise SpecMismatch('Finishing proposal response is not registered as immutable charged evidence; resume proposal reconciliation first')
+        return json.loads((directory/name).read_text())
+    result = response(0, 'proposal.json')
+    if result.get('parse_error') and not result.get('inference_error') and spec['config']['schema_repair_cap']:
+        result = response(1, 'proposal_repair.json')
+    if result.get('parse_error') or result.get('inference_error') or not result.get('output'):
+        raise SpecMismatch('Only a validated charged proposal response can prepare a continuation')
+    return LocalProposal.model_validate(result['output']).model_dump(mode='json')
+
+
 def _propose(ledger, budget, directory, root, run_id, finish_id, originals, director_factory):
     job_id, job_directory = run_id + '_finishing', directory / 'finishing'
     existing = _job(ledger, job_id)
@@ -173,21 +202,22 @@ def _propose(ledger, budget, directory, root, run_id, finish_id, originals, dire
     cfg = _director_config(spec, 512)
     director = director_factory(cfg)
     prepared = False
-    def ensure_prepared(index):
+    def ensure_prepared(index, filename):
         nonlocal prepared
-        if ledger.get_attempt(job_id, index) is None and not prepared:
+        if not _saved_call(ledger, budget, job_id, index, job_directory, filename) and not prepared:
+            preflight_model_load(budget, 'reasoning', estimated_seconds=90)
             with tracked_local_call(root, job_id, 'qwen-load-' + uuid.uuid4().hex[:12], MODEL_ID, scope='model_load'):
                 director.prepare()
             prepared = True
     with budget.workload_lock():
         try:
-            ensure_prepared(0)
+            ensure_prepared(0, 'proposal.json')
             result = model_call(ledger, job_id, job_directory, budget, 0, 'proposal.json',
                 lambda: _multimodal_json(director, FINISH_SYSTEM, request, images,
                     lambda value: LocalProposal.model_validate(value).model_dump(mode='json'),
                     sampling={'temperature': .8, 'top_p': .95}, generation_seed=spec['config']['seed'], total_token_limit=8192), device=cfg.device)
             if result.get('parse_error') and not result.get('inference_error') and spec['config']['schema_repair_cap']:
-                ensure_prepared(1)
+                ensure_prepared(1, 'proposal_repair.json')
                 repair = request | {'prior_response': result.get('raw_response'), 'schema_error': result['parse_error'],
                                     'repair_instruction': 'One schema repair is permitted. Retain the visible hypothesis while satisfying the exact short JSON contract.'}
                 result = model_call(ledger, job_id, job_directory, budget, 1, 'proposal_repair.json',
@@ -205,7 +235,7 @@ def _propose(ledger, budget, directory, root, run_id, finish_id, originals, dire
     return state
 
 
-def _execute(ledger, directory, root, run_id, finish_id, backend_factory):
+def _execute(ledger, budget, directory, root, run_id, finish_id, backend_factory):
     job = ledger.get_job(run_id + '_finishing')
     ledger.verify_artifacts(run_id + '_finishing')
     spec = job['spec']
@@ -213,6 +243,10 @@ def _execute(ledger, directory, root, run_id, finish_id, backend_factory):
     if not proposal:
         raise ValueError('A validated saved finishing proposal is required before execution')
     proposal = LocalProposal.model_validate(proposal).model_dump(mode='json')
+    if proposal != _charged_proposal(ledger, budget, run_id + '_finishing', directory/'finishing', spec):
+        raise SpecMismatch('Finishing summary proposal differs from its charged raw response')
+    for record in [spec['parent'], *spec['source_documents']]:
+        _image(root, record)
     prior = spec['previous_request']
     request = dict(prior)
     request.update(title=run_id + ': observation-informed protected continuation',
@@ -257,7 +291,8 @@ def _observe(ledger, budget, directory, root, run_id, finish_id, director_factor
             for index, pair in enumerate(spec['pairs']):
                 for record in (pair['parent'], pair['child']):
                     _image(root, record)
-                if ledger.get_attempt(job_id, index) is None and not prepared:
+                if not _saved_call(ledger, budget, job_id, index, job_directory, f'observation_{index + 1:02d}.json') and not prepared:
+                    preflight_model_load(budget, 'reasoning', estimated_seconds=90)
                     with tracked_local_call(root, job_id, 'observer-load-' + uuid.uuid4().hex[:12], MODEL_ID, scope='model_load'):
                         director.prepare()
                     prepared = True
@@ -310,7 +345,7 @@ def finish(run_directory, *, root=Path('artifacts/overnight'), stage='all',
         if stage in ('propose', 'all'):
             proposal = _propose(ledger, budget, directory, root, run_id, finish_id, originals, director_factory)
         if stage in ('execute', 'all') and (proposal is None or proposal['proposal']):
-            _execute(ledger, directory, root, run_id, finish_id, backend_factory)
+            _execute(ledger, budget, directory, root, run_id, finish_id, backend_factory)
         observer = _job(ledger, run_id + '_finishing_observation')
         observations = observer['payload'].get('observations') if observer else None
         if stage == 'observe' or (stage == 'all' and proposal['proposal']):

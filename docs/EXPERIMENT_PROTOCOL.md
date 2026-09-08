@@ -66,3 +66,23 @@ Supply a JSON brief file with `brief_id`, `brief`, `partition: "development"`, a
 ```
 
 `--mode <name>` runs one condition from the same immutable plan. Omitting it uses the frozen, seeded condition order. Replay verifies charged artifacts and decision-time parent selections before reusing outputs; uncertain charged calls require reconciliation. Nine offline fixture tests validate these execution contracts, including interrupted reasoning without a second dispatch. The implementation subagent ran no GPU workload and collected no human reviews. A completed, genuinely reviewed multi-brief matched comparison remains the evidence gate.
+
+## Separate optional E0 study profile
+
+[configs/e0_study_384.json](../configs/e0_study_384.json) declares `flux_base4b_e0_384x512_v1`: 384 × 512, 50 steps, guidance 4.0, BF16, model offload and VAE tiling. It is an explicit alternative for the entire E0 protocol. It changes neither the frozen session configuration nor the matched-comparison default of 512 × 640. It has no demonstrated throughput or artistic advantage merely because the smaller dimensions are configured.
+
+Pass the same file explicitly to `run`, `freeze-runtime` and any later heldout `run`. The first dispatch freezes the file path, exact file SHA, named metadata and effective renderer configuration in `render_profile.json`; every episode and job specification carries that identity. An omitted, changed or incompatible profile cannot switch later briefs to a different resolution. The file accepts only the named profile and validated width/height, steps, guidance, precision, offload and VAE tiling fields. Model, device, seeds, budgets and output paths cannot be overridden through it. File changes during execution block the next model load or dispatch; failure or slow execution never triggers an automatic profile change.
+
+Start with one actual development parent and its six edits:
+
+```sh
+.venv/bin/python -m kusama.e0_runner run --protocol artifacts/overnight/evaluation_v2/e0 --index <frozen-index-directory> --root artifacts/overnight --brief-id e0-d01 --render-profile configs/e0_study_384.json
+```
+
+A complete brief writes a `profile_execution_gate.json` with seven verified image hashes/dimensions and the renderer records. Its status distinguishes live measured execution from fixtures or missing timing. This first technical gate does not establish quality or admit the heldout batch. Complete all four development briefs using the identical profile, then freeze and test the conservative measured-throughput gate:
+
+```sh
+.venv/bin/python -m kusama.e0_runner freeze-runtime --protocol artifacts/overnight/evaluation_v2/e0 --index <frozen-index-directory> --root artifacts/overnight --render-profile configs/e0_study_384.json
+```
+
+Development evidence from a different render profile cannot supply the heldout throughput estimate. The implementation subagent executed only fixture tests; the first actual 384 × 512 development gate and any later heldout admission remain separate runtime evidence.

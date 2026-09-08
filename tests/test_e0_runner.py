@@ -335,3 +335,227 @@ def test_interrupted_qwen_action_is_explicit_uncertain_and_resume_does_not_retry
     assert execute(setup, brief_id='e0-d01')['briefs'][0]['generation_status'] == 'uncertain_requires_reconciliation'
     assert execute(setup, brief_id='e0-d01')['briefs'][0]['generation_status'] == 'uncertain_requires_reconciliation'
     assert len(count) == 1 and len(FixtureBackend.calls) == 1
+
+
+@pytest.mark.parametrize('changed_field', ['instruction', 'seed', 'parent'])
+def test_saved_charged_pixels_cannot_be_recovered_as_another_request(setup, changed_field):
+    root = setup[0]
+    folder = root/'recovery-probe'; folder.mkdir()
+    original = {'instruction': 'Original fixture action', 'seed': 23, 'parent': None}
+    changed = {**original, changed_field: {'instruction': 'Different action', 'seed': 41,
+        'parent': {'path': str(root/'different-parent.png'), 'sha256': 'a'*64}}[changed_field]}
+    with SessionBudget(root) as budget, Ledger(root/'jobs.sqlite3') as ledger:
+        ledger.create_job('recovery_probe', {'fixture_only': True}, 1, folder)
+        budget.reserve('recovery_probe:render:0', 'renderer')
+        ledger.open_attempt('recovery_probe', 0, payload={'request': original})
+        ledger.reserve_call('recovery_probe', 0)
+        Image.new('RGB', (64, 64), 'red').save(folder/'image-00.png')
+        renderer = e0_runner.RendererSession(budget, ledger, 'recovery_probe', folder,
+            e0_runner.render_config(root, budget), FixtureBackend)
+        try:
+            with pytest.raises(SpecMismatch, match='charged render request changed'):
+                renderer.attempt(0, changed)
+            assert not (folder/'attempt-00.json').exists()
+            assert ledger.get_attempt('recovery_probe', 0)['request'] == original
+            assert budget.summary()['calls'][0]['status'] == 'running'
+            recovered = renderer.attempt(0, original)
+            assert recovered['status'] == 'completed' and recovered['request'] == original
+            assert budget.summary()['renderer_attempts'] == 1
+        finally:
+            renderer.close()
+    assert FixtureBackend.loads == 0 and FixtureBackend.calls == []
+
+
+@pytest.mark.parametrize('contamination', ['manifest', 'unselected', 'selected_split', 'nested'])
+def test_sealed_source_markers_block_before_retrieval_and_copy(setup, monkeypatch, contamination):
+    index = FixtureIndex(setup[2])
+    if contamination == 'manifest':
+        index.manifest['source_pool'] = {'partition': 'heldout'}
+    elif contamination == 'unselected':
+        index.documents.append({'id': 'not_selected', 'split': 'sealed_test'})
+    elif contamination == 'selected_split':
+        index.documents[0]['split'] = 'test'
+    else:
+        index.documents[0]['reference']['lineage'] = {'sealed': True}
+    monkeypatch.setattr(index, 'query', lambda *a, **k: pytest.fail('Contaminated pool must not affect ranking'))
+    folder = setup[0]/'source-guard-probe'; folder.mkdir()
+    with pytest.raises(ValueError, match='Sealed or test source pools'):
+        e0_runner._references(index, 'Synthetic guard probe', folder, 23)
+    assert not (folder/'sources').exists()
+    assert FixtureBackend.loads == 0 and FixtureBackend.calls == []
+
+
+def profile_fixture(setup, **changes):
+    path = setup[0]/'fixture-e0-profile.json'
+    path.write_text(json.dumps({'name': 'fixture_e0_384x512', 'width': 384, 'height': 512, 'steps': 1,
+        'guidance': 1.0, 'precision': 'fp32', 'offload': 'none', 'vae_tiling': False, **changes}))
+    return path
+
+
+def test_named_e0_study_file_exact_declared_config_without_session_mutation(setup):
+    config = load_config()
+    budget = SimpleNamespace(root=setup[0], config=config)
+    before = config.model_dump(mode='json')
+    effective, metadata = e0_runner._effective_render_profile(budget, Path('configs/e0_study_384.json'))
+    assert (effective.width, effective.height, effective.steps, effective.guidance) == (384, 512, 50, 4.0)
+    assert (effective.precision, effective.offload, effective.vae_tiling) == ('bf16', 'model', True)
+    assert metadata['name'] == 'flux_base4b_e0_384x512_v1'
+    assert metadata['file_sha256'] == sha256(Path('configs/e0_study_384.json'))
+    assert config.model_dump(mode='json') == before
+    ordinary = e0_runner.render_config(setup[0], budget)
+    assert (ordinary.width, ordinary.height) == (512, 640)
+
+
+@pytest.mark.parametrize('changes', [{'width': 383}, {'height': '512'}, {'steps': True}, {'precision': 'auto'},
+    {'offload': 'invented'}, {'vae_tiling': 'true'}, {'model_revision': 'a'*40}, {'renderer_attempt_cap': 999},
+    {'guidance': float('inf')}, {'device': 'cuda'}])
+def test_invalid_e0_profile_rejected_before_model_load_or_charge(setup, changes):
+    path = profile_fixture(setup, **changes)
+    with pytest.raises(ValueError): execute(setup, brief_id='e0-d01', render_profile=path)
+    assert FixtureBackend.loads == FixtureDirector.loads == 0 and FixtureBackend.calls == []
+    with SessionBudget(setup[0]) as budget: assert budget.summary()['renderer_attempts'] == 0
+
+
+def test_explicit_profile_freezes_all_stages_all_briefs_and_resumes_without_calls(setup):
+    path = profile_fixture(setup)
+    result = execute(setup, brief_id='e0-d01', render_profile=path)
+    assert result['briefs'][0]['edit_count'] == 6
+    gate = json.loads(Path(result['briefs'][0]['render_profile_gate']['path']).read_text())
+    assert gate['status'] == 'fixture_or_missing_live_timing' and gate['completed_primary_output_count'] == 7
+    assert all(row['size'] == [384, 512] for row in gate['verified_images'])
+    identity = json.loads((setup[1]/'episodes'/'e0-d01'/'runtime_identity.json').read_text())
+    assert identity['render_profile']['file_sha256'] == sha256(path)
+    assert json.loads((setup[1]/'render_profile.json').read_text())['render_config']['width'] == 384
+    with Ledger(setup[0]/'jobs.sqlite3') as ledger:
+        for stage in ('parent', 'actions', 'edits'):
+            job = ledger.get_job('e0_overnight_v2_e0-d01_'+stage)
+            assert job['spec']['runtime']['render_profile'] == identity['render_profile']
+    first = len(FixtureBackend.calls), FixtureBackend.loads, FixtureDirector.loads
+    execute(setup, brief_id='e0-d01', render_profile=path)
+    assert (len(FixtureBackend.calls), FixtureBackend.loads, FixtureDirector.loads) == first
+    for bid in ('e0-d01', 'e0-d02'):
+        with pytest.raises(ValueError, match='Immutable artifact already differs'):
+            execute(setup, brief_id=bid)  # Omitting explicit profile may not switch to session default.
+    assert (len(FixtureBackend.calls), FixtureBackend.loads, FixtureDirector.loads) == first
+    with SessionBudget(setup[0]) as budget:
+        assert budget.config.default_render_profile == 'fixture'
+        assert budget.config.render_profiles['fixture']['width'] == 64
+
+
+def test_profile_file_byte_change_blocks_resume_even_when_settings_identical(setup):
+    path = profile_fixture(setup)
+    execute(setup, brief_id='e0-d01', render_profile=path)
+    path.write_text(path.read_text()+'\n')
+    with pytest.raises(ValueError, match='Immutable artifact already differs'):
+        execute(setup, brief_id='e0-d01', render_profile=path)
+    assert len(FixtureBackend.calls) == 7
+
+
+def test_profile_change_after_parent_blocks_before_qwen_load(setup, monkeypatch):
+    path = profile_fixture(setup)
+    original = FixtureBackend.generate
+    def change_profile(self, *args, **kwargs):
+        result = original(self, *args, **kwargs)
+        path.write_text(path.read_text()+'\n')
+        return result
+    monkeypatch.setattr(FixtureBackend, 'generate', change_profile)
+    with pytest.raises(SpecMismatch, match='profile file changed'):
+        execute(setup, brief_id='e0-d01', render_profile=path)
+    assert len(FixtureBackend.calls) == 1 and FixtureDirector.loads == 0
+
+
+def test_heldout_admission_requires_identical_explicit_profile(setup):
+    root, protocol, index_path, _ = setup
+    profile = profile_fixture(setup)
+    evidence, freeze = root/'fixture-evidence.json', root/'fixture-freeze.json'
+    write_json(evidence, {'fixture_only': True, 'purpose': 'admission arithmetic only'})
+    with SessionBudget(root) as budget:
+        identity = e0_runner._runtime_identity(budget, FixtureIndex(index_path), protocol, profile)
+        write_json(freeze, {**identity, 'protocol_id': 'e0_overnight_v2', 'development_completed': True,
+            'render_seconds': 10, 'reasoning_seconds': 5, 'retry_reserve': 0,
+            'throughput_evidence': [{'path': str(evidence), 'sha256': sha256(evidence)}]})
+        admitted = e0_runner.heldout_admission(protocol, FixtureIndex(index_path), budget, freeze, render_profile=profile)
+        assert admitted['required_primary_attempts'] == 56 and admitted['status'] == 'admitted'
+        with pytest.raises(SpecMismatch, match='identity differs'):
+            e0_runner.heldout_admission(protocol, FixtureIndex(index_path), budget, freeze)
+    assert FixtureBackend.calls == []
+
+
+def test_freeze_runtime_refuses_mixed_development_profile_evidence(setup):
+    profile = profile_fixture(setup)
+    execute(setup, render_profile=profile)
+    path = setup[1]/'episodes'/'e0-d01'/'runtime_identity.json'
+    identity = json.loads(path.read_text()); identity['render_config']['width'] = 512
+    write_json(path, identity)
+    with pytest.raises(SpecMismatch, match='Development throughput used a different E0 render profile'):
+        e0_runner.freeze_runtime(setup[1], setup[2], root=setup[0], render_profile=profile)
+
+
+@pytest.mark.parametrize('command', ['run', 'freeze-runtime'])
+def test_profile_cli_is_forwarded_to_both_entrypoints(setup, monkeypatch, command):
+    received = []
+    def capture(*args, **kwargs): received.append(kwargs); return {'fixture_only': True}
+    monkeypatch.setattr(e0_runner, 'run' if command == 'run' else 'freeze_runtime', capture)
+    assert e0_runner.main([command, '--protocol', str(setup[1]), '--index', str(setup[2]),
+        '--root', str(setup[0]), '--render-profile', 'configs/e0_study_384.json']) == 0
+    assert received[0]['render_profile'] == Path('configs/e0_study_384.json')
+
+
+@pytest.mark.parametrize('kind', ['renderer', 'reasoning'])
+def test_preload_uses_measured_reservation_time_and_never_loads_rejected_model(setup, monkeypatch, kind):
+    from datetime import timedelta
+    from kusama.ledger import BudgetExceeded
+    root, protocol, index_path, _ = setup
+    folder = root/('preload-'+kind); folder.mkdir()
+    monkeypatch.setattr(SessionBudget, 'estimated_seconds', lambda self, requested_kind, supplied=0: 600)
+    with SessionBudget(root) as budget, Ledger(root/'jobs.sqlite3') as ledger:
+        budget.deadline = (e0_runner.now()+timedelta(minutes=budget.config.handoff_reserve_minutes, seconds=250)).isoformat()
+        if kind == 'renderer':
+            ledger.create_job('preload_renderer', {'fixture_only': True}, 1, folder)
+            renderer = e0_runner.RendererSession(budget, ledger, 'preload_renderer', folder,
+                e0_runner.render_config(root, budget), FixtureBackend)
+            try:
+                with pytest.raises(BudgetExceeded, match='before model load'):
+                    renderer.attempt(0, {'instruction': 'Fixture only', 'seed': 23, 'parent': None})
+            finally: renderer.close()
+        else:
+            parent = root/'fixture-parent.png'; Image.new('RGB', (64, 64), 'red').save(parent)
+            refs = e0_runner._references(FixtureIndex(index_path), 'Fixture only', folder, 23)
+            with pytest.raises(BudgetExceeded, match='before Qwen model load'):
+                e0_runner._actions('Fixture only', 'e0-d01', {'path': str(parent), 'sha256': sha256(parent)}, refs,
+                    folder, budget, ledger, 'fixture_preload', FixtureDirector)
+        assert budget.summary()['renderer_attempts'] == 0 and budget.summary()['calls'] == []
+    assert FixtureBackend.loads == FixtureDirector.loads == 0 and FixtureBackend.calls == []
+
+
+def test_preload_adds_measured_model_load_margin(setup, monkeypatch):
+    from kusama.costs import CostJournal
+    class FixtureCosts:
+        def __init__(self, *args, **kwargs): pass
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def summary(self):
+            return {'records': [
+                {'start': {'model': 'FLUX fixture', 'scope': 'model_load'}, 'finish': {'runtime_seconds': 80}},
+                {'start': {'model': 'Qwen fixture', 'scope': 'model_load'}, 'finish': {'runtime_seconds': 20}},
+                {'start': {'model': 'FLUX fixture', 'scope': 'inference'}, 'finish': {'runtime_seconds': 900}}]}
+    (setup[0]/'costs.sqlite3').touch()
+    monkeypatch.setattr(e0_runner, 'CostJournal', FixtureCosts)
+    budget = SimpleNamespace(root=setup[0], estimated_seconds=lambda kind, supplied: 300 if kind == 'renderer' else 100)
+    assert e0_runner._preload_seconds(budget, 'renderer', 180) == 400
+    assert e0_runner._preload_seconds(budget, 'reasoning', 90) == 125
+
+
+def test_failed_duration_increases_forecast_without_becoming_a_successful_output():
+    # Substitute timing envelopes only; these are never written to research artifacts.
+    success = {'status': 'completed', 'backend': {'model_id': 'substitute-timing-contract'},
+               'measurements': {'runtime_seconds': 100}, 'output': {'path': 'unused-fixture-path'}}
+    failure = {**success, 'status': 'technical_failure', 'measurements': {'runtime_seconds': 420}, 'output': None}
+    measured = [e0_runner._measured_render_time(row) for row in (success, failure)]
+    assert max(measured) == 420
+    assert 1.25*(56+25)*max(measured) == 42525
+    assert failure['output'] is None and failure['status'] == 'technical_failure'
+    assert e0_runner._measured_render_time({**failure, 'backend': {'model_id': 'fixture', 'fixture_only': True}}) is None
+    for seconds in (None, 0, -1, float('nan'), float('inf'), True, '420'):
+        assert e0_runner._measured_render_time({**failure, 'measurements': {'runtime_seconds': seconds}}) is None
+    assert e0_runner._measured_render_time({**failure, 'status': 'uncertain'}) is None

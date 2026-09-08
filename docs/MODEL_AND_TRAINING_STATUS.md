@@ -21,10 +21,10 @@ Current official documentation was checked during implementation: [TRL SFT](http
 Example commands, with the recorded snapshot IDs available in the status manifest:
 
 ```sh
-.venv/bin/python -m kusama.datasets build --artifact-root artifacts --output artifacts/datasets --cutoff 2026-09-08T04:50:00+00:00 --kind judge_sft
-.venv/bin/python -m kusama.learning judge --snapshot artifacts/overnight/evaluation_v2/datasets/473eb2717373e699709b3584 --output artifacts/training/judge-next-check
-.venv/bin/python -m kusama.learning selector --snapshot artifacts/overnight/evaluation_v2/datasets/a4be389bbac0aa3f1c6d7811 --output artifacts/training/selector-next-check
-.venv/bin/python -m kusama.learning director --snapshot artifacts/overnight/evaluation_v2/datasets/9a59247ae1e41f90dea19093 --output artifacts/training/director-next-check
+.venv/bin/python -m kusama.datasets build --artifact-root artifacts/overnight --output artifacts/overnight/datasets --cutoff 2026-09-08T04:50:00+00:00 --kind judge_sft
+.venv/bin/python -m kusama.learning judge --snapshot artifacts/overnight/evaluation_v2/datasets/473eb2717373e699709b3584 --output artifacts/overnight/training/judge-next-check
+.venv/bin/python -m kusama.learning selector --snapshot artifacts/overnight/evaluation_v2/datasets/a4be389bbac0aa3f1c6d7811 --output artifacts/overnight/training/selector-next-check
+.venv/bin/python -m kusama.learning director --snapshot artifacts/overnight/evaluation_v2/datasets/9a59247ae1e41f90dea19093 --output artifacts/overnight/training/director-next-check
 ```
 
 Dataset creation returns 0 even for an empty but valid snapshot. Insufficient-data/capability training results return exit code 2. Use a fresh output directory for every training attempt; result records are immutable and the preflight rejects reuse before training. `--execute` enables actual fitting only after prerequisites; judge/director `--smoke` limits an eligible execution to the disposable integration gate. No existing model is silently downloaded. The next human task is to review real comparisons and support selected-parent revisions across independent briefs; the next learning gate is a sufficiently grouped genuine dataset and a separately verified multimodal mechanics run.

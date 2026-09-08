@@ -1,6 +1,6 @@
 # Starter-source audit — 8 September 2026
 
-The live starter corpus contains **200 distinct image-bearing source records, 400 geometric crops, 502 documented museum/context statements, 4 short attributed reading notes, and 40 machine-authored device seeds**. Thirty-nine device seeds now have explicit assistant visual observations of the saved source images. These observations and transfer hypotheses are **unvalidated**, and none is a human quality judgment. Source size does not establish artistic progress.
+The live starter corpus contains **200 distinct image-bearing source records, 400 geometric crops, 545 context claims (502 documented statements and 43 machine interpretations), and 40 machine-authored device seeds**. The machine claims comprise 39 explicit assistant visual observations and 4 short attributed reading notes. Thirty-nine device seeds have visual grounding in the saved source images. These observations and transfer hypotheses are **unvalidated**, and none is a human quality judgment. Source size does not establish artistic progress.
 
 The local authoritative ledger is [`corpus.sqlite3`](../artifacts/overnight/corpus/corpus.sqlite3). Portable read snapshots are [`sources_manifest.jsonl`](../artifacts/overnight/corpus/sources_manifest.jsonl), [`regions.jsonl`](../artifacts/overnight/corpus/regions.jsonl), [`context_claims.jsonl`](../artifacts/overnight/corpus/context_claims.jsonl), and [`devices.jsonl`](../artifacts/overnight/corpus/devices.jsonl). The machine report has the current counts and storage bytes. These ignored, generated files are local evidence: their links do not resolve in a fresh checkout without the preserved artifact root.
 
@@ -84,3 +84,36 @@ The source, resource, retrieval and inspiration focused suites together passed *
   --output artifacts/overnight/inspectable_source_query.json
 .venv/bin/python -m pytest -q tests/test_corpus.py tests/test_resources.py tests/test_retrieval.py tests/test_inspiration.py
 ```
+
+## Final cached audit — 8 September 2026, 05:56 UTC
+
+The [compact final report](../artifacts/overnight/source_audit_final/summary.json) records a second cached-only re-ingest and complete byte/rights/edge checks. The re-ingest used **zero fetches and zero new request attempts**; all reference, crop, claim and device rows and image hashes stayed identical. The request ledger remains at 372 attempts. The corpus occupies 173,892,319 bytes at this check. The network entry point was disabled for re-ingestion, and no new sources, downloads or architecture were added.
+
+All **313 cached raw response files** also match their stored response hashes, including the nine previously reconciled cache entries. The [raw-cache audit](../artifacts/overnight/source_audit_final/raw_response_cache_verification.json) additionally inventories retained request-failure files. Their original failure events named retained paths without independently recording payload hashes, so this inventory does not retroactively claim an earlier checksum guarantee.
+
+All **597 frozen index views** passed asset-hash and operation-rights checks, including derivative permission and split/rights inheritance for all 398 crops. The 50 AIC whole records and their 100 crops still carry conditional descriptive-text rights; image eligibility does not erase those conditions. All **54 unique typed edges exactly match the text and source ID of a saved machine visual claim**, resolve their device evidence, and remain unvalidated machine interpretations. See the [per-edge and rights audit](../artifacts/overnight/source_audit_final/rights_and_typed_edges.json).
+
+The [12-query replay](../artifacts/overnight/source_audit_final/retrieval_replay_verification.json) used frozen image vectors and the cached frozen CLIP text encoder on CPU with two Torch threads. Every query returned the **same eight IDs in the same order** as the earlier final-index audit, with no CLIP truncation and all selected hashes resolving. Four queries filled both distant slots, one filled one, and seven filled neither; recorded fallback still supplies the remaining shelf positions. Every file in the final index retained its pre-audit hash. Audit outputs were written outside the index. No MPS/GPU work or sealed-brief reads were performed.
+
+The [metadata coverage audit](../artifacts/overnight/source_audit_final/metadata_coverage.json) retains every exact place/culture and date label with its record ID and the explicit counting rules. There are **169 source families: 150 singleton families and 19 multi-record families containing 50 records**. The largest two groups each contain five records. This remains heuristic grouping, not proof of independent sources or comprehensive leakage prevention.
+
+| Explicit place-name cues in recorded culture/place/locality fields | Records |
+| --- | ---: |
+| Europe | 56 |
+| Latin America / Caribbean | 25 |
+| Africa | 20 |
+| North America | 19 |
+| East Asia | 15 |
+| West / Central Asia | 9 |
+| Southeast Asia | 7 |
+| South Asia | 4 |
+| Antarctica | 4 |
+| Named ocean / marine locality | 1 |
+| Missing field | 21 |
+| Present label left unmapped | 19 |
+
+These are literal metadata cues, mixing culture labels with object places and specimen localities. They do not establish nationality, community identity or a balanced account of origin. No explicit Oceania place cue matched the rules; culture-only labels were left unresolved instead of assigning them through outside assumptions. All four admitting institutions are US museum providers. Forty records therefore remain missing or unmapped by this geography check, and museum metadata does not supply originating-community interpretation.
+
+Date metadata is absent for 22 records and explicitly undated for one more. Literal labels contain 32 BCE/cross-era cues, 35 pre-1500 CE cues, 35 cues from 1500–1799, 41 from 1800–1899, and 4 from 2000 onward; records with ranges or alteration dates can occur in multiple buckets. The four 2000+ dates and 11 further post-1949 numeric dates belong to natural specimens and may describe collection events. The sole other post-1949 numeric cue is Cleveland `143792`, *Fragments*, whose saved API fields all say **1420–1955**. That unusually broad range is preserved and does not establish a postwar artwork. Broad labels such as “1900s” also remain imprecise; numeric cues are not inferred creation periods. Contemporary-art coverage remains unestablished by these records.
+
+The final audit adds evidence of cached reproducibility and explicit coverage gaps. It does not establish human contextual usefulness, artistic quality, reliable emotional transfer or a learned advantage.

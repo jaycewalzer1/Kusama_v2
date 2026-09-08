@@ -442,7 +442,9 @@ def memory_excerpt(snapshot, max_chars=1800):
 
 def freeze_memory(root, brief, run_id):
     from .memory import ExperimentMemory, build_memory
-    build_memory(root)
+    build = build_memory(root)
+    if build.get('issues'):
+        raise SpecMismatch('Experiment memory contains unresolved evidence issues; inspect its build report before admitting it')
     decision_at = datetime.now(timezone.utc).isoformat()
     with ExperimentMemory(root) as memory:
         snapshot = memory.query(brief, decision_at, run_id, purpose='development', limit=4)

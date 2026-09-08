@@ -302,6 +302,10 @@ def propose_revisions(run_directory, *, root=Path('artifacts/overnight'), count=
     job_id = run_id + '_local'
     job_directory = directory / 'local'
     with SessionBudget(root) as budget, Ledger(root / 'jobs.sqlite3') as ledger, ledger.lock(job_id):
+        try:
+            existing = ledger.get_job(job_id)
+        except KeyError:
+            existing = None
         source = ledger.get_job(run_id)['spec']
         ledger.verify_artifacts(run_id); ledger.verify_artifacts(run_id + '_render')
         generation = ledger.get_job(run_id + '_render')['payload']['state']
@@ -316,7 +320,7 @@ def propose_revisions(run_directory, *, root=Path('artifacts/overnight'), count=
         rng.shuffle(candidates)
         selected = [{'candidate': candidate, 'allocation': 'ordinary' if i < ordinary_count else 'protected',
                      'reason': 'Seeded exploratory fallback; no quality score or human vote available'} for i,candidate in enumerate(candidates[:count])]
-        if (directory/'archive_pool.json').exists():
+        if existing is None and (directory/'archive_pool.json').exists():
             pool=json.loads((directory/'archive_pool.json').read_text())
             by_id={c['id']:c for c in candidates}
             ordinary=[r for key in ('favored','exploratory_fallback','different') for r in pool[key] if r['candidate_id'] in by_id]
@@ -330,10 +334,6 @@ def propose_revisions(run_directory, *, root=Path('artifacts/overnight'), count=
                 'selected': selected, 'selection_policy': 'CVT archive seeded exploratory pool when available, otherwise fixed seeded fallback; reserved protected continuations',
                 'connections': _connections(ledger,run_id,directory,source), 'source_documents': source['source_documents'],
                 'config': budget.config.model_dump(), 'input_cutoff': generation['updated_at']}
-        try:
-            existing = ledger.get_job(job_id)
-        except KeyError:
-            existing = None
         if existing is not None:
             frozen = existing['spec']
             if len(frozen['selected']) != count:
@@ -439,9 +439,79 @@ def revise(run_directory, *, root=Path('artifacts/overnight')):
 
 
 class Observation(Contract):
-    visible_changes: list[str] = Field(min_length=1,max_length=3)
+    visible_changes: list[str] = Field(max_length=3)
     preservation_failures: list[str] = Field(default_factory=list,max_length=3)
     ambiguity: str = Field(min_length=1,max_length=900)
+
+
+def revalidate_observations(run_directory, *, root=Path('artifacts/overnight')):
+    """Disclose acceptance of unchanged no-change reports; never rerun inference.
+
+    The original observer wrongly required at least one visible difference.
+    Only that specific rejection is eligible. Raw responses, original errors,
+    token charges and the original observation projection remain unchanged.
+    """
+    directory, root = Path(run_directory).resolve(), Path(root).resolve()
+    run_id = json.loads((directory/'job.json').read_text())['job_id']
+    job_id = run_id+'_observe'
+    accepted = []
+    with SessionBudget(root) as budget, Ledger(root/'jobs.sqlite3') as ledger, ledger.lock(job_id):
+        job = ledger.get_job(job_id)
+        ledger.verify_artifacts(job_id)
+        store = ContinuationStore(root)
+        for i, pair in enumerate(job['spec']['pairs']):
+            path = Path(job['directory'])/f'observation_{i+1:02d}.json'
+            if not path.is_file():
+                continue
+            require_charged_invocation(ledger, job_id, i, budget, f'{job_id}:reasoning:{i}', 'reasoning')
+            result = json.loads(path.read_text())
+            error = result.get('parse_error', '') or ''
+            if result.get('output') is not None or result.get('inference_error'):
+                continue
+            if not (error.startswith('1 validation error for Observation\nvisible_changes\n')
+                    and 'type=too_short' in error):
+                continue
+            value = json.loads(result['raw_response'])
+            if value.get('visible_changes') != []:
+                continue
+            output = Observation.model_validate(value).model_dump(mode='json')
+            # No coercion, omitted-field completion or semantic alteration.
+            if output != value:
+                raise SpecMismatch('Observation revalidation would change the saved report')
+            for label in ('parent', 'child'):
+                image = Path(pair[label]['path']).resolve()
+                if not image.is_relative_to(root) or sha256(image) != pair[label]['sha256']:
+                    raise SpecMismatch('Observation revalidation image changed')
+            recorded = result.get('metadata', {}).get('input_images', [])
+            if [(r['id'], r['sha256']) for r in recorded] != [(k, pair[k]['sha256']) for k in ('parent', 'child')]:
+                raise SpecMismatch('Saved observer input images differ from frozen pair')
+            sidecar = {'schema_version': 1, 'policy': 'allow-empty-visible-changes-v1',
+                'origin': 'coordinator_schema_revalidation', 'model_origin': 'frozen Qwen observer',
+                'raw_evidence': {'path': str(path), 'sha256': sha256(path)},
+                'pair': pair, 'original_parse_error': error, 'output': output,
+                'semantic_changes': [], 'new_model_calls': 0, 'human_quality': None}
+            name = f'observation_{i+1:02d}_revalidation.json'
+            sidecar_path = Path(job['directory'])/name
+            if sidecar_path.exists():
+                prior = json.loads(sidecar_path.read_text())
+                if {k: v for k, v in prior.items() if k != 'validator_code_sha256'} != sidecar:
+                    raise SpecMismatch('Saved observation revalidation differs from original evidence')
+                sidecar = prior
+            else:
+                sidecar['validator_code_sha256'] = sha256(Path(__file__))
+            _save_evidence(ledger, job_id, Path(job['directory']), name, sidecar, i)
+            note = canonical(output)
+            author = 'frozen Qwen observer; schema revalidated by coordinator'
+            observations = store.get(pair['continuation_id'])['observations']
+            if not any(o['artifact_id'] == pair['child']['id'] and o['image_sha256'] == pair['child']['sha256']
+                       and o['note'] == note and o['author'] == author and o['origin'] == 'model_observation'
+                       for o in observations):
+                store.observe(pair['continuation_id'], pair['child']['id'], note, author, 'model_observation')
+            accepted.append({'path': str(sidecar_path), 'sha256': sha256(sidecar_path), 'output': output})
+        write_json(directory/'observation_revalidations.json', {'policy': 'allow-empty-visible-changes-v1',
+            'accepted': accepted, 'new_model_calls': 0, 'original_observations_preserved': True})
+        ledger.export_events(directory/'observation_events.jsonl', job_id=job_id, recover=True)
+    return accepted
 
 
 def observe(run_directory, *,root=Path('artifacts/overnight'),director_factory=QwenDirector):
@@ -516,6 +586,9 @@ def gallery(directory):
     if (directory/'continuations.json').exists():
         for row in json.loads((directory/'continuations.json').read_text())['continuations']:
             links.append(f'<li><a href="../../continuations/{html.escape(row["id"])}/gallery.html">{html.escape(row["id"])} ({html.escape(row["allocation"])})</a></li>')
+    finish_id = json.loads((directory/'job.json').read_text())['job_id']+'_finish'
+    if (directory.parent.parent/'continuations'/finish_id/'gallery.html').exists():
+        links.append(f'<li><a href="../../continuations/{html.escape(finish_id)}/gallery.html">{html.escape(finish_id)} (observation-informed protected follow-up)</a></li>')
     output=f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kusama development gallery</title>
 <style>body{{font:17px system-ui;background:#f4f2ea;color:#25221d;margin:40px auto;max-width:1400px;padding:0 24px}}section{{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px}}figure{{margin:0}}img{{width:100%;height:440px;object-fit:contain}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}}figcaption{{line-height:1.5}}</style>
 <h1>Whole-work possibilities</h1><p>{html.escape(manifest['brief'])}</p><p>Six source-grounded frozen-Qwen proposals; actual frozen-FLUX images. Source pairing is operator-authored scaffolding. No artistic winner or human preference has been established.</p><section>{''.join(cards)}</section><h2>Local development branches</h2><p>Seeded exploratory selection; ordinary and protected branches retain equal two-seed budgets. Every result remains available.</p><ul>{''.join(links)}</ul><p>Human judgments remain in the separate blinded review interface.</p></html>'''
@@ -537,7 +610,7 @@ def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--run',type=Path,required=True)
     p.add_argument('--root',type=Path,default=Path('artifacts/overnight'))
-    p.add_argument('--stage',choices=['generate','archive','propose-revisions','revise','observe','gallery','all'],default='all')
+    p.add_argument('--stage',choices=['generate','archive','propose-revisions','revise','observe','revalidate-observations','gallery','all'],default='all')
     p.add_argument('--revision-count',type=int,choices=[1,2,4],default=4)
     a=p.parse_args(argv)
     if a.stage in ('generate','all'):render(a.run,root=a.root)
@@ -545,6 +618,7 @@ def main(argv=None):
     if a.stage in ('propose-revisions','all'):propose_revisions(a.run,root=a.root,count=a.revision_count)
     if a.stage in ('revise','all'):revise(a.run,root=a.root)
     if a.stage in ('observe','all'):observe(a.run,root=a.root)
+    if a.stage=='revalidate-observations':revalidate_observations(a.run,root=a.root)
     print(gallery(a.run))
 
 

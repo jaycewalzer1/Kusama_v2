@@ -73,6 +73,13 @@ the eight actual parent/child pairs. Individual stages are `generate`, `archive`
 `propose-revisions`, `revise`, `observe`, and `gallery`. `resume` is an alias of
 the same durable episode executor; it does not grant another model invocation.
 
+An observer may report an empty `visible_changes` list. For earlier responses
+rejected only because the old schema required a change, the explicit
+`--stage revalidate-observations` command accepts the unchanged report in a
+hashed sidecar after verifying the original charged response and exact image
+pair. It preserves the original rejection and makes no inference call. This
+does not turn a no-change report into a successful intervention.
+
 There is no validated quality model. Archive selection therefore uses a declared
 seeded exploratory fallback, leaves quality null, and preserves two protected
 directions. Four ordinary and four protected image attempts follow the initial

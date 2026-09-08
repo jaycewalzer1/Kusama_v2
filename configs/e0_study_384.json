@@ -1,0 +1,10 @@
+{
+  "name": "flux_base4b_e0_384x512_v1",
+  "width": 384,
+  "height": 512,
+  "steps": 50,
+  "guidance": 4.0,
+  "precision": "bf16",
+  "offload": "model",
+  "vae_tiling": true
+}

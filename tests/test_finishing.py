@@ -10,7 +10,7 @@ from kusama import episodes, finishing
 from kusama.artifacts import sha256, write_json
 from kusama.continuation import ContinuationStore
 from kusama.director import DirectorOutputError
-from kusama.ledger import BudgetExceeded, Ledger
+from kusama.ledger import BudgetExceeded, Ledger, SpecMismatch
 from kusama.resources import SessionBudget, canonical
 from test_episodes import source_run, FixtureBackend, FixtureDirector, fake_local_call
 
@@ -86,7 +86,7 @@ def developed_run(tmp_path, monkeypatch, *, observed=True, finishing_cap=2):
     return root, directory, run_id, rows
 
 
-def capture_model_calls(monkeypatch, *, reject_primary=False):
+def capture_model_calls(monkeypatch, *, reject_primary=False, no_visible_change=False):
     calls = []
     def inference(director, system, request, images, validate, **kwargs):
         calls.append({'tokens': director.config.max_new_tokens, 'request': request,
@@ -101,7 +101,7 @@ def capture_model_calls(monkeypatch, *, reject_primary=False):
                   'region': [.15, .15, .85, .85], 'preserve': ['Retain the surrounding field'],
                   'uncertainty': 'The composited edge may remain apparent.'}
                  if director.config.max_new_tokens == 512 else
-                 {'visible_changes': ['The fixture patch changes'], 'preservation_failures': [],
+                 {'visible_changes': [] if no_visible_change else ['The fixture patch changes'], 'preservation_failures': [],
                   'ambiguity': 'Fixture comparison only; quality remains unknown.'})
         return {'output': validate(value), 'raw_response': canonical(value),
                 'metadata': {'input_tokens': 12, 'generated_tokens': 50}, 'fixture_only': True}
@@ -129,9 +129,11 @@ def test_observation_informed_protected_descendant_stays_within_16_and_resumes(t
     assert result['human_quality'] is result['human_readiness'] is None
     assert result['reviews']['votes'] == 0
     observation_count = len(ContinuationStore(root).get(run_id + '_finish')['observations'])
+    completed_loads = FixtureDirector.loads
     replay = finishing.finish(directory, root=root, director_factory=FixtureDirector, backend_factory=EditBackend)
     assert replay['attempt_accounting']['total_charged_attempts'] == 16
     assert len(calls) == 3 and len(EditBackend.calls) == 2
+    assert FixtureDirector.loads == completed_loads
     assert len(ContinuationStore(root).get(run_id + '_finish')['observations']) == observation_count == 2
     inspection = finishing.finish(directory, root=root, stage='propose', director_factory=FixtureDirector)
     assert inspection['observations'] == replay['observations'] and len(calls) == 3
@@ -213,3 +215,68 @@ def test_interrupted_finishing_charge_is_retained_without_repeating_that_seed(tm
     assert replay['outputs'] == resumed['outputs']
     with SessionBudget(root) as budget:
         assert budget.summary()['renderer_attempts'] == 16
+
+
+@pytest.mark.parametrize('stage', ['propose', 'observe'])
+def test_reasoning_budget_preflight_stops_before_finishing_model_load(tmp_path, monkeypatch, stage):
+    root, directory, run_id, _ = developed_run(tmp_path, monkeypatch)
+    calls = capture_model_calls(monkeypatch)
+    if stage == 'observe':
+        finishing.finish(directory, root=root, stage='propose', director_factory=FixtureDirector)
+        finishing.finish(directory, root=root, stage='execute', backend_factory=EditBackend)
+    before = FixtureDirector.loads, len(calls)
+    original = SessionBudget.summary
+    def exhausted(self):
+        return {**original(self), 'reasoning_tokens_remaining': 0}
+    monkeypatch.setattr(SessionBudget, 'summary', exhausted)
+    with pytest.raises(BudgetExceeded, match='reasoning cap exhausted before model load'):
+        finishing.finish(directory, root=root, stage=stage, director_factory=FixtureDirector)
+    assert (FixtureDirector.loads, len(calls)) == before
+
+
+@pytest.mark.parametrize('orphan', ['global', 'uncharged_attempt', 'response'])
+def test_orphan_finishing_evidence_blocks_before_model_prepare(tmp_path, monkeypatch, orphan):
+    root, directory, run_id, _ = developed_run(tmp_path, monkeypatch)
+    calls = capture_model_calls(monkeypatch)
+    def paused(*args, **kwargs):
+        raise BudgetExceeded('Fixture pause before model loading')
+    with monkeypatch.context() as patch:
+        patch.setattr(finishing, 'preflight_model_load', paused)
+        with pytest.raises(BudgetExceeded):
+            finishing.finish(directory, root=root, stage='propose', director_factory=FixtureDirector)
+    job_id = run_id+'_finishing'
+    with Ledger(root/'jobs.sqlite3') as ledger, SessionBudget(root) as budget:
+        if orphan == 'global':
+            budget.reserve(job_id+':reasoning:0', 'reasoning', max_tokens=8192)
+        elif orphan == 'uncharged_attempt':
+            ledger.open_attempt(job_id, 0, payload={'fixture_only': True})
+        else:
+            write_json(directory/'finishing/proposal.json', {'output': {'fixture_only': True}})
+    before = FixtureDirector.loads
+    with pytest.raises(SpecMismatch):
+        finishing.finish(directory, root=root, stage='propose', director_factory=FixtureDirector)
+    assert FixtureDirector.loads == before and calls == [] and EditBackend.calls == []
+
+
+def test_execute_only_cannot_use_mutated_proposal_summary(tmp_path, monkeypatch):
+    root, directory, run_id, _ = developed_run(tmp_path, monkeypatch)
+    calls = capture_model_calls(monkeypatch)
+    finishing.finish(directory, root=root, stage='propose', director_factory=FixtureDirector)
+    with Ledger(root/'jobs.sqlite3') as ledger:
+        state = ledger.get_job(run_id+'_finishing')['payload']['state']
+        state['proposal']['instruction'] = 'A different instruction absent from the charged raw response'
+        ledger.update_job(run_id+'_finishing', payload={'state': state})
+    with pytest.raises(SpecMismatch, match='differs from its charged raw response'):
+        finishing.finish(directory, root=root, stage='execute', backend_factory=EditBackend)
+    assert len(calls) == 1 and EditBackend.calls == []
+    assert not (root/'continuations'/(run_id+'_finish')).exists()
+
+
+def test_no_visible_change_observations_remain_valid_and_do_not_become_quality_labels(tmp_path, monkeypatch):
+    root, directory, run_id, _ = developed_run(tmp_path, monkeypatch)
+    calls = capture_model_calls(monkeypatch, no_visible_change=True)
+    result = finishing.finish(directory, root=root, director_factory=FixtureDirector, backend_factory=EditBackend)
+    assert len(calls) == 3 and len(result['observations']) == 2
+    assert all(row['observation']['visible_changes'] == [] and row['error'] is None for row in result['observations'])
+    assert result['human_quality'] is result['human_readiness'] is None
+    assert result['reviews']['votes'] == 0

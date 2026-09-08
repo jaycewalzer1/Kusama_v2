@@ -9,6 +9,7 @@ import pytest
 
 from kusama import episodes
 from kusama.artifacts import sha256, write_json
+from kusama.director import DirectorOutputError
 from kusama.inspiration import example
 from kusama.ledger import BudgetExceeded, Ledger, SpecMismatch
 from kusama.resources import OvernightConfig, SessionBudget, load_config
@@ -118,6 +119,57 @@ def fake_local_call(calls):
     return call
 
 
+def test_no_change_observer_revalidation_preserves_raw_charge_and_is_idempotent(tmp_path, monkeypatch):
+    root, directory, run_id = source_run(tmp_path)
+    job_id = run_id+'_observe'
+    folder = directory/'observation'
+    folder.mkdir()
+    pair = {'continuation_id': 'fixture_continuation', 'requested': 'A gap appears.'}
+    for label, filename in [('parent', 'source0.png'), ('child', 'source1.png')]:
+        path = directory/'sources'/filename
+        pair[label] = {'id': label, 'path': str(path), 'sha256': sha256(path)}
+    value = {'visible_changes': [], 'preservation_failures': [], 'ambiguity': 'none'}
+    assert episodes.Observation.model_validate(value).model_dump() == value
+    result = {'raw_response': json.dumps(value), 'output': None,
+        'parse_error': '1 validation error for Observation\nvisible_changes\n  List should have at least 1 item [type=too_short]',
+        'metadata': {'input_tokens': 10, 'generated_tokens': 12, 'input_images': [
+            {'id': label, 'sha256': pair[label]['sha256']} for label in ('parent', 'child')]}}
+    rows = []
+    class Store:
+        def __init__(self, root): pass
+        def get(self, identifier): return {'observations': rows}
+        def observe(self, identifier, artifact_id, note, author, origin):
+            rows.append({'artifact_id': artifact_id, 'image_sha256': pair['child']['sha256'],
+                         'note': note, 'author': author, 'origin': origin})
+    monkeypatch.setattr(episodes, 'ContinuationStore', Store)
+    def rejected_observation():
+        raise DirectorOutputError(result['parse_error'], result)
+    with Ledger(root/'jobs.sqlite3') as ledger, SessionBudget(root) as budget:
+        ledger.create_job(job_id, {'pairs': [pair]}, 1, folder)
+        episodes.model_call(ledger, job_id, folder, budget, 0, 'observation_01.json', rejected_observation, device='cpu')
+        before = budget.summary()
+        assert ledger.get_attempt(job_id, 0)['status'] == 'failed'
+        assert before['calls'][-1]['status'] == 'failed'
+    raw_hash = sha256(folder/'observation_01.json')
+    first = episodes.revalidate_observations(directory, root=root)
+    second = episodes.revalidate_observations(directory, root=root)
+    assert first == second and len(first) == len(rows) == 1
+    assert sha256(folder/'observation_01.json') == raw_hash
+    assert json.loads((folder/'observation_01.json').read_text())['parse_error'] == result['parse_error']
+    with Ledger(root/'jobs.sqlite3') as ledger, SessionBudget(root) as budget:
+        assert ledger.call_count(job_id) == 1
+        assert ledger.get_attempt(job_id, 0)['status'] == 'failed'
+        assert next(row for row in budget.summary()['calls'] if row['key'] == job_id+':reasoning:0')['status'] == 'failed'
+        assert budget.summary()['reasoning_tokens_measured'] == before['reasoning_tokens_measured']
+    # A modified sidecar cannot be accepted as new model evidence.
+    sidecar = folder/'observation_01_revalidation.json'
+    changed = json.loads(sidecar.read_text())
+    changed['output']['visible_changes'] = ['Invented difference']
+    write_json(sidecar, changed)
+    with pytest.raises(SpecMismatch):
+        episodes.revalidate_observations(directory, root=root)
+
+
 def test_generation_wrapper_saves_measured_images_and_resumes_without_calls(tmp_path):
     root, directory, run_id = source_run(tmp_path)
     first = episodes.render(directory, root=root, backend_factory=FixtureBackend)
@@ -216,6 +268,11 @@ def test_local_proposal_parent_lineage_and_resume_after_generation_replay(tmp_pa
         assert sha256(call['images'][0][1]) == candidate['sha256']
         assert row['human_label'] is None
     episodes.render(directory, root=root, backend_factory=FixtureBackend)
+    # Later realized descendants may replace ordinary initial candidates in the
+    # current archive. Replay must use its historical selection, not that pool.
+    write_json(directory / 'archive_pool.json', {
+        'favored': [], 'exploratory_fallback': [{'candidate_id': 'later-child'}],
+        'different': [], 'protected': []})
     replay = episodes.propose_revisions(directory, root=root, count=4, director_factory=FixtureDirector)
     assert replay == proposals and len(calls) == 4
     with Ledger(root / 'jobs.sqlite3') as ledger:

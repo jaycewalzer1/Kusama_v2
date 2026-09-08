@@ -184,3 +184,16 @@ def test_interrupted_reasoning_stays_uncertain_without_another_call(setup, monke
     assert execute(setup, 'direct_best_of_n')['modes'][0]['generation_status'] == 'uncertain_execution'
     assert execute(setup, 'direct_best_of_n')['modes'][0]['generation_status'] == 'uncertain_execution'
     assert calls == [True] and Backend.calls == []
+
+
+def test_sealed_index_manifest_blocks_all_modes_before_source_ranking(setup, monkeypatch):
+    factory = modes.RetrievalIndex
+    def contaminated(path):
+        index = factory(path)
+        index.manifest['source_pool'] = {'split': 'heldout'}
+        index.query = lambda *a, **k: pytest.fail('Sealed manifest must stop before querying sources')
+        return index
+    monkeypatch.setattr(modes, 'RetrievalIndex', contaminated)
+    with pytest.raises(ValueError, match='Sealed source pools'):
+        execute(setup)
+    assert Backend.calls == [] and Backend.loads == 0 and setup[3] == []
