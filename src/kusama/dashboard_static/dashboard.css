@@ -148,3 +148,12 @@ fieldset p { color: var(--muted); font-size: 12px; margin: 0 0 16px; }
 #collection-images figure > button { display: block; margin: 0 10px 10px; width: calc(100% - 20px); font-size: 12px; }
 
 #run-brief { max-width: 105ch; white-space: pre-wrap; color: var(--muted); }
+
+.continuation-plan { display: block; margin: 28px 0; }
+.continuation-plan-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 24px; margin-top: 16px; }
+.continuation-mask-preview { min-width: 0; }
+.continuation-mask-preview svg { display: block; width: 100%; height: auto; }
+.continuation-plan-details { min-width: 0; }
+.continuation-instruction { max-height: none; overflow: visible; }
+.continuation-mask-hash { font-size: 12px; overflow-wrap: anywhere; }
+.continuation-protection-warning { border: 2px solid light-dark(#ae7100, #e0c38c); padding: 12px; }

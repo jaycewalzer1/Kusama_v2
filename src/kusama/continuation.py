@@ -444,26 +444,79 @@ class ContinuationStore:
         directory = self.root / 'continuations' / continuation_id
         esc = lambda value: html.escape(str(value), quote=True)
         cards = []
+        parent_url = None
         for artifact in ([manifest['parent']] if manifest['parent'] else []) + manifest['outputs']:
             path = Path(artifact['path'])
             if sha256(path) != artifact['sha256']:
                 raise ReviewConflict('Gallery artifact hash changed')
             url = esc(f'/api/projects/{quote(manifest["project_id"], safe="")}/artifacts/{quote(artifact["id"], safe="")}'
                       if web else os.path.relpath(path, directory))
+            if artifact['id'] == 'root':
+                parent_url = url
             cards.append(f'<figure><a href="{url}"><img src="{url}" alt="{esc(artifact["id"])}"></a><figcaption>{esc(artifact["id"])} · {esc(artifact.get("origin"))}<br>SHA-256 {esc(artifact["sha256"])}</figcaption></figure>')
+        region = self._gallery_edit_region(manifest)
+        preview = '<p>Prepared edit-region preview is available after preparation completes.</p>'
+        if region is not None:
+            width, height = region['size']
+            left, top, right, bottom = region['bounds']
+            protection = (f'{region["protected"]:,} of {width * height:,} pixels protected outside the rectangle.'
+                          if region['protected'] else '0 protected pixels — the whole image may change.')
+            warning = ' continuation-protection-warning' if region['protected'] == 0 else ''
+            preview = f'''<section class="continuation-plan" aria-labelledby="planned-edit-title">
+<h2 id="planned-edit-title">Planned edit region on the saved parent</h2>
+<div class="continuation-plan-layout"><figure class="continuation-mask-preview">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" role="img" aria-labelledby="edit-region-title edit-region-description">
+<title id="edit-region-title">Exact prepared edit region</title>
+<desc id="edit-region-description">The complete saved parent with the allowed edit rectangle outlined. Pixel bounds: x {left} to {right}, y {top} to {bottom}; right and bottom are exclusive. {esc(protection)}</desc>
+<image href="{parent_url}" x="0" y="0" width="{width}" height="{height}" preserveAspectRatio="xMidYMid meet"/>
+<rect x="{left}" y="{top}" width="{right - left}" height="{bottom - top}" fill="none" stroke="#101010" stroke-width="5" vector-effect="non-scaling-stroke"/>
+<rect x="{left}" y="{top}" width="{right - left}" height="{bottom - top}" fill="none" stroke="#ffda44" stroke-width="2.5" stroke-dasharray="8 5" vector-effect="non-scaling-stroke"/>
+</svg><figcaption>Yellow dashed boundary: allowed edit area. The entire {width} × {height} parent is shown; the overlay does not alter its saved bytes. <a href="{parent_url}">Open original parent</a></figcaption></figure>
+<div class="continuation-plan-details"><p><strong>Prepared pixel bounds:</strong> x [{left}, {right}), y [{top}, {bottom}). Right and bottom bounds are exclusive.</p>
+<p class="continuation-protection{warning}"><strong>{esc(protection)}</strong></p>
+<p>This rectangle is the saved geometric mask, not an inferred object boundary or evidence that the requested subject lies inside it.</p>
+<h3>Exact saved edit instruction</h3><pre class="continuation-instruction">{esc(manifest['request']['revision']['instruction'])}</pre>
+<p class="continuation-mask-hash">Prepared mask SHA-256: {region['sha256']}</p></div></div></section>'''
         selection = manifest['selection']
         body = f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{esc(manifest['request']['title'])}</title>
-<style>body{{font:18px system-ui;max-width:1300px;margin:40px auto;padding:0 24px;background:#f2f0e9;color:#222}}section{{display:flex;gap:20px;flex-wrap:wrap}}figure{{margin:0;flex:1;min-width:260px}}img{{width:100%;max-height:700px;object-fit:contain}}figcaption{{font-size:12px;overflow-wrap:anywhere}}pre{{white-space:pre-wrap;overflow-wrap:anywhere}}</style>
+<style>body{{font:18px system-ui;max-width:1300px;margin:40px auto;padding:0 24px;background:#f2f0e9;color:#222}}section{{display:flex;gap:20px;flex-wrap:wrap}}figure{{margin:0;flex:1;min-width:260px}}img{{width:100%;max-height:700px;object-fit:contain}}figcaption{{font-size:12px;overflow-wrap:anywhere}}pre{{white-space:pre-wrap;overflow-wrap:anywhere}}.continuation-plan{{display:block;margin:28px 0}}.continuation-plan-layout{{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:24px;margin-top:16px}}.continuation-mask-preview{{min-width:0}}.continuation-mask-preview svg{{display:block;width:100%;height:auto}}.continuation-plan-details{{min-width:0}}.continuation-instruction{{max-height:none;overflow:visible}}.continuation-mask-hash{{font-size:12px;overflow-wrap:anywhere}}.continuation-protection-warning{{border:2px solid #ae7100;padding:12px}}</style>
 <h1>{esc(manifest['request']['title'])}</h1><p>Development gallery · provenance visible</p><p>{esc(manifest['request']['brief'])}</p>
 <p>Parent selected by {esc(selection['author'])} ({esc(selection['origin'])}): {esc(selection['reason'])}</p>
 <p>Requested change by {esc(manifest['request']['revision']['author'])}: {esc(manifest['request']['revision']['intended_change'])}</p>
 <p>{esc(manifest['method_note'])}</p><p>Execution: {esc(manifest['status'])}. Charged model calls: {manifest['model_calls']}/2. Human follow-up reviews: {manifest['reviews']['votes']}. Artistic effectiveness remains unassessed until actual observations and situated review.</p>
+{preview}
 <section>{''.join(cards)}</section><h2>Observed results</h2><pre>{esc(encoded(manifest['observations']) if manifest['observations'] else 'No observations saved yet.')}</pre>
 <details><summary>Frozen inquiry, sources and action</summary><pre>{esc(json.dumps(manifest['request'], indent=2, ensure_ascii=False))}</pre></details></html>'''
         if web:
             import re
             body = re.sub(r'<style>.*?</style>', '<link rel="stylesheet" href="/static/dashboard.css">', body, flags=re.S)
         return body
+
+    def _gallery_edit_region(self, manifest):
+        """Read the exact prepared mask; never infer a region from the instruction."""
+        from .studio import read_projects
+        projects = read_projects(self.root, manifest['project_id'])
+        if not manifest['parent'] or not projects:
+            return None
+        actions = projects[0]['actions']
+        if any(key not in actions for key in ('variant_1', 'variant_2')):
+            return None
+        mask_path = self.root / 'continuations' / manifest['id'] / 'allowed_mask.png'
+        mask_hash = sha256(mask_path)
+        if any(actions[key]['source_hashes'].get('allowed_mask') != mask_hash
+               for key in ('variant_1', 'variant_2')):
+            raise ReviewConflict('Gallery prepared mask hash changed')
+        with Image.open(manifest['parent']['path']) as parent, Image.open(mask_path) as mask:
+            if mask.mode != 'L' or mask.size != parent.size:
+                raise ReviewConflict('Gallery prepared mask dimensions or mode changed')
+            histogram = mask.histogram()
+            bounds = mask.getbbox()
+            if sum(histogram[1:255]) or bounds is None:
+                raise ReviewConflict('Gallery requires the prepared binary rectangular mask')
+            left, top, right, bottom = bounds
+            if histogram[255] != (right - left) * (bottom - top):
+                raise ReviewConflict('Gallery prepared mask is not rectangular')
+            return {'size': mask.size, 'bounds': bounds, 'protected': histogram[0], 'sha256': mask_hash}
 
     def export_gallery(self, continuation_id):
         path = self.root / 'continuations' / continuation_id / 'gallery.html'
