@@ -115,6 +115,8 @@ fieldset p { color: var(--muted); font-size: 12px; margin: 0 0 16px; }
 .review-notes { margin-top: 20px; }
 .review-submit { display: flex; gap: 18px; align-items: center; margin-top: 16px; }
 #vote-status, #advance-status { font-size: 12px; }
+.reviewer-guidance { margin: 12px 0; max-width: 85ch; color: var(--muted); font-size: 13px; }
+.reviewer-control { display: flex; flex-direction: column; gap: 6px; }
 #advance-details { border-top: 1px solid var(--line); padding-top: 18px; }
 #advance-form { display: grid; gap: 12px; max-width: 760px; }
 #advance-form button { justify-self: start; }

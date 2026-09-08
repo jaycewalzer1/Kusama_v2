@@ -7,13 +7,76 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 import json
+import math
 from pathlib import Path
 import sqlite3
+from statistics import median
 
 from PIL import Image
 
 from .artifacts import sha256, write_json
 from .costs import CostJournal
+
+
+# These are sampled usage counters. Capacity, available/recommended memory,
+# allocator reservations, and native peak counters have different meanings.
+SAMPLED_USAGE_FIELDS = ('process_rss_bytes', 'mps_current_allocated_bytes',
+                        'mps_driver_allocated_bytes', 'cuda_allocated_bytes')
+
+
+def _valid_measurement(value):
+    return (not isinstance(value, bool) and isinstance(value, (int, float))
+            and math.isfinite(value) and value >= 0)
+
+
+def _model_activity(records):
+    """Aggregate the existing cost journal without exposing call contents."""
+    grouped = {}
+    for record in records:
+        key = (record['start']['model'], record['start']['scope'])
+        grouped.setdefault(key, []).append(record)
+    groups = []
+    for (model, scope), rows in sorted(grouped.items()):
+        finished = [row['finish'] for row in rows if row['finish'] is not None]
+        runtimes = [row['runtime_seconds'] for row in finished
+                    if _valid_measurement(row.get('runtime_seconds'))]
+        missing_runtime = sum(row.get('runtime_seconds') is None for row in finished)
+        sampled = []
+        for finish in finished:
+            measurements = finish.get('measurements')
+            maxima = measurements.get('sampled_max_bytes') if isinstance(measurements, dict) else None
+            sampled.append(maxima if isinstance(maxima, dict) else {})
+        memory = {}
+        for field in SAMPLED_USAGE_FIELDS:
+            values = [row[field] for row in sampled if _valid_measurement(row.get(field))]
+            memory[field] = {'max_bytes': max(values) if values else None,
+                             'measured_records': len(values),
+                             'finished_records_without_valid_measurement': len(finished) - len(values)}
+        groups.append({'model': model, 'scope': scope,
+            'started_records': len(rows), 'completed_records': len(finished),
+            'open_records': len(rows) - len(finished),
+            'finish_outcomes': dict(sorted(Counter(row['outcome'] for row in finished).items())),
+            'runtime_seconds': {'measured_records': len(runtimes),
+                'missing_finished_records': missing_runtime,
+                'invalid_finished_records': len(finished) - missing_runtime - len(runtimes),
+                'unmeasured_open_records': len(rows) - len(finished),
+                'min': min(runtimes) if runtimes else None,
+                'median': median(runtimes) if runtimes else None,
+                'max': max(runtimes) if runtimes else None,
+                'sum': sum(runtimes) if runtimes else None},
+            'sampled_memory': {'finished_records_with_any_valid_usage_measurement': sum(
+                any(_valid_measurement(row.get(field)) for field in SAMPLED_USAGE_FIELDS) for row in sampled),
+                'unmeasured_open_records': len(rows) - len(finished), 'fields': memory}})
+    return {'source': 'CostJournal.summary records', 'groups': groups,
+        'completed_definition': 'A recorded finish event, including failed, interrupted, uncertain or recovered outcomes; not necessarily a successful result.',
+        'limitations': [
+            'Recorded calls only; absent measurements and open calls are unknown, not zero runtime or memory usage.',
+            'Runtime uses each finish.runtime_seconds in its recorded scope. Sums include measured failed calls, exclude missing times, and are not total elapsed session time.',
+            'Exact model and scope groups may mix render profiles, dimensions, tokens, devices and loading state. Scope labels remain distinct; these aggregates are not comparable latency benchmarks.',
+            'Memory figures are maxima of recorded sampled usage counters, not native peaks or guaranteed peak bounds; brief peaks between samples may be missed.',
+            'Available, total and recommended RAM, allocator reservations and native peak counters are excluded. RSS and device allocation counters overlap and must not be added together.',
+            'No raw cost records, prompts, image data, metadata or evidence text are returned.'
+        ]}
 
 
 @contextmanager
@@ -98,6 +161,9 @@ def audit(root):
                 'renderer_attempts': renderer, 'renderer_remaining': cfg['renderer_attempt_cap'] - renderer,
                 'reasoning_tokens_charged_or_reserved': tokens, 'reasoning_tokens_remaining': cfg['reasoning_token_cap'] - tokens,
                 'states': dict(Counter(r['status'] for r in calls)),
+                'calls_by_kind': {kind: {'total': sum(r['kind'] == kind for r in calls),
+                    'states': dict(sorted(Counter(r['status'] for r in calls if r['kind'] == kind).items()))}
+                    for kind in sorted({'renderer', 'reasoning'} | {r['kind'] for r in calls})},
                 'unsettled_keys': [r['key'] for r in calls if r['status'] in ('running', 'uncertain')]}
             if renderer > cfg['renderer_attempt_cap'] or tokens > cfg['reasoning_token_cap']:
                 issues.append({'error': 'Session resource cap exceeded'})
@@ -106,6 +172,7 @@ def audit(root):
         with CostJournal(root, read_only=True) as journal:
             summary = journal.summary()
             cost = {key: value for key, value in summary.items() if key != 'records'}
+            cost['model_activity'] = _model_activity(summary['records'])
     return {'schema_version': 1, 'audited_at': datetime.now(timezone.utc).isoformat(), 'root': str(root),
         'integrity_status': 'passed' if not issues else 'failed', 'issues': issues, 'databases': databases,
         'jobs': jobs, 'registered_unique_image_bytes': len(images), 'image_records': list(images.values()),

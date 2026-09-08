@@ -18,10 +18,12 @@
       <div class="review-heading"><div><p class="eyebrow">Human review</p><h2 id="review-heading">Two images. Two separate judgments.</h2></div><p id="review-progress" role="status"></p></div>
       <p class="review-intro">A finished piece and an idea worth developing can be different choices. Tie means equally good; unsure means you cannot confidently tell.</p>
       <div class="review-controls">
-        <label>Your reviewer name<input id="reviewer" type="text" maxlength="200" autocomplete="nickname" placeholder="Enter your name"></label>
+        <div id="reviewer-name-field" class="reviewer-control"><label for="reviewer">Your reviewer name</label><input id="reviewer" type="text" maxlength="200" autocomplete="nickname" placeholder="Enter your name" aria-describedby="reviewer-guidance"></div>
+        <div id="reviewer-slot-field" class="reviewer-control" hidden><label for="reviewer-slot">Your allocated reviewer slot</label><select id="reviewer-slot" aria-describedby="reviewer-guidance"><option value="">Choose your allocated slot</option></select></div>
         <label>Experiment<select id="review-collection"><option value="">No comparisons registered yet</option></select></label>
         <button type="button" id="start-review">Open comparison</button>
       </div>
+      <p id="reviewer-guidance" class="reviewer-guidance" role="status">Enter your own reviewer name. Some experiments require an allocated reviewer slot instead.</p>
       <p id="review-status" role="status">Saved experiments will appear here when their images are ready.</p>
       <div id="review-workspace" hidden>
         <p id="review-brief"></p>

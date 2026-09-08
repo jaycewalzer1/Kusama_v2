@@ -416,6 +416,10 @@ byId("refresh").addEventListener("click", refresh);
 refresh();
 
 let reviewCollection = null;
+let reviewerCollection = null;
+let reviewerSlots = [];
+let reviewerMetadataRequest = 0;
+const reviewerMetadataCache = new Map();
 let activeComparison = null;
 let reviewRequest = 0;
 let voteSubmissionId = null;
@@ -445,11 +449,83 @@ async function postJSON(url, body) {
 }
 
 function reviewerName() {
-  return byId("reviewer").value.trim();
+  return (reviewerSlots.length ? byId("reviewer-slot") : byId("reviewer")).value.trim();
+}
+
+function reviewerIdentityMessage() {
+  if (reviewerSlots.length) {
+    return reviewerSlots.includes(reviewerName()) ? "" : "Choose only your allocated reviewer slot above. If you do not know your slot, ask the review coordinator before reviewing.";
+  }
+  return reviewerName() ? "" : "Enter your own reviewer name so your judgments are attributed to you.";
+}
+
+function reviewerAllocationGuidance() {
+  byId("reviewer-guidance").textContent = reviewerSlots.length
+    ? "This experiment uses allocated reviewer slots. Choose only the slot assigned to you by the review coordinator. If you do not know yours, ask the coordinator before reviewing."
+    : "Enter your own reviewer name. This experiment has no allocated reviewer slots.";
+}
+
+async function loadReviewerMetadata(collectionId) {
+  if (reviewerCollection?.id === collectionId) {
+    // Returning to an already loaded collection also cancels any late metadata
+    // response for a different selection, without clearing this identity/draft.
+    ++reviewerMetadataRequest;
+    byId("start-review").disabled = false;
+    reviewerAllocationGuidance();
+    return reviewerCollection;
+  }
+  const request = ++reviewerMetadataRequest;
+  byId("start-review").disabled = true;
+  byId("reviewer-guidance").textContent = "Checking this experiment’s reviewer allocation…";
+  try {
+    const collection = reviewerMetadataCache.get(collectionId) || await getJSON(reviewBase(collectionId));
+    if (request !== reviewerMetadataRequest || byId("review-collection").value !== collectionId) return null;
+    reviewerMetadataCache.set(collectionId, collection);
+    reviewerCollection = collection;
+    // Allocation metadata supplies identity choices only. Assignment order,
+    // candidate IDs and methods must not enter this primary-review guidance.
+    reviewerSlots = [...new Set((collection.frozen_assignments || []).map((assignment) => assignment.reviewer_slot)
+      .filter((slot) => typeof slot === "string" && slot.trim()))].sort();
+    byId("reviewer-name-field").hidden = reviewerSlots.length > 0;
+    byId("reviewer-slot-field").hidden = reviewerSlots.length === 0;
+    const select = byId("reviewer-slot");
+    select.replaceChildren();
+    const blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = "Choose your allocated slot";
+    select.append(blank);
+    for (const slot of reviewerSlots) {
+      const option = document.createElement("option");
+      option.value = slot;
+      option.textContent = slot;
+      select.append(option);
+    }
+    // A saved name or the first allocation is never an identity selection.
+    select.value = "";
+    reviewerAllocationGuidance();
+    byId("review-status").textContent = reviewerIdentityMessage() || "Open a comparison to begin reviewing.";
+    return collection;
+  } catch (error) {
+    if (request === reviewerMetadataRequest) {
+      byId("reviewer-guidance").textContent = "Reviewer allocation could not be checked. Use Open comparison to retry before reviewing.";
+      byId("review-status").textContent = error.message;
+    }
+    return null;
+  } finally {
+    if (request === reviewerMetadataRequest) byId("start-review").disabled = false;
+  }
 }
 
 function newSubmissionId() {
   return crypto.randomUUID();
+}
+
+function reviewCollectionLabel(collection) {
+  // Only the predeclared study suffix is public here. Protocol prefixes and
+  // incomplete-output hashes never become labels, nor do action/method IDs.
+  const study = String(collection.id).match(/(?:^|_)e0-([dh]\d{2})(?:_incomplete_[a-f0-9]{8})?$/);
+  const suffix = collection.title === "E0 parent/edit comparison" && study ? ` · study ${study[1]}` : "";
+  return `${collection.title}${suffix} · ${collection.candidate_count} images`;
 }
 
 async function refreshReviews() {
@@ -461,7 +537,7 @@ async function refreshReviews() {
   for (const collection of result.collections) {
     const option = document.createElement("option");
     option.value = collection.id;
-    option.textContent = `${collection.title} · ${collection.candidate_count} images`;
+    option.textContent = reviewCollectionLabel(collection);
     select.append(option);
   }
   if (!result.collections.length) {
@@ -473,7 +549,12 @@ async function refreshReviews() {
     select.value = previous;
   }
   const selected = result.collections.find((collection) => collection.id === select.value);
-  byId("review-progress").textContent = selected ? `${selected.reviewed_pair_ids.length} of ${selected.comparison_count} comparisons reviewed${reviewer ? ` by ${reviewer}` : ""}` : "";
+  if (selected) await loadReviewerMetadata(selected.id);
+  byId("review-progress").textContent = selected
+    ? reviewer === reviewerName() && !reviewerIdentityMessage()
+      ? `${selected.reviewed_pair_ids.length} of ${selected.comparison_count} comparisons reviewed by ${reviewer}`
+      : `${selected.comparison_count} comparisons available`
+    : "";
 }
 
 function reviewHistory(comparison) {
@@ -490,19 +571,22 @@ function reviewHistory(comparison) {
 async function openReviewCollection() {
   const collectionId = byId("review-collection").value;
   if (!collectionId) return;
-  if (!reviewerName()) {
-    byId("review-status").textContent = "Enter a reviewer name so your judgments are attributed to you.";
-    byId("reviewer").focus();
-    return;
-  }
   const request = ++reviewRequest;
   byId("review-status").textContent = "Loading comparisons…";
   byId("review-workspace").hidden = true;
   activeComparison = null;
   try {
-    try { localStorage.setItem("kusama-reviewer", reviewerName()); } catch (_) { /* Review still works without browser storage. */ }
-    const collection = await getJSON(reviewBase(collectionId));
-    if (request !== reviewRequest) return;
+    const collection = await loadReviewerMetadata(collectionId);
+    if (!collection || request !== reviewRequest || byId("review-collection").value !== collectionId) return;
+    const identityMessage = reviewerIdentityMessage();
+    if (identityMessage) {
+      byId("review-status").textContent = identityMessage;
+      byId(reviewerSlots.length ? "reviewer-slot" : "reviewer").focus();
+      return;
+    }
+    if (!reviewerSlots.length) {
+      try { localStorage.setItem("kusama-reviewer", reviewerName()); } catch (_) { /* Review still works without browser storage. */ }
+    }
     reviewCollection = collection;
     activePool = null;
     byId("pool-details").open = false;
@@ -542,7 +626,7 @@ async function openReviewCollection() {
     for (const [index, pair] of collection.pairs.entries()) {
       const option = document.createElement("option");
       option.value = pair.id;
-      option.textContent = `${index + 1} of ${collection.pairs.length} · ${pair.id}`;
+      option.textContent = `${index + 1} of ${collection.pairs.length}`;
       byId("review-pair").append(option);
     }
     const history = await getJSON(`${reviewBase(collectionId)}/history`);
@@ -557,7 +641,7 @@ async function openReviewCollection() {
 }
 
 async function openComparison() {
-  if (!reviewCollection || !reviewerName()) return;
+  if (!reviewCollection || reviewerCollection?.id !== reviewCollection.id || reviewerIdentityMessage()) return;
   const request = ++reviewRequest;
   activeComparison = null;
   byId("review-workspace").hidden = true;
@@ -702,14 +786,24 @@ byId("advance-form").addEventListener("submit", async (event) => {
 });
 
 byId("start-review").addEventListener("click", openReviewCollection);
-byId("review-collection").addEventListener("change", openReviewCollection);
-byId("review-pair").addEventListener("change", openComparison);
-byId("reviewer").addEventListener("input", () => {
+byId("review-collection").addEventListener("change", async () => {
   ++reviewRequest;
   activeComparison = null;
+  activePool = null;
   byId("review-workspace").hidden = true;
-  byId("review-status").textContent = "Open a comparison to review under this name.";
+  const collectionId = byId("review-collection").value;
+  if (collectionId) await loadReviewerMetadata(collectionId);
 });
+byId("review-pair").addEventListener("change", openComparison);
+function reviewerIdentityChanged() {
+  ++reviewRequest;
+  activeComparison = null;
+  activePool = null;
+  byId("review-workspace").hidden = true;
+  byId("review-status").textContent = reviewerIdentityMessage() || "Use Open comparison to review under this identity.";
+}
+byId("reviewer").addEventListener("input", reviewerIdentityChanged);
+byId("reviewer-slot").addEventListener("change", reviewerIdentityChanged);
 for (const [id, change] of [["previous-pair", -1], ["next-pair", 1]]) {
   byId(id).addEventListener("click", () => {
     const select = byId("review-pair");
