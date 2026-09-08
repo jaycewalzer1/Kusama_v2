@@ -1,28 +1,29 @@
-# Overnight handoff — working checkpoint
+# Kusama v2 — morning handoff
 
-**Still running as of 8 September 2026, 07:04 UTC; this is an interruption checkpoint.**
+**8 September 2026, 13:54 UTC.** The real source → connection → image → saved-parent revision → observation → review-queue path is complete. The larger research assignment remains partial: E0 generation is incomplete, human evaluation has not begun and no weights were trained. A usage interruption outlasted the frozen session window; no inference was launched after it expired.
 
-The first real source-to-image-to-local-revision path is working. Six whole-work
-care/control images, eight local variants and two protected-child finishing
-variants are saved. Ten actual observer calls are preserved, including five
-empty-change reports accepted through explicit schema-revalidation sidecars.
-E0 development is running at the separately named 384×512 profile: d01 has its
-complete six-edit pool; d02 stopped before editing on a malformed preservation
-list; d03/d04 continue. No human
-votes or pool selections have been added and no model weights changed.
+- Branch: `overnight/2026-09-08`. [Final source receipt](artifacts/overnight/source_checkout_final.json) records the exact committed checkout; baseline `f04b6de` preserves the original project.
+- [Open the live review dashboard](http://127.0.0.1:8766/). **9 collections; 0 human votes, 0 pool selections, 0 advancements.** The next useful human task is one E0 development pool: six parent/edit comparisons, then a six-edit-or-none selection. Use only your allocated reviewer slot.
+- [Whole-work gallery](artifacts/overnight/runs/care_control_v2/gallery.html), [protected branch](artifacts/overnight/continuations/care_control_v2_local_03/gallery.html), [finishing comparison](artifacts/overnight/continuations/care_control_v2_finish/gallery.html). The saved policy selected the first seeded protected branch and its first realization; there is no human-selected or quality-ranked “best” image. All alternatives remain available.
 
-- Branch: `overnight/2026-09-08`; baseline `f04b6de`, latest code checkpoint `7d40bf4`; 628 fixture tests and TypeScript contract check passed.
-- UI: [local review dashboard](http://127.0.0.1:8766/).
-- Whole gallery: [care/control](artifacts/overnight/runs/care_control_v2/gallery.html).
-- First local pair: [continuation](artifacts/overnight/continuations/care_control_v2_local_01/gallery.html).
-- [Implementation status](docs/IMPLEMENTATION_STATUS.md), [source audit](docs/SOURCE_AUDIT.md), [workflow commands](docs/source_connected_studio.md).
-- Authoritative usage: `artifacts/overnight/resources.sqlite3`; job/image evidence: `artifacts/overnight/jobs.sqlite3`; reviews: `artifacts/overnight/reviews.sqlite3`.
+The first studio episode saved **16 real 512 × 640 images**: six initial possibilities, four ordinary local edits, four protected local edits and two finishing edits. One complete example combines AIC's elevator grille (`artic_148322`) with Cleveland's bat ornament (`cleveland_97477`) to propose support becoming confinement. Qwen supplied the attributed transfer and FLUX produced a bronze bat with hands behind bars. A later masked action requested a connecting headrest bar. One finishing seed added no clear bar; the other added a short forehead bar that did not reach the requested outer supports. All 311,003 outside pixels were preserved, but the mask excluded those supports. The [full evidence chain](artifacts/overnight/vertical_slice_evidence_final.json) and [gallery refresh receipt](artifacts/overnight/recovery_audits/gallery_projection_refresh_final.json) preserve original inputs, failures, images and observations. This is an inspected execution path, not proof of artistic improvement.
 
-Do not launch a competing model job while the E0 worker holds the GPU lease.
-Its command is `uv run --locked kusama e0 run --protocol artifacts/overnight/evaluation_v2/e0 --index artifacts/overnight/indexes/849a29aaaec9d1959002 --root artifacts/overnight --render-profile configs/e0_study_384.json`; log `artifacts/overnight/e0_development_remaining.log`. Completed calls replay without new reservations. The d02 schema failure needs a disclosed technical recovery before a complete development gate; its two valid actions and parent must be preserved. All heldout texts must remain outside the tuning path. [Completed first-episode evidence](artifacts/overnight/vertical_slice_evidence_final.json) records the actual 16-attempt chain; authoritative session usage remains in SQLite.
+**E0:** d01, d03 and d04 each have one parent and six edits; d02 has its parent only. **22 E0 images exist, so 62 additional renders are needed for all 84.** d02's one malformed preservation list has a hash-bound, no-call recovery authorization; the repair itself is unexecuted. All eight heldout briefs remain unexecuted and unadmitted. [Protocol/status/resume details](docs/EXPERIMENT_PROTOCOL.md) explain why normal resume across changed code is rejected and why the prepared repair command cannot reopen the expired budget.
 
-The current artistic uncertainty is whether local interventions make the proposed
-source relationship visibly consequential. Catalog-like object rendering and
-weak transformation in the chair direction were retained as findings. The next
-evidence gate is inspection of real parent/child changes followed by genuine
-human quality and development reviews. Technical completion cannot answer that.
+**Sources and search:** 200 image-bearing records, 400 geometric crops, 545 context claims (502 documented, 43 machine interpretations), 40 unvalidated device seeds and 200 distinct original-image hashes. There are 169 heuristic source families, 372 request attempts and 65 retained request-failure files; the latter are not 65 distinct lost images. The final index has 199 whole views, 398 crops and 54 unvalidated typed relations. Rights, attribution, duplicate/metadata/coverage limits are in the [source audit](docs/SOURCE_AUDIT.md). Contemporary-art and originating-community coverage remain inadequate. Retrieval uses FTS5/BM25, CLIP cosine similarity and typed relations fused by reciprocal rank (`k=60`). Creative search uses 32 fixed CVT-MAP-Elites-style CLIP niches, null quality, seeded exploration and protected alternatives. E0 uses fixed matched actions/seeds instead.
+
+**Resources:** 38 new renderer attempts, all completed; 46 Qwen calls, including 20 retained failures; 81,834 reasoning tokens; zero unsettled calls. The unused 122 image attempts and 418,166 tokens do not override the expired wall-time limit. Provider API cost is $0; electricity/hardware costs are unknown. The [integrity and measured activity report](artifacts/overnight/integrity_audit_final_complete.json), [runtime inventory](artifacts/overnight/doctor_final_snapshot.json) and [remaining-work manifest](artifacts/overnight/remaining_work_final.json) retain exact settings, timings, sampled-memory coverage and requirements. Frozen Qwen 8B, FLUX base 4B and CLIP are cached on the 36 GB M4 Max; no CUDA. Local edits took roughly276–298 seconds; E0 edits roughly181–188 seconds. These are different profiles, not a comparative speed/quality result.
+
+**Verification:** 706 software tests passed, with two existing dependency warnings; generated TypeScript contracts match. The 34-job integrity audit passed. Actual sources, saved images and the live source/review/local-detail UI were inspected separately. [Seven fresh datasets](artifacts/overnight/evaluation_v2/dataset_training_status_final.json) contain zero eligible rows; selector, judge and director validators return `insufficient_data`. Optional intention maps, selection/stop records and training mechanics are described in [implementation status](docs/IMPLEMENTATION_STATUS.md) and [model/training status](docs/MODEL_AND_TRAINING_STATUS.md); no training integration adapter exists.
+
+The next engineering task is exact parent-target grounding and a valid edit region that includes the intended relationship. First obtain a genuine review and explicit parent choice. Further inference needs a new explicit resource contract plus audited migration; do not reset the old deadline or discard valid actions. Matched workflow modes and three further inspiration briefs are queued, not executed, and their combined worst-case token demand exceeds the unused allowance.
+
+Read-only checks and UI restart, from the repository root:
+
+```sh
+.venv/bin/python -m kusama verify --root artifacts/overnight
+.venv/bin/python -m kusama.evaluation status --protocol artifacts/overnight/evaluation_v2/e0
+.venv/bin/python -m kusama review --artifacts artifacts/overnight --port 8766
+```
+
+[Portable evidence ZIP](artifacts/overnight/exports/morning/kusama_evidence.zip), [export manifest](artifacts/overnight/exports/morning/export_manifest.json), [verification receipt](artifacts/overnight/exports/morning/verification.json), and [source Git bundle](artifacts/overnight/exports/morning/source.bundle) preserve the handoff. Generated artifacts and model caches are ignored by Git; local links need this separate export. The ZIP retains original absolute provenance and a path map. Relocated execution still requires explicit reconciliation and separately restored model caches. [Workflow commands](docs/source_connected_studio.md) cover the implemented entrypoints.

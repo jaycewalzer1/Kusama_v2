@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 from datetime import datetime
+import hashlib
 import json
 from pathlib import Path
 import sqlite3
@@ -12,6 +13,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from .evaluation import digest, file_hash, immutable_json
+from .dataset_lineage import ADAPTER_VERSION, ReviewLineageResolver
 
 KINDS = ('selector', 'judge_sft', 'director_sft', 'retrieval', 'action_preferences', 'continuations', 'practice_critique')
 
@@ -58,6 +60,9 @@ class LearningEvent(BaseModel):
     presented_images: list[dict[str, Any]] = Field(default_factory=list)
     outcome: dict[str, Any] = Field(default_factory=dict)
     confounds: list[str] = Field(default_factory=list)
+    # Explicit typed envelopes already supply their canonical IDs. Live reviews
+    # additionally retain the resolver's exact ancestry proof outside inputs.
+    lineage_provenance: dict[str, Any] = Field(default_factory=dict)
 
 
 def _group_tokens(row, claim):
@@ -94,10 +99,13 @@ def grouped_assignments(rows, *, claim='project_transfer', seed=23):
     groups = {digest(sorted(r.event_id for r in group)): group for group in members.values()}
     ordered = sorted(groups, key=lambda group: digest([seed, group]))
     sealed = {group for group, items in groups.items() if any(r.sealed for r in items)}
-    unsealed = [x for x in ordered if x not in sealed]
+    quarantined = {group for group, items in groups.items() if any(
+        r.lineage_provenance and r.lineage_provenance.get('status') != 'resolved' for r in items)} - sealed
+    unsealed = [x for x in ordered if x not in sealed | quarantined]
     # Five independent groups is the minimum for a literal 3/1/1 partition.
     # Smaller datasets remain unassigned and cannot quietly become all-training.
     splits = {group: 'sealed' for group in sealed}
+    splits.update({group: 'quarantined' for group in quarantined})
     if len(unsealed) < 5:
         splits.update({group: 'insufficient_groups' for group in unsealed})
     else:
@@ -130,6 +138,8 @@ def eligibility(row, *, cutoff, claim, assignment):
         reasons.append('missing_label_reviewer_or_provenance')
     if row.sealed or assignment['split'] == 'sealed':
         reasons.append('sealed_or_related_to_sealed')
+    if assignment['split'] == 'quarantined':
+        reasons.append('unresolved_or_related_review_lineage')
     if claim == 'source_family_transfer' and not row.source_family_ids:
         reasons.append('source_family_provenance_missing')
     if not row.input_events:
@@ -194,21 +204,27 @@ def build_snapshot(events, output_root, *, cutoff, claim='project_transfer', kin
         reasons = eligibility(row, cutoff=cutoff, claim=claim, assignment=assignments[row.event_id])
         if any(evidence_splits.get(event.event_id, set()) & {'test', 'sealed'} for event in row.input_events):
             reasons.append('heldout_review_or_event_in_input')
+        if any('quarantined' in evidence_splits.get(event.event_id, set()) for event in row.input_events):
+            reasons.append('unresolved_review_lineage_event_in_input')
         if reasons:
-            rejected.append({'event_id': row.event_id, 'reasons': reasons})
+            rejected.append({'event_id': row.event_id, 'reasons': reasons}
+                            | ({'lineage_provenance': row.lineage_provenance} if row.lineage_provenance else {}))
             continue
         record = row.model_dump(mode='json') | assignments[row.event_id]
         record['model_input'] = [e.data for e in row.input_events]
         admitted.append(record)
     admitted.sort(key=lambda row: row['event_id'])
     rejected.sort(key=lambda row: row['event_id'])
-    provenance = {'schema_version': 1, 'kind': kind, 'human_only': True, 'cutoff': cutoff, 'claim': claim,
+    provenance = {'schema_version': 2, 'kind': kind, 'human_only': True, 'cutoff': cutoff, 'claim': claim,
+                  'exporter_identity': {'review_adapter': ADAPTER_VERSION, 'datasets_sha256': file_hash(Path(__file__)),
+                                        'lineage_resolver_sha256': file_hash(Path(__file__).with_name('dataset_lineage.py'))},
                   'split_seed': seed, 'source_event_manifest_sha256': digest([r.model_dump(mode='json') for r in rows]),
                   'source_event_count': len(rows), 'eligible_count': len(admitted), 'rejected_count': len(rejected),
                   'split_counts': dict(Counter(row['split'] for row in admitted)),
                   'independent_groups': len({row['split_group'] for row in admitted}),
                   'split_policy': 'Connected project/brief/trajectory/lineage/image groups; source families/parents/duplicates additionally connected for source transfer. At least five unsealed groups before 60/20/20.',
                   'inputs_policy': 'Only input_events available at decision_at; labels/outcomes remain separate targets; test rows never loaded by trainers.',
+                  'review_lineage_policy': 'Live reviews require registered original-brief ancestry or an explicit collection-hash-bound curator declaration. Unknown/conflicting ancestry and connected rows are quarantined. Exact brief wording cannot establish semantic independence; differently worded versions may need curator grouping. Candidate IDs are scoped to their collection.',
                   'rejection_reasons': dict(Counter(reason for row in rejected for reason in row['reasons']))}
     snapshot_id = digest({'provenance': provenance, 'rows': admitted, 'rejections': rejected})[:24]
     root = Path(output_root) / snapshot_id
@@ -227,7 +243,7 @@ def build_snapshot(events, output_root, *, cutoff, claim='project_transfer', kin
     files['rejections.json'] = file_hash(root / 'rejections.json')
     manifest = provenance | {'snapshot_id': snapshot_id, 'files': files}
     immutable_json(root / 'manifest.json', manifest)
-    card = f"# Dataset {snapshot_id}\n\nKind: {kind}. Claim: {claim}. Human-only. Cutoff: {cutoff}.\n\n{len(admitted)} eligible rows from {provenance['independent_groups']} independent groups; {len(rejected)} rejected. Split counts: {json.dumps(provenance['split_counts'], sort_keys=True)}.\n\n{provenance['split_policy']}\n\n{provenance['inputs_policy']}\n\nRejections: {json.dumps(provenance['rejection_reasons'], sort_keys=True)}. Small datasets remain insufficient_groups; these rows are not training data. Two questions, reversed image orders and seeds do not create independent human judgments. Common sources may be shared for project transfer only. No trained advantage is established. File hashes and source event IDs preserve provenance. Images remain at recorded artifact paths and require separately preserved bytes.\n"
+    card = f"# Dataset {snapshot_id}\n\nKind: {kind}. Claim: {claim}. Human-only. Cutoff: {cutoff}.\n\n{len(admitted)} eligible rows from {provenance['independent_groups']} independent groups; {len(rejected)} rejected. Split counts: {json.dumps(provenance['split_counts'], sort_keys=True)}.\n\n{provenance['split_policy']}\n\n{provenance['inputs_policy']}\n\n{provenance['review_lineage_policy']}\n\nExporter identity: {json.dumps(provenance['exporter_identity'], sort_keys=True)}.\n\nRejections: {json.dumps(provenance['rejection_reasons'], sort_keys=True)}. Small datasets remain insufficient_groups; these rows are not training data. Two questions, reversed image orders and seeds do not create independent human judgments. Common sources may be shared for project transfer only. No trained advantage is established. File hashes and source event IDs preserve provenance. Images remain at recorded artifact paths and require separately preserved bytes.\n"
     path = root / 'data_card.md'
     if path.exists() and path.read_text() != card:
         raise ValueError('Immutable data card changed')
@@ -237,7 +253,7 @@ def build_snapshot(events, output_root, *, cutoff, claim='project_transfer', kin
     return {'snapshot_path': str(root.resolve()), **manifest}
 
 
-def review_events(artifact_root, *, kind='judge_sft'):
+def review_events(artifact_root, *, kind='judge_sft', lineage_declarations=None):
     """Read actual ReviewStore votes only. Advancement/model observations are not votes."""
     if kind not in ('selector', 'judge_sft'):
         return []  # These require linked action/continuation provenance, not a guess.
@@ -246,32 +262,61 @@ def review_events(artifact_root, *, kind='judge_sft'):
     if not path.exists():
         return []
     with sqlite3.connect(path.as_uri() + '?mode=ro', uri=True) as db:
-        specs = {row[0]: json.loads(row[1]) for row in db.execute('SELECT id,specification FROM review_collections')}
+        db.execute('BEGIN')
+        db.create_function('lineage_sha256', 1, lambda value: hashlib.sha256(value.encode()).hexdigest())
         votes = [json.loads(row[0]) for row in db.execute('SELECT record FROM review_votes ORDER BY sequence')]
+        # Do not inspect unrelated collection definitions, especially sealed
+        # studies. No votes means no candidate, brief or lineage reads at all.
+        collection_ids = {vote['collection_id'] for vote in votes if vote.get('type') == 'human_pairwise_review'}
+        # The original text is withheld until the ancestry/seal check passes.
+        records = {cid: db.execute("SELECT json_remove(specification,'$.brief'),lineage_sha256(specification) FROM review_collections WHERE id=?", (cid,)).fetchone()
+                   for cid in sorted(collection_ids)}
+        specs = {cid: json.loads(record[0]) for cid, record in records.items()}
+    if not specs:
+        return []
+    with ReviewLineageResolver(root, declarations=lineage_declarations) as resolver:
+        lineage = {cid: resolver.resolve(collection, collection_sha256=records[cid][1]) for cid, collection in specs.items()}
+    with sqlite3.connect(path.as_uri() + '?mode=ro', uri=True) as db:
+        db.create_function('lineage_sha256', 1, lambda value: hashlib.sha256(value.encode()).hexdigest())
+        briefs = {}
+        for cid, ancestry in lineage.items():
+            if ancestry['status'] != 'resolved' or ancestry['sealed']:
+                continue
+            row = db.execute("SELECT json_extract(specification,'$.brief') FROM review_collections WHERE id=? AND lineage_sha256(specification)=?", (cid, records[cid][1])).fetchone()
+            if row is None:
+                raise ValueError('Review collection changed during lineage resolution')
+            briefs[cid] = row[0]
     events = []
     for vote in votes:
         if vote.get('type') != 'human_pairwise_review':
             continue
         collection = specs[vote['collection_id']]
+        ancestry = lineage[collection['id']]
         candidates = {c['id']: c for c in collection['candidates']}
         images = []
         for position in ('A', 'B'):
-            candidate = candidates[vote['candidate_order'][position]['id']]
-            image_path = root / candidate['path']
-            if file_hash(image_path) != candidate['sha256']:
+            presented = vote['candidate_order'][position]
+            candidate = candidates.get(presented['id'])
+            if candidate is None or presented.get('sha256') != candidate['sha256']:
+                raise ValueError('Recorded review presentation differs from the registered candidate identity')
+            image_path = (root / candidate['path']).resolve()
+            if not image_path.is_relative_to(root):
+                raise ValueError('A reviewed image escapes the artifact root')
+            if ancestry['status'] == 'resolved' and not ancestry['sealed'] and file_hash(image_path) != candidate['sha256']:
                 raise ValueError('A reviewed image changed; refuse dataset export')
             images.append({'position': position, 'candidate_id': candidate['id'], 'path': str(image_path), 'sha256': candidate['sha256']})
         for dimension in ('finished_quality', 'development_potential'):
             event_id = f"{vote['submission_id']}:{dimension}"
             events.append({'event_id': event_id, 'kind': kind, 'occurred_at': vote['created_at'], 'decision_at': vote['created_at'],
-                           'project_id': collection['id'], 'brief_id': collection['id'], 'episode_id': collection['id'],
-                           'trajectory_id': collection['id'], 'lineage_ids': [c['id'] for c in collection['candidates']],
+                           'project_id': ancestry['project_id'], 'brief_id': ancestry['brief_id'], 'episode_id': collection['id'],
+                           'trajectory_id': ancestry['trajectory_id'], 'lineage_ids': ancestry['lineage_ids'],
+                           'lineage_provenance': ancestry, 'sealed': ancestry['sealed'],
                            'image_hashes': [im['sha256'] for im in images], 'label_origin': 'human', 'reviewer': vote['reviewer'],
                            'label': vote[dimension]['choice'], 'source_event_ids': [vote['submission_id']],
                            'presented_images': images,
                            'input_events': [{'event_id': f"presentation:{vote['assignment_id']}", 'occurred_at': vote['created_at'],
-                                             'episode_id': collection['id'], 'data': {'brief': collection['brief'], 'dimension': dimension,
-                                             'reviewer': vote['reviewer'], 'candidate_order': images}}],
+                                             'episode_id': collection['id'], 'data': {'brief': briefs[collection['id']], 'dimension': dimension,
+                                             'reviewer': vote['reviewer'], 'candidate_order': images}}] if collection['id'] in briefs else [],
                            'target': {'dimension': dimension}, 'outcome': {'review_event_ids': [vote['submission_id']]}})
     return events
 
@@ -310,8 +355,12 @@ def main(argv=None):
     build.add_argument('--claim', choices=('project_transfer', 'source_family_transfer'), default='project_transfer')
     build.add_argument('--kind', choices=KINDS, default='judge_sft')
     build.add_argument('--seed', type=int, default=23)
+    build.add_argument('--lineage', type=Path, help='Explicit collection-hash-bound curator lineage declarations for live reviews')
     args = parser.parse_args(argv)
-    events = review_events(args.artifact_root, kind=args.kind) if args.artifact_root else [json.loads(line) for line in args.events.read_text().splitlines() if line.strip()]
+    if args.lineage and not args.artifact_root:
+        parser.error('--lineage applies only to --artifact-root live review exports')
+    declarations = json.loads(args.lineage.read_text()) if args.lineage else None
+    events = review_events(args.artifact_root, kind=args.kind, lineage_declarations=declarations) if args.artifact_root else [json.loads(line) for line in args.events.read_text().splitlines() if line.strip()]
     result = build_snapshot(events, args.output, cutoff=args.cutoff, claim=args.claim, kind=args.kind, seed=args.seed)
     print(json.dumps(result, indent=2))
     return 0

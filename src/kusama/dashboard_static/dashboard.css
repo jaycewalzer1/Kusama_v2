@@ -159,3 +159,6 @@ fieldset p { color: var(--muted); font-size: 12px; margin: 0 0 16px; }
 .continuation-instruction { max-height: none; overflow: visible; }
 .continuation-mask-hash { font-size: 12px; overflow-wrap: anywhere; }
 .continuation-protection-warning { border: 2px solid light-dark(#ae7100, #e0c38c); padding: 12px; }
+.continuation-detail { display: block; width: 100%; height: auto; max-height: 500px; overflow: hidden; }
+.continuation-intentions { overflow-x: auto; }
+.continuation-intentions th, .continuation-intentions td { text-align: left; vertical-align: top; padding: 10px; border-bottom: 1px solid var(--line); }

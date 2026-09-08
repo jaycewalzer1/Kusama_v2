@@ -105,6 +105,8 @@ def test_all_four_modes_count_sixteen_images_and_equal_real_review_pools(setup):
     store = ReviewStore(setup[0])
     assert len(store.collections()) == 4
     for collection in store.collections():
+        assert collection['id'].startswith('workflow_')
+        assert all(mode not in collection['id'] for mode in modes.MODES)
         pool = store.pool_assignment(collection['id'], 'fixture-reviewer')
         assert pool['complete'] and len(pool['candidates']) == 4 and pool['human_label'] is None
         assert store.pool_history(collection['id']) == []

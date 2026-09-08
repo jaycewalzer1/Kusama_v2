@@ -11,7 +11,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from kusama.continuation import ContinuationRequest
+from kusama.continuation import ContinuationRequest, DevelopmentDecision
 from kusama.continuation_dispatch import DispatchRequest
 from kusama.corpus import ContextClaim, CorpusReference, Device, Region
 from kusama.dashboard import ContinuationCreate, ContinuationObservation
@@ -19,7 +19,7 @@ from kusama.inspiration import ConnectionHypothesis, RenderAction
 from kusama.reviews import Advancement, PoolChoice, Presentation, Vote
 
 
-MODELS = (ContinuationRequest, DispatchRequest, ContinuationCreate, ContinuationObservation,
+MODELS = (ContinuationRequest, DevelopmentDecision, DispatchRequest, ContinuationCreate, ContinuationObservation,
           ContextClaim, CorpusReference, Device, Region, ConnectionHypothesis,
           RenderAction, Advancement, PoolChoice, Presentation, Vote)
 OUTPUT = Path(__file__).resolve().parents[1] / 'src/kusama/dashboard_static/contracts.d.ts'

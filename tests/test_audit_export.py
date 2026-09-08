@@ -34,7 +34,8 @@ def test_audit_distinguishes_corruption_from_missing_evaluation(tmp_path):
     assert result['issues'][0]['error'] == 'Registered artifact hash mismatch'
 
 
-def test_export_includes_committed_wal_and_exact_bytes_without_mutating_inputs(tmp_path):
+@pytest.mark.parametrize('embedded_code', [False, True])
+def test_export_includes_committed_wal_and_exact_bytes_without_mutating_inputs(tmp_path, embedded_code):
     root = tmp_path / 'artifacts'
     root.mkdir()
     db = sqlite3.connect(root / 'fixture.sqlite3')
@@ -44,6 +45,8 @@ def test_export_includes_committed_wal_and_exact_bytes_without_mutating_inputs(t
     db.commit()
     original = root / 'immutable.json'
     original.write_text(json.dumps({'absolute_original_path': str(root / 'prior.png')}))
+    if embedded_code:
+        (root / 'diagnostic.py').write_text('# Preserved diagnostic code, not a complete repository.\n')
     expected = sha256(original)
     output = tmp_path / 'export'
     result = export_evidence(root, output)
@@ -58,7 +61,9 @@ def test_export_includes_committed_wal_and_exact_bytes_without_mutating_inputs(t
     with sqlite3.connect(tmp_path / 'restored/artifacts/fixture.sqlite3') as restored:
         assert restored.execute('SELECT value FROM events').fetchone()[0] == 'committed WAL evidence'
         assert restored.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
-    assert manifest['source_code_included'] is False
+    assert manifest['source_code_included'] is embedded_code
+    assert manifest['complete_repository_included'] is False
+    assert manifest['embedded_code_evidence_paths'] == (['diagnostic.py'] if embedded_code else [])
     assert manifest['models_included'] is False
     assert manifest['path_map'][str(original)] == 'artifacts/immutable.json'
     with pytest.raises(ValueError, match='fresh output'):

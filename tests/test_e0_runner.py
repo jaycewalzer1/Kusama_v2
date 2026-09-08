@@ -245,14 +245,16 @@ def test_heldout_preflight_uses_seven_primaries_and_frozen_retry_reserve(setup):
     with SessionBudget(root) as budget:
         identity = e0_runner._runtime_identity(budget, index, protocol)
         write_json(freeze_path, {**identity, 'protocol_id': json.loads((protocol/'manifest.json').read_text())['protocol_id'],
-            'development_completed': True, 'render_seconds': 10, 'reasoning_seconds': 5,
+            'development_completed': True, **fixture_timing(),
             'model_load_seconds_per_brief': 20, 'retry_reserve': 25,
             'throughput_evidence': [{'path': str(evidence), 'sha256': sha256(evidence)}]})
         result = e0_runner.heldout_admission(protocol, index, budget, freeze_path)
         assert result['required_primary_attempts'] == 56
         assert result['remaining_retry_reserve'] == 25
         assert result['required_renderer_attempts'] == 81
-        assert result['required_reasoning_tokens'] == 8*3*8192
+        assert result['required_reasoning_tokens'] == 8*6*8192
+        assert result['required_parent_attempts']==8 and result['required_edit_attempts']==48
+        assert result['possible_schema_repair_calls']==24
         assert result['status'] == 'admitted'
         assert FixtureBackend.calls == []  # This tested arithmetic, no heldout execution.
 
@@ -472,7 +474,7 @@ def test_heldout_admission_requires_identical_explicit_profile(setup):
     with SessionBudget(root) as budget:
         identity = e0_runner._runtime_identity(budget, FixtureIndex(index_path), protocol, profile)
         write_json(freeze, {**identity, 'protocol_id': 'e0_overnight_v2', 'development_completed': True,
-            'render_seconds': 10, 'reasoning_seconds': 5, 'retry_reserve': 0,
+            **fixture_timing(), 'model_load_seconds_per_brief': 20, 'retry_reserve': 0,
             'throughput_evidence': [{'path': str(evidence), 'sha256': sha256(evidence)}]})
         admitted = e0_runner.heldout_admission(protocol, FixtureIndex(index_path), budget, freeze, render_profile=profile)
         assert admitted['required_primary_attempts'] == 56 and admitted['status'] == 'admitted'
@@ -559,3 +561,9 @@ def test_failed_duration_increases_forecast_without_becoming_a_successful_output
     for seconds in (None, 0, -1, float('nan'), float('inf'), True, '420'):
         assert e0_runner._measured_render_time({**failure, 'measurements': {'runtime_seconds': seconds}}) is None
     assert e0_runner._measured_render_time({**failure, 'status': 'uncertain'}) is None
+
+
+def fixture_timing():
+    return {'render_seconds':10,'parent_render_seconds':7,'edit_render_seconds':10,
+        'reasoning_seconds':5,'schema_repair_seconds':6,'schema_repair_model_load_seconds':2,
+        'schema_repair_max_per_action':1,'throughput_estimator_version':'e0_stage_max_with_bounded_schema_repairs_v2'}

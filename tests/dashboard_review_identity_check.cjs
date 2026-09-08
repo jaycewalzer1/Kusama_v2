@@ -114,6 +114,8 @@ const pairRequests = () => requestLog.filter((url) => url.includes('/pairs/'));
   assert.equal(run('reviewCollectionLabel(labelFixture)'), 'An ordinary study · 3 images');
   context.labelFixture = { id: 'private-protocol_e0-d01_private-method', title: 'E0 parent/edit comparison', candidate_count: 7 };
   assert.equal(run('reviewCollectionLabel(labelFixture)'), 'E0 parent/edit comparison · 7 images');
+  context.labelFixture = {id: 'workflow_1234567890abcdef12345678', title: 'Matched development workflow', candidate_count: 4};
+  assert.equal(run('reviewCollectionLabel(labelFixture)'), 'Matched development workflow · study 12345678 · 4 images');
 
   // Discovery loads metadata before a name is supplied; a remembered ordinary
   // name never selects the first allocated identity or dispatches a comparison.
@@ -149,6 +151,8 @@ const pairRequests = () => requestLog.filter((url) => url.includes('/pairs/'));
   assert.equal(pairRequests().length, 1);
   assert.ok(pairRequests()[0].endsWith('?reviewer=reviewer-2'));
   assert.equal(get('review-workspace').hidden, false);
+  assert.equal(get('collection-overview').hidden, true);
+  assert.equal(get('collection-images').children.length, 0, 'Assigned overview must not expose raw candidate URLs or unshuffled order');
   assert.deepEqual(get('review-pair').children.map((n) => n.textContent), ['1 of 1']);
   assert.equal(storageWrites.length, 0, 'Allocated identities must not be persisted as remembered names');
   const formResets = get('vote-form').resetCount;
@@ -171,6 +175,13 @@ const pairRequests = () => requestLog.filter((url) => url.includes('/pairs/'));
   await run('openReviewCollection()');
   assert.equal(pairRequests().length, 2);
   assert.ok(pairRequests()[1].endsWith('?reviewer=Fixture%20reviewer'));
+  assert.equal(get('collection-overview').hidden, false);
+  assert.equal(get('collection-images').children.length, 2, 'Ordinary collection overview remains available');
+  collections.ordinary.presentation = {condition: 'statement_free'};
+  await run('openReviewCollection()');
+  assert.equal(get('collection-overview').hidden, true);
+  assert.equal(get('collection-images').children.length, 0, 'Statement-free workflows must also hide method-bearing candidate URLs');
+  delete collections.ordinary.presentation;
 
   // A delayed allocation response cannot replace controls after a user returns
   // to an already loaded ordinary collection.
@@ -190,6 +201,6 @@ const pairRequests = () => requestLog.filter((url) => url.includes('/pairs/'));
   get('review-collection').value = 'assigned';
   await get('review-collection').dispatch('change');
   assert.equal(get('reviewer-slot').value, '');
-  assert.equal(pairRequests().length, 2);
+  assert.equal(pairRequests().length, 3);
   console.log('Reviewer allocation: twelve neutral study labels, early metadata, unique neutral slots, explicit identity, ordinary names and stale-response checks passed.');
 })().catch((error) => { console.error(error); process.exitCode = 1; });

@@ -90,10 +90,12 @@ host still requires explicit path reconciliation and cached model checkpoints.
                 if sha256(source)!=before:raise ValueError('Artifact changed during export: '+relative)
                 records.append({'path':relative,'archive_path':'artifacts/'+relative,'sha256':before,
                                 'bytes':source.stat().st_size,'original_path':str(path),'copy_kind':kind})
+            embedded_code=[r['path'] for r in records if Path(r['path']).suffix in ('.py','.js','.ts','.cjs','.mjs','.sh')]
             manifest={'schema_version':1,'created_at':datetime.now(timezone.utc).isoformat(),'original_root':str(root),
                       'files':records,'path_map':{r['original_path']:r['archive_path'] for r in records},
-                      'models_included':False,'source_code_included':False,'execution_logs_included':True,
-                      'resume_boundary':'Restore original root for exact local resume, or reconcile original absolute ledger/config paths explicitly on another host. Model caches and code are separate.',
+                      'models_included':False,'source_code_included':bool(embedded_code),'complete_repository_included':False,
+                      'embedded_code_evidence_paths':embedded_code,'execution_logs_included':True,
+                      'resume_boundary':'Restore original root for exact local resume, or reconcile original absolute ledger/config paths explicitly on another host. Model caches and the authoritative repository checkout are separate; embedded diagnostic code is artifact evidence only.',
                       'unchanged_original_manifests':True}
             zipped.writestr('export_manifest.json',json.dumps(manifest,indent=2))
         write_json(output/'export_manifest.json',manifest)

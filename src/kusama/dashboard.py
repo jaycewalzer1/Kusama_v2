@@ -20,7 +20,7 @@ from .studio import Studio, read_projects
 from .reviews import Advancement, PoolChoice, ReviewConflict, ReviewError, ReviewNotFound, ReviewStore, Vote
 from .artifacts import sha256
 from .config import Config
-from .continuation import ContinuationRequest, ContinuationStore
+from .continuation import ContinuationRequest, ContinuationStore, DevelopmentDecision
 from .continuation_dispatch import DispatchRequest, DispatchStore
 from .ledger import BudgetExceeded, JobLocked
 
@@ -311,7 +311,7 @@ def create_app(artifacts: Path = Path('artifacts')):
     @app.get('/api/contracts')
     def contracts():
         return {model.__name__: model.model_json_schema() for model in (
-            ContinuationCreate, ContinuationRequest, ContinuationObservation, DispatchRequest, Vote, PoolChoice)}
+            ContinuationCreate, ContinuationRequest, ContinuationObservation, DevelopmentDecision, DispatchRequest, Vote, PoolChoice)}
 
     @app.post('/api/continuations', status_code=201)
     def continuation_prepare(proposal: ContinuationCreate):
@@ -356,6 +356,17 @@ def create_app(artifacts: Path = Path('artifacts')):
     def continuation_detail(continuation_id: str):
         from .continuation import ContinuationStore
         return ContinuationStore(runs.root).get(continuation_id)
+
+    @app.post('/api/continuations/{continuation_id}/decisions')
+    def continuation_decide(continuation_id: str, decision: DevelopmentDecision):
+        try:
+            return ContinuationStore(runs.root).decide(continuation_id, decision)
+        except JobLocked as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except ReviewError:
+            raise
+        except (ValueError, OSError) as exc:
+            raise HTTPException(422, str(exc)) from exc
 
     @app.get('/api/continuations/{continuation_id}/gallery')
     def continuation_gallery(continuation_id: str):

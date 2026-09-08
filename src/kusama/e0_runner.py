@@ -162,6 +162,7 @@ def _job(ledger, identifier):
 
 
 def _runtime_identity(budget, index, protocol, render_profile=None):
+    from .e0_recovery import SCHEMA_REPAIR_POLICY, REPAIR_SYSTEM
     verified_assignments(protocol)
     config, profile = _effective_render_profile(budget, render_profile)
     director = DirectorConfig(Path(budget.config.cache_dir).resolve(), device=budget.config.device, precision='bf16', local_files_only=True, max_new_tokens=512, max_image_pixels=262144)
@@ -169,13 +170,33 @@ def _runtime_identity(budget, index, protocol, render_profile=None):
             'protocol_manifest_sha256': sha256(Path(protocol) / 'manifest.json'),
             'review_assignments_sha256': sha256(Path(protocol) / 'review_assignments.jsonl'),
             'execution_policy': {'roles': ROLE_INSTRUCTIONS, 'action_system': ACTION_SYSTEM,
+            'schema_repair_policy': SCHEMA_REPAIR_POLICY, 'schema_repair_system': REPAIR_SYSTEM,
+            'throughput_estimator_version': 'e0_stage_max_with_bounded_schema_repairs_v2',
             'parent_prompt_policy': PARENT_PROMPT_POLICY, 'action_schema': ActionRequest.model_json_schema(),
             'scoped_code_sha256': {filename: sha256(Path(__file__).with_name(filename)) for filename in
-                ('e0_runner.py', 'evaluation.py', 'inspiration.py', 'director.py', 'backend.py', 'config.py', 'reviews.py', 'resources.py', 'ledger.py', 'episodes.py', 'retrieval.py', 'search_archive.py')}},
+                ('e0_runner.py', 'e0_recovery.py', 'evaluation.py', 'inspiration.py', 'director.py', 'backend.py', 'config.py', 'reviews.py', 'resources.py', 'ledger.py', 'episodes.py', 'retrieval.py', 'search_archive.py')}},
             'render_profile': profile, 'render_config': config.to_dict(), 'director_profile': {'model_id': MODEL_ID, 'revision': director.model_revision,
             'device': director.device, 'precision': director.precision, 'max_new_tokens': 512, 'max_image_pixels': 262144,
             'temperature': .8, 'top_p': .95, 'generation_seed': 23}, 'index_id': index.manifest['index_id'],
             'index_manifest_sha256': sha256(index.directory / 'manifest.json'), 'memory_sha256': digest(MEMORY)}))
+
+
+def _verified_development_evidence(root,protocol):
+    """Bind throughput to charged execution authority, never merely current bytes."""
+    from .e0_recovery import repair_job_id
+    pid=load_protocol(protocol)['protocol_id'];registered={}
+    with Ledger(Path(root)/'jobs.sqlite3') as ledger,SessionBudget(root) as budget:
+        for bid in [f'e0-d{i+1:02}' for i in range(4)]:
+            identifiers=[(f'{pid}_{bid}_{stage}','reasoning' if stage=='actions' else 'renderer') for stage in ('parent','actions','edits')]
+            identifiers += [(repair_job_id(pid,bid,c),'reasoning') for c in CONDITIONS if _job(ledger,repair_job_id(pid,bid,c)) is not None]
+            for job_id,kind in identifiers:
+                job=ledger.get_job(job_id);ledger.verify_artifacts(job_id)
+                for row in ledger.artifacts(job_id):
+                    path=(Path(job['directory'])/row['path']).resolve();registered[str(path)]=row['sha256']
+                    if row['attempt_index'] is not None:
+                        index=row['attempt_index'];suffix='render' if kind=='renderer' else 'reasoning'
+                        require_charged_invocation(ledger,job_id,index,budget,f'{job_id}:{suffix}:{index}',kind)
+    return registered
 
 
 def freeze_runtime(protocol, index_dir, *, root=Path('artifacts/overnight'), output=None, retry_reserve=None, render_profile=None):
@@ -184,6 +205,7 @@ def freeze_runtime(protocol, index_dir, *, root=Path('artifacts/overnight'), out
     status = protocol_status(protocol)
     if not {f'e0-d{i+1:02}' for i in range(4)} <= set(status['complete_pool_briefs']):
         raise ValueError('All four development briefs require complete saved outputs before the heldout runtime freeze')
+    registered_evidence=_verified_development_evidence(root,protocol)
     index = RetrievalIndex(index_dir)
     with SessionBudget(root) as budget:
         identity = _runtime_identity(budget, index, protocol, render_profile)
@@ -203,27 +225,41 @@ def freeze_runtime(protocol, index_dir, *, root=Path('artifacts/overnight'), out
     if retry_reserve is not None and (type(retry_reserve) is not int or not 0 <= retry_reserve <= 56):
         raise ValueError('Heldout retry reserve must be an integer between zero and 56')
     retry_reserve = min(25 if retry_reserve is None else retry_reserve, max(0, remaining_attempts-56))
-    rendering, reasoning, evidence = [], [], []
+    from .e0_recovery import repair_job_id
+    rendering, parent_times, edit_times, reasoning, repair_times, evidence = [], [], [], [], [], []
+    real_reason_jobs,real_repair_jobs=set(),set()
     for bid in [f'e0-d{i+1:02}' for i in range(4)]:
         directory = protocol / 'episodes' / bid
         development_identity = json.loads((directory/'runtime_identity.json').read_text())
         if any(development_identity.get(key) != identity[key] for key in ('render_profile', 'render_config')):
             raise SpecMismatch('Development throughput used a different E0 render profile')
         for path in [*(directory / 'parent').glob('attempt-*.json'), *(directory / 'edits').glob('attempt-*.json')]:
+            if registered_evidence.get(str(path.resolve()))!=sha256(path):raise SpecMismatch('Throughput record lacks unchanged registered execution authority')
             row = json.loads(path.read_text())
             measured_seconds = _measured_render_time(row)
             if measured_seconds is not None:
                 rendering.append(measured_seconds)
-                evidence.append({'path': str(path), 'sha256': sha256(path), 'kind': 'render', 'attempt_status': row['status']})
+                (parent_times if path.parent.name=='parent' else edit_times).append(measured_seconds)
+                evidence.append({'path': str(path), 'sha256': sha256(path), 'kind': 'render', 'stage':path.parent.name, 'attempt_status': row['status']})
         for path in (directory / 'actions').glob('action-*.json'):
+            if registered_evidence.get(str(path.resolve()))!=sha256(path):raise SpecMismatch('Action timing lacks unchanged registered execution authority')
             row = json.loads(path.read_text())
-            if not row.get('fixture_only') and row.get('measurements', {}).get('runtime_seconds'):
-                reasoning.append(row['measurements']['runtime_seconds'])
+            if not row.get('fixture_only'):
+                real_reason_jobs.add(f"{load_protocol(protocol)['protocol_id']}_{bid}_actions")
+                seconds=row.get('measurements',{}).get('runtime_seconds')
+                if isinstance(seconds,(int,float)) and not isinstance(seconds,bool) and math.isfinite(seconds) and seconds>0:reasoning.append(seconds)
                 evidence.append({'path': str(path), 'sha256': sha256(path), 'kind': 'reasoning'})
-    if not rendering or not reasoning:
-        raise ValueError('Measured live rendering and reasoning evidence is required; fixtures cannot pass heldout throughput admission')
+        for path in (directory/'schema_repairs').glob('*/response.json'):
+            if registered_evidence.get(str(path.resolve()))!=sha256(path):raise SpecMismatch('Repair timing lacks unchanged registered execution authority')
+            row=json.loads(path.read_text());seconds=row.get('measurements',{}).get('runtime_seconds')
+            if not row.get('fixture_only'):
+                real_repair_jobs.add(repair_job_id(load_protocol(protocol)['protocol_id'],bid,path.parent.name))
+                if isinstance(seconds,(int,float)) and not isinstance(seconds,bool) and math.isfinite(seconds) and seconds>0:repair_times.append(seconds)
+                evidence.append({'path':str(path),'sha256':sha256(path),'kind':'schema_repair_reasoning'})
+    if not parent_times or not edit_times or not real_reason_jobs or not real_repair_jobs:
+        raise ValueError('Measured live parent, edit, primary reasoning and schema-repair evidence is required; fixtures cannot pass heldout throughput admission. An all-valid development run without measured repair timing remains uncalibrated for this policy; never induce a failure or launch an implicit calibration call.')
     protocol_id = load_protocol(protocol)['protocol_id']
-    load_totals = []
+    load_totals, repair_load_times, reasoning_cost_evidence = [], [], []
     with CostJournal(root, read_only=True) as costs:
         for bid in [f'e0-d{i+1:02}' for i in range(4)]:
             records = costs.summary(run_ids=[f'{protocol_id}_{bid}_{stage}' for stage in ('parent','actions','edits')])['records']
@@ -231,13 +267,30 @@ def freeze_runtime(protocol, index_dir, *, root=Path('artifacts/overnight'), out
             if len(loads) < 3 or any(row['finish'] is None for row in loads):
                 raise ValueError('Complete measured model-load overhead is required before heldout admission')
             load_totals.append(sum(row['finish']['runtime_seconds'] for row in loads))
+            repair_records=costs.summary(run_ids=[repair_job_id(protocol_id,bid,condition) for condition in CONDITIONS])['records']
+            for record in records+repair_records:
+                if record['start'].get('scope')!='inference' or record['run_id'] not in real_reason_jobs|real_repair_jobs:continue
+                if record['finish'] is None:raise ValueError('Unsettled reasoning call prevents throughput freeze')
+                seconds=record['finish'].get('runtime_seconds')
+                if isinstance(seconds,(int,float)) and not isinstance(seconds,bool) and math.isfinite(seconds) and seconds>0:
+                    (repair_times if record['run_id'] in real_repair_jobs else reasoning).append(seconds)
+                    reasoning_cost_evidence.append(record)
+            qwen_loads=[row for row in records+repair_records if row['start'].get('scope')=='model_load' and 'qwen' in row['start'].get('model','').lower()]
+            if any(row['finish'] is None for row in qwen_loads):raise ValueError('Unsettled Qwen model load prevents throughput freeze')
+            repair_load_times.extend(row['finish']['runtime_seconds'] for row in qwen_loads if row['finish']['runtime_seconds']>0)
+    if not repair_load_times or not reasoning or not repair_times:raise ValueError('Measured primary/repair reasoning and Qwen load overhead are required')
     load_snapshot = protocol / 'development_load_timing.json'
-    immutable_json(load_snapshot, {'protocol_id': protocol_id, 'per_brief_load_seconds': load_totals})
+    immutable_json(load_snapshot, {'protocol_id': protocol_id, 'per_brief_load_seconds': load_totals,
+        'schema_repair_model_load_seconds':max(repair_load_times),'schema_repair_load_policy':'One additional maximum measured Qwen load reserved per possible repair.',
+        'reasoning_cost_evidence':reasoning_cost_evidence,'failure_timing_policy':'Include completed cost receipts for technical schema/inference failures even when raw response metadata has no measurement.'})
     evidence.append({'path': str(load_snapshot), 'sha256': sha256(load_snapshot), 'kind': 'load_overhead'})
     freeze = {**identity, 'protocol_id': protocol_id, 'development_completed': True,
               'retry_reserve': retry_reserve, 'model_load_seconds_per_brief': max(load_totals),
-              'render_seconds': max(rendering), 'reasoning_seconds': max(reasoning), 'throughput_evidence': evidence,
-              'estimation_policy': 'Maximum measured successful or technically failed renderer duration and reasoning/model-load times plus 25% margin; seven primary images per brief plus the frozen aggregate retry reserve.',
+              'render_seconds': max(rendering), 'parent_render_seconds':max(parent_times),'edit_render_seconds':max(edit_times),
+              'reasoning_seconds': max(reasoning), 'schema_repair_seconds':max(repair_times),
+              'schema_repair_model_load_seconds':max(repair_load_times),'schema_repair_max_per_action':1,
+              'throughput_estimator_version':'e0_stage_max_with_bounded_schema_repairs_v2','throughput_evidence': evidence,
+              'estimation_policy': 'Separate maxima of measured successful or technically failed parent/edit durations at the identical profile; retry images cost the slower maximum. Add all primary reasoning, one possible schema-repair call and Qwen load per action, and per-brief base loads, then retain the 25% margin. Required stages lacking real timing reject admission.',
               'created_at': datetime.now(timezone.utc).isoformat()}
     path = Path(output) if output else protocol / 'runtime_freeze.json'
     immutable_json(path, freeze)
@@ -254,8 +307,11 @@ def heldout_admission(protocol, index, budget, runtime_freeze, *, render_profile
     identity = _runtime_identity(budget, index, protocol, render_profile)
     if any(frozen.get(key) != value for key, value in identity.items()) or frozen.get('protocol_id') != load_protocol(protocol)['protocol_id']:
         raise SpecMismatch('Heldout runtime/config/reference/memory identity differs from development freeze')
-    if not frozen.get('development_completed') or frozen.get('render_seconds', 0) <= 0 or frozen.get('reasoning_seconds', 0) <= 0:
+    timing_fields=('parent_render_seconds','edit_render_seconds','reasoning_seconds','schema_repair_seconds','schema_repair_model_load_seconds','model_load_seconds_per_brief')
+    if not frozen.get('development_completed') or any(not isinstance(frozen.get(key),(int,float)) or isinstance(frozen[key],bool) or not math.isfinite(frozen[key]) or frozen[key]<=0 for key in timing_fields):
         raise ValueError('A complete development freeze and positive measured throughput are required')
+    if frozen.get('schema_repair_max_per_action')!=1 or frozen.get('throughput_estimator_version')!='e0_stage_max_with_bounded_schema_repairs_v2':
+        raise ValueError('Heldout admission requires the frozen bounded repair and stage-aware estimator policy')
     if not frozen.get('throughput_evidence'):
         raise ValueError('Throughput requires hashed real evidence')
     for item in frozen['throughput_evidence']:
@@ -267,18 +323,21 @@ def heldout_admission(protocol, index, budget, runtime_freeze, *, render_profile
     summary = budget.summary()
     charged_keys = {row['key'] for row in summary['calls']}
     protocol_id = frozen['protocol_id']
-    primary_keys = [key for bid in pending for key in [f'{protocol_id}_{bid}_parent:render:0',
-                    *[f'{protocol_id}_{bid}_edits:render:{i*2}' for i in range(6)]]]
+    from .e0_recovery import repair_job_id
+    parent_keys=[f'{protocol_id}_{bid}_parent:render:0' for bid in pending]
+    edit_keys=[f'{protocol_id}_{bid}_edits:render:{i*2}' for bid in pending for i in range(6)]
+    primary_keys=parent_keys+edit_keys
     reasoning_keys = [f'{protocol_id}_{bid}_actions:reasoning:{i}' for bid in pending for i in range(3)]
+    repair_keys=[f'{repair_job_id(protocol_id,bid,condition)}:reasoning:0' for bid in pending for condition in CONDITIONS]
+    parent_remaining=len(set(parent_keys)-charged_keys);edit_remaining=len(set(edit_keys)-charged_keys)
     primary_remaining = len(set(primary_keys)-charged_keys)
     _retry_table(budget)
     used_retries = budget.db.execute('SELECT count(*) FROM e0_retry_reservations WHERE protocol_id=?', (protocol_id,)).fetchone()[0]
     retry_remaining = max(0, frozen['retry_reserve']-used_retries)
     required_images = primary_remaining + retry_remaining
-    required_tokens = len(set(reasoning_keys)-charged_keys)*8192
-    required_seconds = 1.25*(required_images*frozen['render_seconds']+
-                            (required_tokens/8192)*frozen['reasoning_seconds']+
-                            len(pending)*frozen.get('model_load_seconds_per_brief', 0))
+    primary_reasoning_remaining=len(set(reasoning_keys)-charged_keys);repair_remaining=len(set(repair_keys)-charged_keys)
+    required_tokens = (primary_reasoning_remaining+repair_remaining)*8192
+    required_seconds = _stage_forecast(frozen,parent_remaining,edit_remaining,retry_remaining,primary_reasoning_remaining,repair_remaining,len(pending))
     available_seconds = (datetime.fromisoformat(budget.deadline)-timedelta(minutes=budget.config.handoff_reserve_minutes)-now()).total_seconds()
     if summary['renderer_remaining'] < required_images:
         missing.append('insufficient image attempts for remaining primaries plus frozen aggregate retry reserve')
@@ -290,9 +349,20 @@ def heldout_admission(protocol, index, budget, runtime_freeze, *, render_profile
         missing.append('reconcile all uncertain/running session reservations before heldout dispatch')
     return {'status': 'queued_not_executable' if missing else 'admitted', 'scope': 'entire_remaining_heldout_job',
             'pending_briefs': pending, 'required_primary_attempts': primary_remaining, 'remaining_retry_reserve': retry_remaining, 'required_renderer_attempts': required_images, 'required_reasoning_tokens': required_tokens,
+            'required_parent_attempts':parent_remaining,'required_edit_attempts':edit_remaining,
+            'required_primary_reasoning_calls':primary_reasoning_remaining,'possible_schema_repair_calls':repair_remaining,
+            'throughput_estimator_version':frozen['throughput_estimator_version'],
             'required_seconds': required_seconds, 'available_seconds': available_seconds,
             'handoff_reserve_minutes': budget.config.handoff_reserve_minutes, 'missing_requirements': missing,
             'runtime_freeze_sha256': sha256(Path(runtime_freeze))}
+
+
+def _stage_forecast(frozen,parents,edits,retries,reasoning,repairs,briefs):
+    """Identical-profile maxima; retries pay the slower stage; margin never shrinks."""
+    return 1.25*(parents*frozen['parent_render_seconds']+edits*frozen['edit_render_seconds']+
+        retries*max(frozen['parent_render_seconds'],frozen['edit_render_seconds'])+
+        reasoning*frozen['reasoning_seconds']+repairs*frozen['schema_repair_seconds']+
+        briefs*frozen['model_load_seconds_per_brief']+repairs*frozen['schema_repair_model_load_seconds'])
 
 
 
@@ -480,7 +550,9 @@ def _parent_prompt(brief, sources):
             ' Give the composition room for an unresolved interpretation. No caption, text label, or artist-name imitation.')
 
 
-def _actions(brief, bid, parent, references, directory, budget, ledger, protocol_id, director_factory, *, execution_runtime=None):
+def _actions(brief, bid, parent, references, directory, budget, ledger, protocol_id, director_factory, *, execution_runtime=None,
+             recovery_authorization=None, effective_runtime=None):
+    from .e0_recovery import eligible_source, execute_model_repair
     job_id = f'{protocol_id}_{bid}_actions'
     folder = directory / 'actions'
     folder.mkdir(parents=True, exist_ok=True)
@@ -523,10 +595,15 @@ def _actions(brief, bid, parent, references, directory, budget, ledger, protocol
                     budget.settle(f'{job_id}:reasoning:{i}', 'uncertain')
                     raise UncertainExecution('Uncertain charged Qwen action requires reconciliation; no retry dispatched')
                 try:
-                    result = model_call(ledger, job_id, folder, budget, i, f'action-{condition}.json',
-                                        lambda request=request: _multimodal_json(director, ACTION_SYSTEM,
-                                            request, images, lambda value: ActionRequest.model_validate(value).model_dump(mode='json'),
-                                            total_token_limit=8192, sampling={'temperature': .8, 'top_p': .95}, generation_seed=23), device=config.device)
+                    if recovery_authorization:
+                        # The authorization already verified all original local and
+                        # global charges. Read-only replay preserves their timestamps.
+                        result=json.loads((folder/f'action-{condition}.json').read_text())
+                    else:
+                        result = model_call(ledger, job_id, folder, budget, i, f'action-{condition}.json',
+                                            lambda request=request: _multimodal_json(director, ACTION_SYSTEM,
+                                                request, images, lambda value: ActionRequest.model_validate(value).model_dump(mode='json'),
+                                                total_token_limit=8192, sampling={'temperature': .8, 'top_p': .95}, generation_seed=23), device=config.device)
                 except BaseException as exc:
                     if isinstance(exc, Exception):
                         raise
@@ -534,6 +611,23 @@ def _actions(brief, bid, parent, references, directory, budget, ledger, protocol
                         ledger.save_attempt(job_id, i, status='uncertain')
                         budget.settle(f'{job_id}:reasoning:{i}', 'uncertain')
                     raise UncertainExecution('Interrupted Qwen action; reconcile charged evidence before retry') from exc
+                repair_provenance = None
+                # Old development evidence is repairable only through its exact
+                # separately registered authorization. New episodes use the policy
+                # frozen in their runtime identity before any action or child.
+                policy_runtime = effective_runtime or execution_runtime
+                repair_allowed = bool(recovery_authorization or (policy_runtime and
+                    policy_runtime['execution_policy'].get('schema_repair_policy')))
+                if eligible_source(result) is not None and repair_allowed:
+                    if recovery_authorization and condition != recovery_authorization['condition']:
+                        raise SpecMismatch('Development authorization does not cover this failed action')
+                    repaired, prepared = execute_model_repair(protocol=directory.parent.parent, bid=bid, condition=condition,
+                        primary_result=result, brief=brief, parent=parent, references=references, folder=directory,
+                        budget=budget, ledger=ledger, director=director, director_prepared=prepared,
+                        runtime=policy_runtime, authorization=recovery_authorization)
+                    if repaired:
+                        result = {'output': repaired['output']}
+                        repair_provenance = repaired['provenance']
                 if result.get('output') and not result.get('parse_error') and not result.get('inference_error'):
                     raw = ActionRequest.model_validate(result['output']).model_dump(mode='json')
                     if any(not value.strip() or len(value) > 400 for value in raw['preserve']):
@@ -541,8 +635,11 @@ def _actions(brief, bid, parent, references, directory, budget, ledger, protocol
                     requests[condition] = {**raw, 'instruction': raw['instruction']+' Preserve: '+'; '.join(raw['preserve'])+'.',
                                            'execution_method': 'flux_prompt_guided_edit', 'preservation_guarantee': 'none',
                                            'author': 'frozen_qwen', 'condition_instruction': ROLE_INSTRUCTIONS[condition]}
+                    if repair_provenance:
+                        requests[condition]['schema_repair'] = repair_provenance
     finally:
         director.close()
+    ledger.update_job(job_id, status='completed' if len(requests)==3 else 'actions_incomplete')
     return requests
 
 
@@ -599,9 +696,16 @@ def _register_review(root, protocol, bid, brief, parent, children, *, complete):
 
 
 def run_brief(protocol, index, budget, ledger, bid, *, heldout=False, runtime_freeze=None,
-              backend_factory=FluxBackend, director_factory=QwenDirector, render_profile=None):
+              backend_factory=FluxBackend, director_factory=QwenDirector, render_profile=None, development_recovery=None):
     manifest = load_protocol(protocol)
-    identity = _runtime_identity(budget, index, protocol, render_profile)
+    current_identity = _runtime_identity(budget, index, protocol, render_profile)
+    recovery = None
+    if development_recovery:
+        from .e0_recovery import validate_authorization
+        if heldout: raise ValueError('Technical runtime migration is development-only')
+        recovery = validate_authorization(development_recovery,protocol,index,budget,ledger,render_profile)
+        if recovery['brief_id'] != bid: raise SpecMismatch('Recovery belongs to another brief')
+    identity = recovery['original_runtime_identity'] if recovery else current_identity
     _bind_render_profile(protocol, identity)
     config, receipt = _effective_render_profile(budget, render_profile)
     if receipt != identity['render_profile'] or digest(config.to_dict()) != digest(identity['render_config']):
@@ -609,6 +713,9 @@ def run_brief(protocol, index, budget, ledger, bid, *, heldout=False, runtime_fr
     brief = episode_brief(protocol, bid, purpose='heldout_execution' if heldout else 'development', episode_id=bid)['brief']
     folder = Path(protocol) / 'episodes' / bid
     folder.mkdir(parents=True, exist_ok=True)
+    identity_path=folder/'runtime_identity.json'
+    if identity_path.exists() and json.loads(identity_path.read_text()) != identity:
+        raise SpecMismatch('Episode runtime changed; explicit authorized development recovery is required')
     state = {'schema_version': 1, 'brief_id': bid, 'partition': 'sealed_test' if heldout else 'development',
              'generation_status': 'queued', 'evaluation_status': 'awaiting_human_review', 'children': [], 'parent': None,
              'excluded_pairs': [], 'human_judgments': 0, 'human_pool_selections': 0}
@@ -622,6 +729,11 @@ def run_brief(protocol, index, budget, ledger, bid, *, heldout=False, runtime_fr
     retry_limit = json.loads(Path(runtime_freeze).read_text())['retry_reserve'] if heldout else None
     references = _references(index, brief, folder, budget.config.seed)
     immutable_json(folder / 'runtime_identity.json', identity)
+    if recovery:
+        immutable_json(folder/'schema_repairs'/'recovery_runtime_identity.json', {'original_runtime_identity_sha256': recovery['original_runtime_identity_sha256'],
+            'authorization_sha256':sha256(Path(development_recovery)), 'effective_runtime_identity':current_identity,
+            'policy':'Disclosed development-only technical recovery; original runtime identity remains unchanged.'})
+        state['development_recovery'] = {'path':str(Path(development_recovery).resolve()),'sha256':sha256(Path(development_recovery))}
     parent_job = f"{manifest['protocol_id']}_{bid}_parent"
     parent_folder = folder / 'parent'
     parent_folder.mkdir(exist_ok=True)
@@ -629,21 +741,26 @@ def run_brief(protocol, index, budget, ledger, bid, *, heldout=False, runtime_fr
                       'authorship': 'operator-authored fixed parent prompt template from original brief and frozen source metadata'}
     ledger.create_job(parent_job, {'request': parent_request, 'runtime': identity, 'reference_sha256': digest(references)}, 2, parent_folder)
     ledger.verify_artifacts(parent_job)
-    renderer = RendererSession(budget, ledger, parent_job, parent_folder, config, backend_factory, render_profile_receipt=receipt)
-    try:
-        with budget.workload_lock():
-            for attempt in (0, 1):
-                if attempt and not _reserve_retry(budget, manifest['protocol_id'], parent_job+':retry', parent_request, limit=retry_limit):
-                    state['missing_parent_reason'] = 'Technical failure; aggregate identical-retry reserve exhausted.'
-                    break
-                parent_record = renderer.attempt(attempt, parent_request)
-                if parent_record['status'] == 'completed':
-                    state['parent'] = parent_record['output']; persist(); break
-    finally:
-        renderer.close()
+    if recovery:
+        state['parent'] = recovery['parent']; persist()
+    else:
+        renderer = RendererSession(budget, ledger, parent_job, parent_folder, config, backend_factory, render_profile_receipt=receipt)
+        try:
+            with budget.workload_lock():
+                for attempt in (0, 1):
+                    if attempt and not _reserve_retry(budget, manifest['protocol_id'], parent_job+':retry', parent_request, limit=retry_limit):
+                        state['missing_parent_reason'] = 'Technical failure; aggregate identical-retry reserve exhausted.'
+                        break
+                    parent_record = renderer.attempt(attempt, parent_request)
+                    if parent_record['status'] == 'completed':
+                        state['parent'] = parent_record['output']; persist(); break
+        finally:
+            renderer.close()
+    ledger.update_job(parent_job,status='completed' if state['parent'] else 'failed')
     if state['parent'] is None:
         state['generation_status'] = 'parent_failed'; persist(); return state
-    actions = _actions(brief, bid, state['parent'], references, folder, budget, ledger, manifest['protocol_id'], director_factory, execution_runtime=identity)
+    actions = _actions(brief, bid, state['parent'], references, folder, budget, ledger, manifest['protocol_id'], director_factory,
+        execution_runtime=identity,recovery_authorization=recovery,effective_runtime=current_identity)
     if len(actions) != 3:
         state.update(generation_status='actions_incomplete', validated_action_count=len(actions)); persist(); return state
     if len({' '.join(row['instruction'].casefold().split()) for row in actions.values()}) != 3:
@@ -656,7 +773,9 @@ def run_brief(protocol, index, budget, ledger, bid, *, heldout=False, runtime_fr
     edit_job = f"{manifest['protocol_id']}_{bid}_edits"
     edit_folder = folder / 'edits'
     edit_folder.mkdir(exist_ok=True)
-    ledger.create_job(edit_job, {'frozen_request_sha256': frozen['request_sha256'], 'runtime': identity}, 12, edit_folder)
+    edit_spec = {'frozen_request_sha256': frozen['request_sha256'], 'runtime': current_identity}
+    if recovery: edit_spec['development_recovery_sha256']=sha256(Path(development_recovery))
+    ledger.create_job(edit_job, edit_spec, 12, edit_folder)
     ledger.verify_artifacts(edit_job)
     renderer = RendererSession(budget, ledger, edit_job, edit_folder, config, backend_factory, render_profile_receipt=receipt)
     try:
@@ -689,6 +808,7 @@ def run_brief(protocol, index, budget, ledger, bid, *, heldout=False, runtime_fr
         renderer.close()
     complete = len(state['children']) == 6
     state['generation_status'] = 'generation_complete' if complete else 'incomplete_outputs'
+    ledger.update_job(edit_job,status='completed' if complete else 'incomplete_outputs')
     if complete:
         state['render_profile_gate'] = _profile_execution_gate(folder, identity, state['parent'], state['children'])
     state['review'] = _register_review(budget.root, protocol, bid, brief, frozen['parent'], state['children'], complete=complete)

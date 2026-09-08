@@ -18,8 +18,7 @@ uv run --locked kusama review --artifacts artifacts/overnight --port 8766
 The artifact root freezes its session configuration on first use. The overnight
 root has an eight-hour horizon and a protected 45-minute handoff window. An
 expired root is inspectable but cannot silently become a new inference budget.
-Starting another authorized session requires explicit reconciliation of prior
-uncertain calls and a separate resource root/configuration.
+The saved session expired at 12:40:47 UTC on 8 September 2026; new inference dispatch ended at 11:55:47 UTC. Starting another authorized session requires explicit reconciliation of prior calls and a separate resource contract. There is no automatic migration of frozen E0 paths or budgets. The exact prepared recovery command and current blocker are documented in the [E0 recovery section](EXPERIMENT_PROTOCOL.md).
 
 ## Propose without rendering
 
@@ -136,3 +135,9 @@ provide implementation references for archives, variation and evaluation. Here,
 CLIP descriptors measure representation distance; absent a validated judge or
 human feedback, they cannot supply artistic quality. The custom NumPy CVT
 implementation is a modest exploration mechanism, not an evaluated advantage.
+
+## Search method actually used
+
+Reference retrieval runs SQLite FTS5/BM25 over the complete query, cosine similarity over pinned normalized CLIP embeddings for whole views and geometric crops, and matches to explicitly typed relationship claims. Reciprocal-rank fusion uses `k=60`; parent/source-family deduplication and a declared relevant/distant/underrepresented shelf policy follow it. Sparse typed relationships trigger recorded fallback, not invented connections. The director ultimately sees at most two source images per call.
+
+Creative search uses a custom spherical CVT-MAP-Elites-style archive. Spherical k-means fits 32 frozen niches from eligible reference CLIP vectors before candidate search. Real images enter the compatible niche; every candidate remains in the event store. With no validated judge, quality is null, retention uses a seeded exploratory ordering, and the active pool preserves descriptor-different and protected alternatives. This is a small archive-guided branching experiment, not evidence of quality optimization. E0 instead uses a fixed same-parent three-action ×two-seed design and a two-source lexical shelf; it does not use archive selection. Repository code search during implementation uses `rg`/`rg --files`.

@@ -22,6 +22,7 @@ from .backend import FluxBackend
 from .config import Config
 from .controlled import load_plan
 from .execution import canonical_config, restore_config
+from .intentions import IntentionMap, pixel_bounds, validate_intention_edit
 from .reviews import ReviewConflict, ReviewNotFound, ReviewStore
 from .studio import Inquiry, Reference, Studio, encoded, fingerprint, now
 
@@ -98,6 +99,7 @@ class ContinuationRequest(StrictModel):
     references: list[Reference] = Field(default_factory=list, max_length=32)
     connection_context: list[dict] = Field(default_factory=list, max_length=32)
     revision: Revision
+    intention_map: IntentionMap | None = None
 
     @model_validator(mode='after')
     def known_sources(self):
@@ -105,6 +107,18 @@ class ContinuationRequest(StrictModel):
         if len(ids) != len(set(ids)) or set(self.revision.source_ids) - set(ids):
             raise ValueError('Reference IDs must be unique and every action source must resolve')
         return self
+
+
+class DevelopmentDecision(StrictModel):
+    submission_id: str = Field(pattern=r'^[A-Za-z0-9_-]{1,64}$')
+    artifact_id: str = Field(min_length=1, max_length=200)
+    choice: Literal['select', 'stop']
+    author: str = Field(min_length=1, max_length=200)
+    origin: Literal['operator', 'model_selection', 'development_example']
+    reason: str = Field(min_length=1, max_length=4000)
+    local_assessment: str = Field(min_length=1, max_length=4000)
+    whole_assessment: str = Field(min_length=1, max_length=4000)
+    preservation_assessment: str = Field(min_length=1, max_length=4000)
 
 
 def _identifier(value):
@@ -190,9 +204,14 @@ class ContinuationStore:
         selected = self._selection(request)
         if (config.width, config.height) != tuple(selected['size']):
             raise ValueError('Declared renderer width/height must match the saved parent')
+        self._validate_intentions(continuation_id, request, selected)
+        request_data = request.model_dump(mode='json')
+        # Preserve legacy frozen request bytes when the opt-in map is absent.
+        if request.intention_map is None:
+            request_data.pop('intention_map')
         spec = {'schema_version': 1, 'kind': 'selected_parent_continuation', 'id': continuation_id,
                 'project_id': 'cont_' + continuation_id, 'episode_id': 'revision',
-                'request': request.model_dump(mode='json'), 'selection': selected,
+                'request': request_data, 'selection': selected,
                 'config': config.to_dict(), 'max_calls': 2,
                 'resource_root': str(Path(resource_root or self.root).resolve()),
                 'invocation_keys': {str(seed): f'continuation:{continuation_id}:seed:{seed}'
@@ -216,8 +235,38 @@ class ContinuationStore:
             self._materialize(studio, spec)
         return self.get(continuation_id)
 
+    def _validate_intentions(self, continuation_id, request, selected):
+        intentions = request.intention_map
+        if intentions is None:
+            return
+        validate_intention_edit(intentions, request.revision, selected['image_sha256'], selected['size'])
+        previous_id = intentions.previous_continuation_id
+        if previous_id is None:
+            return
+        if previous_id == continuation_id:
+            raise ValueError('Intention history cannot reference itself')
+        previous = self.get(previous_id)
+        previous_map = previous['request'].get('intention_map')
+        if not previous_map:
+            raise ValueError('Previous continuation has no intention map')
+        candidates = [previous['parent'], *previous['outputs']]
+        candidate = next((c for c in candidates if c and c['sha256'] == selected['image_sha256']), None)
+        if candidate is None or sha256(Path(candidate['path'])) != candidate['sha256']:
+            raise ValueError('Intention history must follow an intact previous parent or child')
+        before = {element['id']: element for element in previous_map['elements']}
+        after = {element.id: element.model_dump(mode='json') for element in intentions.elements}
+        if set(intentions.revisit_reasons) - set(before):
+            raise ValueError('Revisit reasons must name previous intention elements')
+        for identifier, element in before.items():
+            if (element['protect_pixels'] or element['status'] != 'unresolved') and after.get(identifier) != element:
+                if identifier not in intentions.revisit_reasons:
+                    raise ValueError('Changing a resolved/protected intention requires a revisit reason: ' + identifier)
+
     def _materialize(self, studio, spec):
         request = ContinuationRequest.model_validate(spec['request'])
+        if request.intention_map is not None:
+            validate_intention_edit(request.intention_map, request.revision,
+                                    spec['selection']['image_sha256'], spec['selection']['size'])
         revision = request.revision
         project_id, episode_id = spec['project_id'], spec['episode_id']
         directory = self.root / 'continuations' / spec['id']
@@ -237,10 +286,7 @@ class ContinuationStore:
             size = image.size
         mask = Image.new('L', size, 255 if revision.method == 'whole' else 0)
         if revision.region is not None:
-            l, t, r, b = revision.region
-            bounds = [int(l * size[0]), int(t * size[1]), int(r * size[0]), int(b * size[1])]
-            if bounds[0] >= bounds[2] or bounds[1] >= bounds[3]:
-                raise ValueError('Region is empty after mapping to parent pixels')
+            bounds = pixel_bounds(revision.region, size)
             ImageDraw.Draw(mask).rectangle((bounds[0], bounds[1], bounds[2] - 1, bounds[3] - 1), fill=255)
         mask_path = directory / 'allowed_mask.png'
         if mask_path.exists():
@@ -293,6 +339,8 @@ class ContinuationStore:
             'model_calls': episode['model_calls'] if episode else 0,
             'parent': project['artifacts']['root'] if project else None, 'outputs': outputs,
             'observations': project['observations'] if project else [], 'reviews': review_status,
+            'decisions': project['decisions'] if project else [],
+            'selected_artifact_id': episode['current_artifact_id'] if episode else None,
             'method_note': ('FLUX edits the full saved parent. Prompt requests do not guarantee local preservation.'
                 if spec['request']['revision']['method'] == 'whole' else
                 'FLUX proposes an edit from the full parent; a hard rectangular compositor preserves decoded pixels outside the declared mask. Meaning and boundaries inside it remain uncontrolled. Raw spillover is retained in each attempt.'),
@@ -436,6 +484,43 @@ class ContinuationStore:
         self.export_gallery(continuation_id)
         return record
 
+    def decide(self, continuation_id, decision: DevelopmentDecision | dict):
+        """Append an attributed selection/stop; never create reviews or render."""
+        decision = DevelopmentDecision.model_validate(decision)
+        data = decision.model_dump(mode='json')
+        spec = self._spec(continuation_id)
+        with Studio(self.root) as studio, studio.ledger.lock('continuation_' + continuation_id):
+            with studio.locked(spec['project_id']) as project:
+                previous = next((d for d in project['decisions']
+                                 if d.get('submission_id') == decision.submission_id), None)
+                if previous is not None:
+                    if any(previous.get(key) != value for key, value in data.items()):
+                        raise ReviewConflict('Decision submission ID has different saved content')
+                    return previous
+                episode = project['episodes'][spec['episode_id']]
+                artifact = studio._artifact(project, decision.artifact_id)
+                if episode['status'] in ('stopped', 'completed'):
+                    raise ValueError('Closed continuation decisions are immutable; prepare a new continuation to revisit')
+                if decision.choice == 'select' and studio._pending(project, episode):
+                    raise ValueError('Complete the prepared alternatives before selecting, or explicitly stop')
+                record = data | {'kind': 'development_decision', 'created_at': now(),
+                    'episode_id': spec['episode_id'], 'image_sha256': artifact['sha256'],
+                    'parent_sha256': project['artifacts']['root']['sha256'],
+                    'intention_map_sha256': (fingerprint(spec['request']['intention_map'])
+                                             if spec['request'].get('intention_map') else None)}
+                project['decisions'].append(record)
+                project['current_artifact_id'] = episode['current_artifact_id'] = artifact['id']
+                episode['selected_round'] = episode['round']
+                if decision.choice == 'stop':
+                    for action in studio._pending(project, episode):
+                        action['status'] = 'cancelled'
+                    episode['status'] = 'stopped'
+                else:
+                    studio._settle(project, episode)
+                studio._save(project, 'development_decided', record)
+        self.export_gallery(continuation_id)
+        return record
+
     def gallery_html(self, continuation_id, *, web=False):
         """Read-only gallery projection. Local export links preserve original bytes."""
         import os
@@ -444,7 +529,9 @@ class ContinuationStore:
         directory = self.root / 'continuations' / continuation_id
         esc = lambda value: html.escape(str(value), quote=True)
         cards = []
+        detail_cards = []
         parent_url = None
+        region = self._gallery_edit_region(manifest)
         for artifact in ([manifest['parent']] if manifest['parent'] else []) + manifest['outputs']:
             path = Path(artifact['path'])
             if sha256(path) != artifact['sha256']:
@@ -454,7 +541,10 @@ class ContinuationStore:
             if artifact['id'] == 'root':
                 parent_url = url
             cards.append(f'<figure><a href="{url}"><img src="{url}" alt="{esc(artifact["id"])}"></a><figcaption>{esc(artifact["id"])} · {esc(artifact.get("origin"))}<br>SHA-256 {esc(artifact["sha256"])}</figcaption></figure>')
-        region = self._gallery_edit_region(manifest)
+            if region is not None:
+                width, height = region['size']
+                left, top, right, bottom = region['bounds']
+                detail_cards.append(f'<figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="{left} {top} {right-left} {bottom-top}" class="continuation-detail" role="img" aria-label="Edit region detail: {esc(artifact["id"])}"><image href="{url}" x="0" y="0" width="{width}" height="{height}"/></svg><figcaption>{esc(artifact["id"])} · same pixel bounds, enlarged for inspection</figcaption></figure>')
         preview = '<p>Prepared edit-region preview is available after preparation completes.</p>'
         if region is not None:
             width, height = region['size']
@@ -478,14 +568,27 @@ class ContinuationStore:
 <h3>Exact saved edit instruction</h3><pre class="continuation-instruction">{esc(manifest['request']['revision']['instruction'])}</pre>
 <p class="continuation-mask-hash">Prepared mask SHA-256: {region['sha256']}</p></div></div></section>'''
         selection = manifest['selection']
+        intentions = manifest['request'].get('intention_map')
+        intention_section = ''
+        if intentions:
+            rows = ''.join(f'<tr><td>{esc(element["id"])}</td><td>{esc(element["role"])}</td><td>{esc(element["subtlety"])}</td><td>{esc(", ".join(element["relationships"]))}</td><td>{esc(element["must_survive"])}<br>{esc(element["status"])} · {"pixels protected" if element["protect_pixels"] else "semantic request only"}</td></tr>' for element in intentions['elements'])
+            intention_section = f'''<div><h2>Intention map</h2>
+<p>Attributed to {esc(intentions['author'])} ({esc(intentions['origin'])}). These are intentions and hypotheses, not established viewer responses.</p>
+<p>{esc(intentions['whole'])}</p><p>Next intervention: {esc(intentions['operation'])} · {esc(', '.join(intentions['target_ids']))}. {esc(intentions['attention_reason'])}</p>
+<p>Expected reading: {esc(intentions['expected_reading'])}</p>
+<div class="continuation-intentions"><table><thead><tr><th>Element</th><th>Role</th><th>Subtlety</th><th>Related elements</th><th>Preservation</th></tr></thead><tbody>{rows}</tbody></table></div></div>'''
         body = f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{esc(manifest['request']['title'])}</title>
-<style>body{{font:18px system-ui;max-width:1300px;margin:40px auto;padding:0 24px;background:#f2f0e9;color:#222}}section{{display:flex;gap:20px;flex-wrap:wrap}}figure{{margin:0;flex:1;min-width:260px}}img{{width:100%;max-height:700px;object-fit:contain}}figcaption{{font-size:12px;overflow-wrap:anywhere}}pre{{white-space:pre-wrap;overflow-wrap:anywhere}}.continuation-plan{{display:block;margin:28px 0}}.continuation-plan-layout{{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:24px;margin-top:16px}}.continuation-mask-preview{{min-width:0}}.continuation-mask-preview svg{{display:block;width:100%;height:auto}}.continuation-plan-details{{min-width:0}}.continuation-instruction{{max-height:none;overflow:visible}}.continuation-mask-hash{{font-size:12px;overflow-wrap:anywhere}}.continuation-protection-warning{{border:2px solid #ae7100;padding:12px}}</style>
+<style>body{{font:18px system-ui;max-width:1300px;margin:40px auto;padding:0 24px;background:#f2f0e9;color:#222}}section{{display:flex;gap:20px;flex-wrap:wrap}}figure{{margin:0;flex:1;min-width:260px}}img{{width:100%;max-height:700px;object-fit:contain}}figcaption{{font-size:12px;overflow-wrap:anywhere}}pre{{white-space:pre-wrap;overflow-wrap:anywhere}}.continuation-plan{{display:block;margin:28px 0}}.continuation-plan-layout{{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:24px;margin-top:16px}}.continuation-mask-preview{{min-width:0}}.continuation-mask-preview svg{{display:block;width:100%;height:auto}}.continuation-plan-details{{min-width:0}}.continuation-instruction{{max-height:none;overflow:visible}}.continuation-mask-hash{{font-size:12px;overflow-wrap:anywhere}}.continuation-protection-warning{{border:2px solid #ae7100;padding:12px}}.continuation-detail{{display:block;width:100%;height:auto;max-height:500px;overflow:hidden}}.continuation-intentions{{overflow-x:auto}}.continuation-intentions th,.continuation-intentions td{{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid #aaa}}</style>
 <h1>{esc(manifest['request']['title'])}</h1><p>Development gallery · provenance visible</p><p>{esc(manifest['request']['brief'])}</p>
 <p>Parent selected by {esc(selection['author'])} ({esc(selection['origin'])}): {esc(selection['reason'])}</p>
 <p>Requested change by {esc(manifest['request']['revision']['author'])}: {esc(manifest['request']['revision']['intended_change'])}</p>
 <p>{esc(manifest['method_note'])}</p><p>Execution: {esc(manifest['status'])}. Charged model calls: {manifest['model_calls']}/2. Human follow-up reviews: {manifest['reviews']['votes']}. Artistic effectiveness remains unassessed until actual observations and situated review.</p>
 {preview}
-<section>{''.join(cards)}</section><h2>Observed results</h2><pre>{esc(encoded(manifest['observations']) if manifest['observations'] else 'No observations saved yet.')}</pre>
+{intention_section}
+<h2>Whole painting</h2><section>{''.join(cards)}</section>
+<h2>Local inspection</h2><p>These are enlarged views of the saved pixels, not higher-resolution render passes. Judge readability and relationships in the whole painting above as well as seams and details here.</p><section>{''.join(detail_cards)}</section>
+<h2>Observed results</h2><pre>{esc(encoded(manifest['observations']) if manifest['observations'] else 'No observations saved yet.')}</pre>
+<h2>Development decisions</h2><pre>{esc(json.dumps(manifest['decisions'], indent=2, ensure_ascii=False) if manifest['decisions'] else 'No branch accepted and no stop decision recorded.')}</pre>
 <details><summary>Frozen inquiry, sources and action</summary><pre>{esc(json.dumps(manifest['request'], indent=2, ensure_ascii=False))}</pre></details></html>'''
         if web:
             import re
@@ -537,6 +640,9 @@ def main(argv=None):
     for name in ('execute', 'show', 'gallery'):
         command = sub.add_parser(name)
         command.add_argument('--id', required=True)
+    decide = sub.add_parser('decide')
+    decide.add_argument('--id', required=True)
+    decide.add_argument('--decision', type=Path, required=True)
     args = parser.parse_args(argv)
     store = ContinuationStore(args.artifacts)
     try:
@@ -547,6 +653,8 @@ def main(argv=None):
             result = store.execute(args.id, resource_root=args.resource_root)
         elif args.command == 'gallery':
             result = {'gallery': str(store.export_gallery(args.id))}
+        elif args.command == 'decide':
+            result = store.decide(args.id, json.loads(args.decision.read_text()))
         else:
             result = store.get(args.id)
         print(json.dumps(result, indent=2, ensure_ascii=False))

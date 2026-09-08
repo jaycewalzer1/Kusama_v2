@@ -2,11 +2,13 @@
 
 Start with [project direction, current evidence and next milestones](docs/project_direction.md) for how this implementation relates to the ambition of superhuman artistic abilities. [AGENTS.md](AGENTS.md) gives coding agents the working rules; the [version 2.1 source specification](docs/architecture_spec_v2.1_source.md) preserves the research design. The current system runs artistic experiments with frozen models; learned artistic improvement and superiority to human workflows remain unproven.
 
-This Python 3.11 project connects frozen `Qwen/Qwen3-VL-8B-Instruct` direction with frozen `black-forest-labs/FLUX.2-klein-base-4B` generation and editing. It saves reference inputs, proposals, images, lineage, resource usage and monetary accounting. Humans separately review finished quality and development potential and explicitly choose what advances. No training occurs.
+This Python 3.11 project connects frozen `Qwen/Qwen3-VL-8B-Instruct` direction with frozen `black-forest-labs/FLUX.2-klein-base-4B` generation and editing. It saves reference inputs, proposals, images, lineage, resource usage and monetary accounting. Humans separately review finished quality and development potential and explicitly choose what advances. No model was trained in the recorded runs.
 
 The [source-connected studio](docs/source_connected_studio.md) adds bounded official collection ingestion, whole/detail retrieval, source-grounded combinations, realized branching, local revisions and follow-up review. Use the `kusama` command for this workflow. The earlier [reference-informed workflow](docs/reference_loop.md) still accepts curated packets and generates sibling realizations. The [reference library](references/README.md) preserves its initial Mutu process and Maya memory packets. Automated collection retrieval remains bounded; it is not comprehensive cultural research or learned reference selection.
 
 The original three-call image/edit experiment remains available below. Saved technical success is separate from artistic success, which requires looking at the images and reviewing them.
+
+The [final overnight handoff](MORNING_HANDOFF.md) records 38 new rendered images, three complete E0 development pools, the expired inference window and zero human votes. The final software suite passed 706 tests; [implementation status](docs/IMPLEMENTATION_STATUS.md) separates those checks from real inference and artistic evaluation.
 
 ## Setup from a fresh checkout
 
@@ -106,7 +108,7 @@ Run the focused software checks with:
 uv run --locked pytest
 ```
 
-These checks exercise software behavior with small local fixtures and controlled pipeline substitutes. They do not establish model access, real inference, or visual instruction-following. The 8 September 2026 audit passed **402 tests**, including the frozen director, reference loop, recovery, cost accounting and live human-review interface (two dependency deprecation warnings). Real inference and saved artifacts are checked separately; see [the original execution evidence](docs/verification.md) and [the creative experiment](docs/creative_verification.md).
+These checks exercise software behavior with small local fixtures and controlled pipeline substitutes. They do not establish model access, real inference, or visual instruction-following. The historical 04:17 UTC audit on 8 September 2026 passed **402 tests**, including the frozen director, reference loop, recovery, cost accounting and live human-review interface (two dependency deprecation warnings). Real inference and saved artifacts are checked separately; see [the original execution evidence](docs/verification.md) and [the creative experiment](docs/creative_verification.md).
 
 ## Troubleshooting
 

@@ -278,7 +278,12 @@ def _run_mode(mode, folder, spec, refs, index, budget, ledger, backend_factory, 
             persist()
         state['generation_status'] = 'generation_complete' if len(state['candidates']) == 4 else 'incomplete_outputs'
         if len(state['candidates']) >= 2:
-            cid = job_prefix+('' if len(state['candidates']) == 4 else '_partial_'+digest(state['candidates'])[:8])
+            # Primary image URLs must not disclose which workflow made a pool.
+            # The actual method and full lineage remain in this saved state.
+            review_identity = [spec['comparison_id'], mode]
+            if len(state['candidates']) != 4:
+                review_identity.append([row['candidate_id'] for row in state['candidates']])
+            cid = 'workflow_'+digest(review_identity)[:24]
             store = ReviewStore(budget.root)
             store.register_collection(cid, title='Matched development workflow', brief=spec['brief']['brief'],
                 candidates=[{'id': row['candidate_id'], 'path': row['path'], 'label': 'Candidate'} for row in state['candidates']],

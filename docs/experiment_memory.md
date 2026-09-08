@@ -81,6 +81,17 @@ append-only events. Eleven fixture tests cover cutoffs, future-image/observation
 review stability, source integrity, append-only logs, failure retention,
 continuation lineage, shared-image leakage and genuine-review separation.
 
+A later read-only-source build at approximately 07:06 UTC contained 1,321 events:
+330 artifact, 414 budget, 441 execution, 51 action, 40 failure, 19 context and 26
+observation events. It reported zero ingest issues; 1,258 events were classified
+as development and 63 remained unclassified. A live historical query selected an
+attributed model proposal, a finishing observation, an actual image artifact and
+a retained schema failure. The [query snapshot](../artifacts/overnight/memory/queries/2d860044b385a1fdf79a5f35c6b0941b57aacdc94d4670e2b8cee1faeac28ccd.json)
+preserves its exact cutoff and complete candidate set. It was an assistant
+retrieval check, not a new director decision or evidence that the retrieved
+notes improved an image. Memory did not enter the E0 condition, whose prior
+snapshot remains explicitly empty.
+
 The current memory does not establish useful artistic transfer or learning. The
 next evidence gate is an attributed memory-assisted decision compared with a
 matched source-only decision, followed by genuine human evaluation of the actual

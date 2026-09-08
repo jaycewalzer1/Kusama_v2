@@ -45,6 +45,59 @@ Pool selections use separate append-only `review_pool_votes` records with choice
 
 Verification covers exact parent and output hashes, unsupported controls, source IDs, seed grouping, idempotency, interrupted postprocessing, uncertain invocations, frozen session root, budget exhaustion, exclusive workload locking, balanced image order and situated-label mapping. These checks establish software behavior only. The evidence gate remains actual desired and unrelated visual changes followed by genuine independent human judgment of the whole work.
 
+## Intention maps and decisions at whole/detail scale
+
+Added 8 September 2026. New requests can opt into `intention_map`; old frozen requests keep their original serialized shape. The map describes the exact selected `parent_sha256` and attributes its contents to an `author` and `origin` (`operator`, `model_proposal`, or `development_example`). It records the whole-work intention, named elements with normalized regions, intended roles, subtlety, relationships to other element IDs, and what must survive. These are artistic hypotheses. Neither `resolved` nor an expected reading is a human quality label.
+
+The map separates the next artistic decision (`target_ids`, `operation`, `attention_reason`, `expected_reading`) from the existing renderer instruction and rectangular mask. Operations name artistic intentions such as concealment or simplification; they are not extra renderer parameters. Each target must be unresolved and intersect the edit rectangle. Non-target elements may be `resolved` or `leave_alone`. Setting `protect_pixels=true` rejects any proposed rectangle that intersects those pixels, including a whole-image edit. Text in `must_survive` alone cannot guarantee semantic preservation. Regions that become empty at the declared image dimensions fail before job registration.
+
+For example, add this map to a request whose edit rectangle covers the chair and excludes the sleeve. Replace the placeholder hash with the selected parent's actual SHA-256:
+
+```json
+{
+  "parent_sha256": "REPLACE_WITH_SELECTED_PARENT_SHA256",
+  "author": "operator name",
+  "origin": "operator",
+  "whole": "An absence suggested through a relationship between figure and chair",
+  "elements": [
+    {"id": "chair", "region": [0.5, 0.4, 0.8, 0.9],
+     "role": "Suggest someone's absence", "subtlety": "Discovered after the figure",
+     "relationships": ["sleeve"], "must_survive": "Its relation to the sleeve pattern"},
+    {"id": "sleeve", "region": [0.1, 0.2, 0.3, 0.4],
+     "role": "Connect the remaining figure to the absent person", "subtlety": "Quiet repetition",
+     "must_survive": "The resolved pattern marks", "status": "resolved", "protect_pixels": true}
+  ],
+  "target_ids": ["chair"], "operation": "revise",
+  "attention_reason": "Test the relationship without disturbing the resolved sleeve",
+  "expected_reading": "Viewers may experience absence; this requires an unprompted viewer response"
+}
+```
+
+The existing initial-generation workflow supplies the whole composition. A prepared continuation tests one saved intervention with two seeds from the same parent, then registers statement-free human follow-up comparisons. The development gallery shows the full parent and each child plus matching enlarged views of the edit rectangle. Enlargement is inspection of existing pixels; this change does not implement crop-conditioned high-resolution diffusion, layers, arbitrary masks, or regional attention guidance. Existing Qwen proposal jobs are unchanged and do not automatically generate or ingest this optional map. An operator or a separately attributed model proposal must supply it. Autonomous attention allocation remains a subsequent experiment.
+
+Use `ContinuationStore(root).decide(id, decision)` or `POST /api/continuations/{id}/decisions` to append a development decision. The JSON contract is `DevelopmentDecision` in `/api/contracts`. For example:
+
+```json
+{
+  "submission_id": "chair-choice-1", "artifact_id": "root", "choice": "select",
+  "author": "operator name", "origin": "operator",
+  "reason": "Keep the parent; neither alternative strengthened the relationship",
+  "local_assessment": "The pattern became more legible but too emphatic",
+  "whole_assessment": "The chair drew attention away from the figure",
+  "preservation_assessment": "The sleeve pixels survived; integration remains weak"
+}
+```
+
+`artifact_id` must resolve to the saved parent (`root`) or a realized child from this continuation. `select` waits for the prepared batch to settle; choosing `root` retains the before image. `stop` can also cancel unexecuted work, without rendering. `origin` is explicitly `operator`, `model_selection`, or `development_example`; human advancement still uses the original review submission path. Decisions save the chosen and original parent hashes, the intention snapshot fingerprint, the reasons and local/whole/preservation assessments in the studio's append-only events. They create no human votes and start no additional work. Stable submission IDs are idempotent and reject changed content. Closed continuations require a new continuation to revisit.
+
+```sh
+.venv/bin/python -m kusama.continuation --artifacts artifacts/overnight decide --id example --decision decision.json
+```
+
+To continue, prepare a **new** continuation using the selected saved image and its exact hash. Set the new map's `previous_continuation_id` to the prior continuation and update `parent_sha256`. This validates that the new parent is an intact prior parent or child. Linked snapshots require an entry in `revisit_reasons`, keyed by element ID, before changing or removing any previously resolved, leave-alone or pixel-protected element. Reopening a protected target requires both `status="unresolved"` and `protect_pixels=false`, with that reason. Old images, maps, decisions and alternatives survive. The linkage is opt-in; legacy/map-free workflows do not acquire implicit protection, and choosing a prior alternative is an explicitly attributed branch choice.
+
+Fixture checks cover protection, same-parent branching, linked reopening, snapshot immutability, stop without execution, idempotent decisions, unchanged review labels and matching crop views. The next evidence gate is an actual reviewed whole → local intervention → whole comparison: do the intended reading and preservation survive, and does the work improve? No inference or human feedback was produced by this implementation.
+
 ## Observation-informed final intervention
 
 `kusama.finishing.finish(run_directory, root=Path('artifacts/overnight'), stage='all')` spends the one reserved finishing allocation after the original initial, ordinary and protected allocations have settled and their charged attempt counts match the frozen session configuration. The default allocation is 6 initial + 4 ordinary + 4 protected + 2 final seed attempts. Failed or uncertain charged calls remain in those counts. The continuation ID is fixed to `<run>_finish`; callers cannot choose a second finishing ID to expand this allocation.

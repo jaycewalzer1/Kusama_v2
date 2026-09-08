@@ -524,7 +524,9 @@ function reviewCollectionLabel(collection) {
   // Only the predeclared study suffix is public here. Protocol prefixes and
   // incomplete-output hashes never become labels, nor do action/method IDs.
   const study = String(collection.id).match(/(?:^|_)e0-([dh]\d{2})(?:_incomplete_[a-f0-9]{8})?$/);
-  const suffix = collection.title === "E0 parent/edit comparison" && study ? ` · study ${study[1]}` : "";
+  const workflow = String(collection.id).match(/^workflow_([a-f0-9]{24})$/);
+  const suffix = collection.title === "E0 parent/edit comparison" && study ? ` · study ${study[1]}`
+    : collection.title === "Matched development workflow" && workflow ? ` · study ${workflow[1].slice(0, 8)}` : "";
   return `${collection.title}${suffix} · ${collection.candidate_count} images`;
 }
 
@@ -596,7 +598,11 @@ async function openReviewCollection() {
     byId("review-brief").textContent = collection.brief;
     byId("collection-images").replaceChildren();
     byId("collection-overview").open = false;
-    for (const candidate of collection.candidates) {
+    // Assigned studies use their shuffled neutral pair/pool routes. Raw
+    // candidate URLs and collection order can expose condition identities.
+    const neutralOverview = reviewerSlots.length > 0 || collection.presentation?.condition === "statement_free";
+    byId("collection-overview").hidden = neutralOverview;
+    for (const candidate of neutralOverview ? [] : collection.candidates) {
       const figure = document.createElement("figure");
       const caption = document.createElement("figcaption");
       caption.textContent = candidate.label;

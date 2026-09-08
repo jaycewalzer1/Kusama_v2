@@ -1,45 +1,28 @@
-# Implementation status
+# Implementation and evidence status
 
-**Working checkpoint: 8 September 2026, 07:04 UTC. Implementation and live experiments continue.**
+**Final overnight assessment: 8 September 2026, 13:54 UTC.** The first inspected artistic-development path executed with frozen Qwen and FLUX. The inference session expired; all model workers have settled. E0 remains incomplete and no human artistic evaluation or learning result is available.
 
-The application now joins bounded museum ingestion, whole/detail/relationship
-retrieval, frozen multimodal connection proposals, real FLUX generation, saved
-parent continuations and follow-up review in the existing Python/SQLite/FastAPI
-application. The source and rendering models remain frozen. No human preference
-learning or superiority claim is supported.
-
-| Component | Implemented and checked | Execution boundary at this checkpoint |
+| Component | Implemented / mechanically verified | Real evidence and limits |
 | --- | --- | --- |
-| Corpus | Four official adapters, original bytes, rights by operation, crops, claims, resumable ledgers | 200 real image-bearing references; 400 geometric crops; 40 unvalidated machine Device seeds |
-| Retrieval | Pinned normalized 512-dimensional CLIP, lexical FTS, typed relationships, logged shelf fusion | Final index has 199 whole references and 398 crops; one faint specimen is excluded from director retrieval; 12-query audit saved |
-| Connection direction | Strict source roles, transferred/discarded properties, whole/part plan, supported actions, bounded repairs | Two live care/control proposal runs; original malformed outputs retained. Six directions validated in the second run, one through a disclosed metadata-only sidecar |
-| Generation | Frozen image recipe, exact output hashes, invocation budgets, replay | First extended episode complete: six initial 512×640 images, eight local variants and two finishing variants; source objects sometimes dominate the intended 2D medium |
-| Revision bridge | Explicit saved-parent selection, same-parent seeds 23/41, local rectangle compositor, raw spillover, follow-up review, exact prepared-mask preview | Four two-seed local branches and a two-seed descendant are complete; actual inspection found absent, partial and preservation-violating changes |
-| Search | Fixed reference-fitted CVT niches, context-scoped retention, exact descriptor cache, protected exploration | Initial and local images archived; selection is seeded exploration with quality null |
-| Observation and finishing | Attributed actual-pair observer; separate observation-informed two-seed protected-child follow-up | Ten actual observer calls retained; five original empty-change schema rejections recovered in explicit no-call sidecars. Finishing executed, but its intended connection remains absent or incomplete |
-| Review UI | Source explorer, gallery, blind A/B, separate quality/potential/readiness/willingness, open reading, none pools | Browser source and initial comparison views inspected; zero human submissions |
-| Memory | Append-only event projection, actual-time cutoffs, sealed/source-family exclusion, immutable candidates | Live source ledgers ingested without issues; usefulness remains untested |
-| Evaluation | Exact 12-brief E0 plan and matched same-parent three-action executor; assignment order frozen | Development brief d01 has one parent and six edits at the separately named 384×512 profile. d02 stopped before edits on a malformed action; d03/d04 execution continues. Heldout admission and matched controls remain pending |
-| Learning | Seven snapshot kinds, grouped splits, cheap selector, judge/director validation and optional CUDA QLoRA executor | Human-eligible snapshots empty; no trained checkpoint; CUDA training mechanics unverified on this Mac |
-| Persistence | Shared session limits, GPU lease, immutable job inputs, artifact checks, costs, consistent SQLite export | Checkpoint integrity audit passed; recovery audit fixes are being integrated |
+| Source corpus | Four official adapters; resumable requests; original bytes, rights by operation, claims and crop lineage | 200 real records, 400 geometric crops, 545 claims, 40 unvalidated device seeds. Cached re-ingestion made no requests or duplicates. Coverage is incomplete. |
+| Retrieval | FTS5/BM25, pinned 512-dimensional CLIP whole/detail cosine search,54 typed machine relations, reciprocal-rank fusion and family dedup | 199 whole views and 398 crops; 12 actual CPU query replays reproduced IDs/order. Human usefulness untested. |
+| Connection proposals | Typed source roles, transferred/discarded properties, whole/part plan, concrete instruction, bounded schema recovery | Six valid care/control directions, one using a disclosed metadata-only sidecar. Original12-call failed proposal run retained. Source pairing/medium rules are operator scaffolding. |
+| Generation and search | Frozen profiles, actual-image hashing,32 fixed CVT niches, seeded exploration and protected alternatives | Six initial and eight local images archived. Finishing images remain in the Studio event store. Quality is null; no learned judge or quality-optimization result. |
+| Selected-parent revision | Explicit human-advancement or attributed operator/model selection, two same-parent seeds, rectangular compositor, raw spillover and follow-up queue | Four two-seed local branches and one two-seed descendant executed:16 images for the whole episode. Desired changes range from absent to partial; one full-mask edit changed intended preserved upholstery. |
+| Attention and decisions | Optional exact-parent intention maps, geometric protection, linked reopening reasons, whole/detail views and attributed select/stop records | New maps/decisions fixture-tested; not retrofitted onto old prompts. Maps are supplied explicitly. No autonomous attention policy, semantic segmentation or high-resolution crop generation. |
+| Observation | Actual parent/child Qwen observations, explicit no-call schema revalidation, separately attributed assistant inspection | Ten observer calls; five original empty-change rejections retained with validation sidecars. Observers sometimes overstate success; no human votes inferred. |
+| Human review | Neutral A/B and shuffled pools, allocated E0 slots, independent quality/potential/readiness/open reading, explicit advancement | 9 collections, 42 registrations, 37 distinct candidate images; zero actual votes, pool choices or advancements. Browser inspected, including exact edit-region detail views. |
+| Experiment memory | Append-only actual-time projections, decision cutoff, frozen candidate set, sealed guards, optional bounded text retrieval | 1,321-event dated checkpoint and real-ledger query saved. No demonstrated benefit from including memory in a director decision. |
+| E0 | Immutable 12-brief plan, three actions ×two seeds, same references/parent, matched profile, exact review assignments | d01/d03/d04 complete; d02 parent only: 22 actual images. d02 repair prepared without inference. Heldout eight briefs unexecuted and unadmitted. |
+| Recovery/admission | Charge/raw-response verification, narrowly lossless schema repair, disclosed development-code migration and stage-specific measured-throughput estimator | 89 recovery/evaluation fixture checks passed within final suite. No live schema-repair timing yet; no heldout runtime freeze. The expired root cannot dispatch. |
+| Matched workflows | Direct best-of-N, grounded noniteration, ordinary critique/edit and archive search, equal source access and 16 total renderer ceiling | `repair_compare_v2` is a frozen current-code plan only. All four modes unexecuted; genuine matched preference analysis pending. |
+| Learning | Seven immutable dataset kinds; original-brief/descendant grouping; conservative lineage quarantine; exact vote-image binding; selector and judge/director entrypoints | Seven fresh empty snapshots, three `insufficient_data` results. No fitting, checkpoint, optional CUDA training smoke or measured learning gain. |
+| Persistence/export | SQLite ledgers, shared session limits, model lease, immutable inputs, failed attempts, costs, checksums and consistent database backups | 34-job final integrity audit passed, no unsettled calls. Portable evidence and companion committed-source bundle are separate from cached model weights. |
 
-See [workflow and exact commands](source_connected_studio.md),
-[source audit](SOURCE_AUDIT.md), [E0 protocol](EXPERIMENT_PROTOCOL.md),
-[model/training boundaries](MODEL_AND_TRAINING_STATUS.md), and
-[experiment memory](experiment_memory.md). The interface extends the established
-HTML/JavaScript dashboard with Pydantic-derived TypeScript declarations; there
-is no React rewrite, external queue, vector database, DINOv2, learned reranker,
-DPO, online RL or renderer adaptation.
+The [706-test final verification](../artifacts/overnight/software_verification_final_complete.json) passed in 37.20 seconds with two existing deprecation warnings. These are fixtures/substitutes and recorded-evidence checks. Pydantic-derived TypeScript contracts matched. Live ingestion, real inference and visual inspections are separate evidence in the [source audit](SOURCE_AUDIT.md), [vertical-slice audit](../artifacts/overnight/vertical_slice_evidence_final.json), [E0 diagnostics](EXPERIMENT_PROTOCOL.md) and [final browser receipt](../artifacts/overnight/recovery_audits/final_ui_verification.json). No fixture counts as a live integration or artistic win.
 
-The final handoff will replace this working snapshot with ledger-derived counts,
-completed visual inspections, exact queued requirements and software results.
-All generated evidence is local and ignored by Git. A fresh checkout needs the
-separate artifact export and pinned model caches.
+Actual new inference totals: 38 completed renderer attempts and 46 Qwen calls, of which 20 retain failed status. Five observer revalidations and one proposal metadata recovery preserve those original failures and their costs. Qwen tokens total 81,834; all 84 charged calls are settled. The session started 04:40:47 UTC, new dispatch ended 11:55:47 UTC and the frozen deadline was 12:40:47 UTC. A usage interruption outlasted that horizon. The remaining 122 image attempts and 418,166 reasoning tokens are unused capacity, not permission to resume after expiration. The [queued-work manifest](../artifacts/overnight/remaining_work_final.json) distinguishes prepared repairs, unmet calibration, heldout admission and optional workloads.
 
-The [completed vertical-slice audit](../artifacts/overnight/vertical_slice_evidence_final.json)
-binds exact sources, the Qwen connection, actual parent and descendant images,
-raw versus composited edits, assistant observations, model observations and
-empty human review records. The latest complete software run passed 628 fixture
-tests with two existing deprecation warnings; it does not validate artistic
-quality. Current human-eligible datasets have zero rows, and all three training
-validators report insufficient data.
+The central artistic uncertainty is whether a proposed reference connection becomes visibly consequential in the actual work and improves a situated viewer's experience. The experiments exposed absent parent targets, masks excluding necessary connections, substantial seed variability, preservation failures and overly confident model observations. The next evidence gate is genuine review of a small complete comparison pool followed by an explicitly selected-parent revision and follow-up review. New inference requires a reconciled resource contract; expanding the archive or training without this evidence would not answer that uncertainty.
+
+Relevant code is in the existing `src/kusama/` package: corpus/retrieval/inspiration, episodes/search_archive, continuation/intentions, reviews/dashboard, memory, evaluation/e0_runner/e0_recovery/comparison_modes, datasets/dataset_lineage/learning, resources/audit/cli. The UI remains HTML/JavaScript with generated TypeScript declarations. There is no React rewrite, external queue/vector database, DINOv2, DPO, online RL or renderer adaptation. Exact commands, model revisions and remaining training gates are in [workflow](source_connected_studio.md), [continuations](continuation.md), [model/training status](MODEL_AND_TRAINING_STATUS.md) and the [morning handoff](../MORNING_HANDOFF.md).
