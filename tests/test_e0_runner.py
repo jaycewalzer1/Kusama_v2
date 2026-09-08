@@ -128,9 +128,9 @@ def test_one_brief_all_actions_frozen_before_shared_seed_edits_and_exact_review_
     store = ReviewStore(root)
     collection = store.collections()[0]
     assert collection['comparison_count'] == 6 and collection['candidate_count'] == 7 and collection['vote_count'] == 0
-    pool = store.pool_assignment(collection['id'], 'fixture-reviewer')
+    pool = store.pool_assignment(collection['id'], 'reviewer-1')
     assert pool['complete'] is True and len(pool['candidates']) == 6
-    assert all(candidate['id'] != 'e0-d01-parent' for candidate in pool['candidates'])
+    assert all(candidate['id'] != 'e0-d01-parent' for candidate in pool['candidates'].values())
     assert protocol_status(protocol)['verified_edits'] == 6
 
 
@@ -166,7 +166,7 @@ def test_unresolved_output_excludes_pair_and_standard_pool(setup):
     store = ReviewStore(setup[0])
     collection = store.collections()[0]
     assert collection['comparison_count'] == 5
-    pool = store.pool_assignment(collection['id'], 'fixture-reviewer')
+    pool = store.pool_assignment(collection['id'], 'reviewer-1')
     assert pool['complete'] is False and pool['eligibility'] == 'incomplete_pool_excluded'
     execute(setup, brief_id='e0-d01')
     assert len(FixtureBackend.calls) == 8
@@ -221,3 +221,117 @@ def test_unavailable_resources_pause_with_saved_evidence_not_missing_feedback(se
     state = json.loads((setup[1] / 'episodes' / 'e0-d01' / 'state.json').read_text())
     assert state['parent'] and len(state['children']) == 1
     assert state['human_judgments'] == 0 and len(FixtureBackend.calls) == 2
+
+
+def test_aggregate_retry_quota_is_transactional_idempotent_and_not_reclaimed(setup):
+    import sqlite3
+    with SessionBudget(setup[0]) as budget:
+        request = {'instruction': 'fixture', 'seed': 23}
+        assert e0_runner._reserve_retry(budget, 'fixture-protocol', 'retry-1', request, limit=1)
+        assert e0_runner._reserve_retry(budget, 'fixture-protocol', 'retry-1', request, limit=1)
+        assert not e0_runner._reserve_retry(budget, 'fixture-protocol', 'retry-2', request, limit=1)
+        with pytest.raises(SpecMismatch):
+            e0_runner._reserve_retry(budget, 'fixture-protocol', 'retry-1', {**request, 'seed': 41}, limit=1)
+        with pytest.raises(sqlite3.IntegrityError, match='append-only'):
+            budget.db.execute('DELETE FROM e0_retry_reservations')
+
+
+def test_heldout_preflight_uses_seven_primaries_and_frozen_retry_reserve(setup):
+    root, protocol, index_path, _ = setup
+    index = FixtureIndex(index_path)
+    evidence = root / 'fixture-throughput-evidence.json'
+    write_json(evidence, {'fixture_only': True, 'test': 'admission arithmetic only'})
+    freeze_path = root / 'fixture-runtime-freeze.json'
+    with SessionBudget(root) as budget:
+        identity = e0_runner._runtime_identity(budget, index, protocol)
+        write_json(freeze_path, {**identity, 'protocol_id': json.loads((protocol/'manifest.json').read_text())['protocol_id'],
+            'development_completed': True, 'render_seconds': 10, 'reasoning_seconds': 5,
+            'model_load_seconds_per_brief': 20, 'retry_reserve': 25,
+            'throughput_evidence': [{'path': str(evidence), 'sha256': sha256(evidence)}]})
+        result = e0_runner.heldout_admission(protocol, index, budget, freeze_path)
+        assert result['required_primary_attempts'] == 56
+        assert result['remaining_retry_reserve'] == 25
+        assert result['required_renderer_attempts'] == 81
+        assert result['required_reasoning_tokens'] == 8*3*8192
+        assert result['status'] == 'admitted'
+        assert FixtureBackend.calls == []  # This tested arithmetic, no heldout execution.
+
+
+def test_partial_resource_pause_resumes_with_new_counted_model_load(setup, monkeypatch):
+    original = SessionBudget.reserve
+    paused = {'enabled': True}
+    def limited(self, key, kind, *args, **kwargs):
+        if paused['enabled'] and kind == 'renderer' and self.summary()['renderer_attempts'] >= 2:
+            from kusama.ledger import BudgetExceeded
+            raise BudgetExceeded('Fixture temporary allocation pause')
+        return original(self, key, kind, *args, **kwargs)
+    monkeypatch.setattr(SessionBudget, 'reserve', limited)
+    assert execute(setup, brief_id='e0-d01')['briefs'][0]['generation_status'] == 'queued_resource_limit'
+    paused['enabled'] = False
+    assert execute(setup, brief_id='e0-d01')['briefs'][0]['edit_count'] == 6
+    assert len(FixtureBackend.calls) == 7
+    assert FixtureBackend.loads == 3  # Parent, first edit stage, resumed edit stage.
+
+
+def test_duplicate_action_requests_stop_before_any_edit_without_retry(setup, monkeypatch):
+    original = e0_runner._multimodal_json
+    def duplicate(*args, **kwargs):
+        result = original(*args, **kwargs)
+        result['output']['instruction'] = 'Identical fixture request'
+        return result
+    monkeypatch.setattr(e0_runner, '_multimodal_json', duplicate)
+    result = execute(setup, brief_id='e0-d01')
+    assert result['briefs'][0]['generation_status'] == 'duplicate_actions'
+    assert len(FixtureBackend.calls) == 1 and len(setup[3]) == 3
+    assert not (setup[1] / 'episodes' / 'e0-d01' / 'frozen.json').exists()
+
+
+def test_all_protocol_reviewer_slots_match_exact_frozen_pair_and_pool_assignments(setup):
+    execute(setup, brief_id='e0-d01')
+    root, protocol, _, _ = setup
+    store = ReviewStore(root)
+    binding_path = next((protocol/'episodes'/'e0-d01').glob('review_assignment_binding-*.json'))
+    binding = json.loads(binding_path.read_text())
+    planned = {row['assignment_id']: row for row in e0_runner.verified_assignments(protocol) if row['brief_id'] == 'e0-d01'}
+    assert len(binding['bindings']) == 21
+    for row in binding['bindings']:
+        original = planned[row['protocol_assignment_id']]
+        assert row['actual_assignment_id'] == original['assignment_id']
+        if row['kind'] == 'parent_edit':
+            task = store.comparison(row['collection_id'], row['pair_id'], row['reviewer_slot'])
+            assert {position: candidate['id'] for position, candidate in task['candidates'].items()} == original['candidate_order']
+        else:
+            task = store.pool_assignment(row['collection_id'], row['reviewer_slot'])
+            assert [candidate['id'] for candidate in task['candidates'].values()] == original['candidate_ids']
+        assert task['assignment_id'] == original['assignment_id']
+
+
+def test_altered_frozen_plan_rejected_before_any_dispatch(setup):
+    path = setup[1]/'review_assignments.jsonl'
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    rows[0]['candidate_order'] = dict(zip(('B', 'A'), rows[0]['candidate_order'].values()))
+    path.write_text(''.join(json.dumps(row)+'\n' for row in rows))
+    with pytest.raises(ValueError, match='Frozen review assignments differ'):
+        execute(setup, brief_id='e0-d01')
+    assert FixtureBackend.calls == [] and FixtureDirector.loads == 0
+
+
+def test_runtime_freezes_prompt_schema_code_and_review_identity(setup):
+    root, protocol, index, _ = setup
+    with SessionBudget(root) as budget:
+        identity = e0_runner._runtime_identity(budget, FixtureIndex(index), protocol)
+    assert identity['execution_policy']['action_system'] == e0_runner.ACTION_SYSTEM
+    assert identity['execution_policy']['action_schema'] == e0_runner.ActionRequest.model_json_schema()
+    assert identity['execution_policy']['scoped_code_sha256']['e0_runner.py'] == sha256(Path(e0_runner.__file__))
+    assert identity['review_assignments_sha256'] == sha256(protocol/'review_assignments.jsonl')
+
+
+def test_interrupted_qwen_action_is_explicit_uncertain_and_resume_does_not_retry(setup, monkeypatch):
+    count = []
+    def interrupted(*args, **kwargs):
+        count.append(True)
+        raise KeyboardInterrupt('Fixture interrupted Qwen')
+    monkeypatch.setattr(e0_runner, '_multimodal_json', interrupted)
+    assert execute(setup, brief_id='e0-d01')['briefs'][0]['generation_status'] == 'uncertain_requires_reconciliation'
+    assert execute(setup, brief_id='e0-d01')['briefs'][0]['generation_status'] == 'uncertain_requires_reconciliation'
+    assert len(count) == 1 and len(FixtureBackend.calls) == 1

@@ -233,6 +233,78 @@ def test_workload_lock_prevents_model_loading_and_budget_exhaustion_stops_dispat
     assert not pool['complete'] and pool['eligibility'] == 'incomplete_pool_excluded'
 
 
+def test_session_completion_waits_for_raw_commit_and_crash_never_repeats_seed(setup, monkeypatch):
+    import kusama.execution as execution
+    from kusama.resources import SessionBudget
+    store, request, config = setup
+    store.prepare('study', request, config)
+    original = execution.save_image
+    def interrupted_save(image, path):
+        if path.name == 'attempt_0_raw.png':
+            with SessionBudget(store.root) as budget:
+                assert budget.summary()['calls'][0]['status'] == 'running'
+            raise KeyboardInterrupt('Returned pixels were not yet committed')
+        return original(image, path)
+    monkeypatch.setattr(execution, 'save_image', interrupted_save)
+    with pytest.raises(KeyboardInterrupt):
+        store.execute('study', Backend, resource_root=store.root)
+    audit = json.loads((store.root / 'continuations/study/session_accounting.json').read_text())
+    assert audit['rows'][0]['evidence_status'] == 'uncertain'
+    assert audit['rows'][0]['session_status_after'] == 'uncertain'
+    assert not audit['rows'][0]['raw_file_present']
+    monkeypatch.setattr(execution, 'save_image', original)
+    result = store.execute('study', Backend, resource_root=store.root)
+    assert [c['seed'] for c in Backend.calls] == [23, 41]
+    assert result['model_calls'] == 2 and len(result['outputs']) == 1
+    assert store.execute('study', forbidden, resource_root=store.root)['model_calls'] == 2
+
+
+def test_registered_raw_recovery_and_known_failure_reconcile_without_extra_charge(setup, monkeypatch):
+    import kusama.execution as execution
+    from kusama.resources import SessionBudget
+    store, request, config = setup
+    store.prepare('study', request, config)
+    finish = execution._finish
+    monkeypatch.setattr(execution, '_finish', lambda *a, **k: (_ for _ in ()).throw(OSError('After raw commit')))
+    first = store.execute('study', Backend, resource_root=store.root)
+    assert first['model_calls'] == 1
+    with SessionBudget(store.root) as budget:
+        assert budget.summary()['calls'][0]['status'] == 'completed'
+    monkeypatch.setattr(execution, '_finish', finish)
+    class KnownFailure(Backend):
+        def generate(self, *args, **kwargs):
+            super().generate(*args, **kwargs)
+            raise RuntimeError('Known failure after pipeline invocation')
+    result = store.execute('study', KnownFailure, resource_root=store.root)
+    assert len(result['outputs']) == 1 and result['model_calls'] == 2
+    assert [c['seed'] for c in Backend.calls] == [23, 41]
+    audit = store.reconcile_session('study')
+    assert [r['session_status_after'] for r in audit['rows']] == ['completed', 'failed']
+    assert audit['discrepancies'] == []
+    assert store.execute('study', forbidden, resource_root=store.root)['model_calls'] == 2
+
+
+def test_legacy_completed_without_raw_retains_history_and_discloses_discrepancy(setup):
+    from kusama.resources import SessionBudget
+    store, request, config = setup
+    store.prepare('study', request, config)
+    class LegacyPrematureCompletion(Backend):
+        def generate(self, *args, **kwargs):
+            super().generate(*args, **kwargs)
+            with SessionBudget(store.root) as budget:
+                budget.settle('continuation:study:seed:23', 'completed')
+            raise KeyboardInterrupt('Legacy process stopped after premature settlement')
+    with pytest.raises(KeyboardInterrupt):
+        store.execute('study', LegacyPrematureCompletion, resource_root=store.root)
+    audit = store.reconcile_session('study')
+    assert audit['rows'][0]['session_status_after'] == 'completed'
+    assert audit['rows'][0]['evidence_status'] == 'uncertain'
+    assert len(audit['discrepancies']) == 1 and audit['human_quality'] is None
+    result = store.execute('study', Backend, resource_root=store.root)
+    assert [c['seed'] for c in Backend.calls] == [23, 41] and len(result['outputs']) == 1
+    assert store.reconcile_session('study')['discrepancies'][0]['session_status_after'] == 'completed'
+
+
 def test_dashboard_neutral_assignment_and_gallery_reads(setup):
     from kusama.dashboard import create_app
     store, request, config = setup

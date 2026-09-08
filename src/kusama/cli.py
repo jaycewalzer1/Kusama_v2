@@ -69,7 +69,7 @@ host still requires explicit path reconciliation and cached model checkpoints.
         raise ValueError('Export requires an existing artifact root and a fresh output directory')
     files=[p for p in sorted(root.rglob('*')) if p.is_file() and not p.is_relative_to(output)
            and not any(part in ('exports','__pycache__') for part in p.relative_to(root).parts)
-           and not p.name.endswith(('-wal','-shm','.tmp','.lock')) and p.suffix!='.log']
+           and not p.name.endswith(('-wal','-shm','.tmp','.lock'))]
     output.mkdir(parents=True)
     database_dir=output/'database_snapshots';database_dir.mkdir()
     records=[]
@@ -92,7 +92,7 @@ host still requires explicit path reconciliation and cached model checkpoints.
                                 'bytes':source.stat().st_size,'original_path':str(path),'copy_kind':kind})
             manifest={'schema_version':1,'created_at':datetime.now(timezone.utc).isoformat(),'original_root':str(root),
                       'files':records,'path_map':{r['original_path']:r['archive_path'] for r in records},
-                      'models_included':False,'source_code_included':False,
+                      'models_included':False,'source_code_included':False,'execution_logs_included':True,
                       'resume_boundary':'Restore original root for exact local resume, or reconcile original absolute ledger/config paths explicitly on another host. Model caches and code are separate.',
                       'unchanged_original_manifests':True}
             zipped.writestr('export_manifest.json',json.dumps(manifest,indent=2))
@@ -107,7 +107,7 @@ host still requires explicit path reconciliation and cached model checkpoints.
 def main(argv=None):
     argv=list(sys.argv[1:] if argv is None else argv)
     if not argv or argv[0] in ('--help','-h'):
-        print('Kusama frozen source-connected studio\n\nCommands: doctor, ingest, index, inspire, run, resume, review, dataset, train, evaluate, export\nUse COMMAND --help for exact arguments. No command fabricates human feedback or training evidence.')
+        print('Kusama frozen source-connected studio\n\nCommands: doctor, ingest, index, inspire, run, resume, review, dataset, train, evaluate, e0, compare, finish, memory, verify, export\nUse COMMAND --help for exact arguments. No command fabricates human feedback or training evidence.')
         return 0
     command,args=argv[0],argv[1:]
     if command=='doctor':
@@ -139,6 +139,21 @@ def main(argv=None):
         return call(args)
     if command=='evaluate':
         from .evaluation import main as call
+        return call(args)
+    if command=='e0':
+        from .e0_runner import main as call
+        return call(args)
+    if command=='compare':
+        from .comparison_modes import main as call
+        return call(args)
+    if command=='finish':
+        from .finishing import main as call
+        return call(args)
+    if command=='memory':
+        from .memory import main as call
+        return call(args)
+    if command=='verify':
+        from .audit import main as call
         return call(args)
     if command=='export':
         p=argparse.ArgumentParser(prog='kusama export');p.add_argument('--root',type=Path,default=Path('artifacts/overnight'))

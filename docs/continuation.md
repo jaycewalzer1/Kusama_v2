@@ -15,6 +15,8 @@ Only `whole` and `masked` compile through this bridge. `whole` uses FLUX on the 
 
 Inputs are immutable in `jobs.sqlite3:continuation_specs`; the studio keeps authoritative project events and per-action ledgers in the same database. Readable projections live at `<root>/continuations/<id>/`: `inputs.json`, seed plans, `manifest.json`, `review_assignments.jsonl`, and `gallery.html`. The original image remains preserved in the studio project. Resume reuses committed raw bytes and does not repeat uncertain charged calls. A custom backend factory is for controlled substitutes or an independently budgeted worker; default real inference always uses the frozen shared `SessionBudget` root and exclusive model-workload lock. Session charges have stable keys `continuation:<id>:seed:<seed>`.
 
+Shared-session completion is settled after the controlled action commits hash-verified raw bytes. Known charged failures without raw bytes settle as failed; an interruption without committed evidence remains uncertain. Every status remains charged. `ContinuationStore(root).reconcile_session(id)` performs this accounting check without loading a model or dispatching inference, under the same exclusive locks. `session_accounting.json` records each seed's local evidence and session status. Legacy immutable completed/failed session records are never rewritten: a disagreement with current local evidence is disclosed in the sidecar. Neither a discrepancy nor reconciliation authorizes a replacement call.
+
 The tested module commands are:
 
 ```sh
@@ -40,3 +42,17 @@ New follow-up collections use stable, balanced A/B presentation and a statement-
 Pool selections use separate append-only `review_pool_votes` records with choices `candidate`, `none`, `unsure`, or `decline`. The complete-pool expectation is frozen during registration with `pool_expected_count`. Optional `pool_candidate_ids` selects a subset: E0 can register a parent plus six children for parent/edit comparisons while offering only the six children in the pool. Incomplete designated pools remain inspectable and pair-reviewable, but reject standard pool-selection submission. Pair votes, pool choices and explicit advancement remain separate events. No model observation or absent human answer becomes a human label.
 
 Verification covers exact parent and output hashes, unsupported controls, source IDs, seed grouping, idempotency, interrupted postprocessing, uncertain invocations, frozen session root, budget exhaustion, exclusive workload locking, balanced image order and situated-label mapping. These checks establish software behavior only. The evidence gate remains actual desired and unrelated visual changes followed by genuine independent human judgment of the whole work.
+
+## Observation-informed final intervention
+
+`kusama.finishing.finish(run_directory, root=Path('artifacts/overnight'), stage='all')` spends the one reserved finishing allocation after the original initial, ordinary and protected allocations have settled and their charged attempt counts match the frozen session configuration. The default allocation is 6 initial + 4 ordinary + 4 protected + 2 final seed attempts. Failed or uncertain charged calls remain in those counts. The continuation ID is fixed to `<run>_finish`; callers cannot choose a second finishing ID to expand this allocation.
+
+The declared operator policy selects the first protected continuation in the frozen proposal order and its first saved child. It is exploratory selection, with no human approval or quality ranking. The exact child must have a saved, attributed model or operator observation matching its ID and image hash. The proposal snapshots all such observations and admits the latest three, the saved whole-work inquiry and the same two connected source images. Later observations cannot enter this frozen input. Qwen has 512 output tokens and at most one explicitly charged schema repair to propose a local test through `episodes.LocalProposal`.
+
+The saved proposal prepares one masked continuation with two seeds. It preserves original inquiry, reference and connection records and hashes the actual developed child as its new parent. Each resulting image can then receive a separate deterministic 256-token Qwen observation of visible changes and preservation failures. These observations never become human quality, potential or readiness labels. All final-stage work uses the shared resource cap and model-workload lock.
+
+```sh
+.venv/bin/python -m kusama.finishing --run artifacts/overnight/runs/RUN_ID --artifacts artifacts/overnight --stage all
+```
+
+`RUN_ID` is illustrative. Stages `propose`, `execute` and `observe` are independently resumable. Preparation and raw proposal responses live in `<run>/finishing`; the observer uses `<run>/finishing_observation`. Separate authoritative jobs and append-only event exports retain failures. `<run>/finishing.json` links the lineage, action, observations and charged-attempt accounting. The original `continuations.json` and original observation plan remain unchanged. Fixture verification covers all 16 charged renderer attempts, bounded schema repair, late-observation exclusion, altered-parent rejection, and interruption with no repeated charged seed; it does not establish real visual or artistic success.

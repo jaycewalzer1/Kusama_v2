@@ -135,6 +135,44 @@ def _now():
     return datetime.now(timezone.utc).isoformat()
 
 
+def _frozen_assignments(rows, pairs, pool_ids):
+    """Validate a complete externally frozen schedule without inventing reviewers."""
+    if not isinstance(rows, list) or not rows:
+        raise ReviewError('Frozen assignments require a nonempty list')
+    pair_members = {pair['id']: set(pair['candidate_ids']) for pair in pairs}
+    normalized, seen, identifiers, reviewers = [], set(), set(), set()
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ReviewError('Frozen assignment must be an object')
+        kind = row.get('kind')
+        required = {'reviewer_slot', 'assignment_id', 'kind'} | ({'pair_id', 'candidate_order'} if kind == 'parent_edit' else {'candidate_ids'})
+        if kind not in ('parent_edit', 'six_candidate_or_none') or set(row) != required:
+            raise ReviewError('Unknown or missing frozen assignment fields')
+        reviewer = _text(row['reviewer_slot'], 200)
+        identifier = row['assignment_id']
+        if not isinstance(identifier, str) or not re.fullmatch(r'[a-f0-9]{64}', identifier) or identifier in identifiers:
+            raise ReviewError('Frozen assignment IDs require distinct lowercase SHA256 identifiers')
+        key = (reviewer, kind, row.get('pair_id'))
+        if key in seen:
+            raise ReviewError('Frozen reviewer slots must be unique per comparison or pool')
+        if kind == 'parent_edit':
+            order = row['candidate_order']
+            if (row['pair_id'] not in pair_members or not isinstance(order, dict) or set(order) != {'A', 'B'}
+                    or set(order.values()) != pair_members[row['pair_id']]):
+                raise ReviewError('Frozen A/B order must match the registered pair')
+        else:
+            order = row['candidate_ids']
+            if not isinstance(order, list) or len(order) != len(pool_ids) or set(order) != set(pool_ids):
+                raise ReviewError('Frozen pool order must contain each designated candidate exactly once')
+        normalized.append({**row, 'reviewer_slot': reviewer})
+        seen.add(key); identifiers.add(identifier); reviewers.add(reviewer)
+    expected = {(reviewer, 'parent_edit', pair) for reviewer in reviewers for pair in pair_members}
+    expected |= {(reviewer, 'six_candidate_or_none', None) for reviewer in reviewers}
+    if seen != expected:
+        raise ReviewError('Every frozen reviewer slot requires all registered pairs and one pool assignment')
+    return sorted(normalized, key=lambda row: (row['reviewer_slot'], row['kind'], row.get('pair_id', '')))
+
+
 class ReviewStore:
     def __init__(self, root: Path):
         self.root = Path(root).resolve()
@@ -194,12 +232,14 @@ class ReviewStore:
         return path
 
     def register_collection(self, collection_id, *, title, brief, candidates, pairs=None, presentation=None,
-                            pool_expected_count=None, pool_candidate_ids=None):
+                            pool_expected_count=None, pool_candidate_ids=None, frozen_assignments=None):
         """Freeze image hashes and a comparison plan; identical registration is idempotent.
 
         Candidate: id, path, label; optional direction_id, parent_candidate_id, studio.
         Pair: id, candidate_ids (exactly two distinct IDs), kind (alternatives/before_after).
         Omitted pairs produces all unordered pairs. No review is created here.
+        Frozen assignments name actual reviewer slots and fix exact A/B and pool orders;
+        when supplied, unassigned reviewers cannot open or submit these tasks.
         """
         _id(collection_id)
         if not 2 <= len(candidates) <= 100:
@@ -266,6 +306,9 @@ class ReviewStore:
             if type(pool_expected_count) is not int or not pool_count <= pool_expected_count <= 100:
                 raise ReviewError('Expected pool count must include every designated pool candidate and be at most 100')
             specification['pool_expected_count'] = pool_expected_count
+        if frozen_assignments is not None:
+            specification.update(schema_version=3, frozen_assignments=_frozen_assignments(
+                frozen_assignments, normalized_pairs, pool_candidate_ids if pool_candidate_ids is not None else ids))
         with closing(self._connect(write=True)) as db, db:
             db.execute('BEGIN IMMEDIATE')
             row = db.execute('SELECT specification FROM review_collections WHERE id=?', (collection_id,)).fetchone()
@@ -337,10 +380,19 @@ class ReviewStore:
             reverse = int(digest, 16) % 2
         if reverse:
             ids.reverse()
+        frozen = None
+        if 'frozen_assignments' in spec:
+            frozen = next((item for item in spec['frozen_assignments'] if item['reviewer_slot'] == reviewer
+                           and item['kind'] == 'parent_edit' and item['pair_id'] == pair_id), None)
+            if frozen is None:
+                raise ReviewNotFound('Reviewer slot is not assigned to this frozen comparison')
+            ids = [frozen['candidate_order'][position] for position in ('A', 'B')]
         candidates = {c['id']: c for c in spec['candidates']}
         for candidate_id in ids:
             self.candidate_path(collection_id, candidate_id)
         assignment_id = hashlib.sha256(_json([collection_id, pair_id, reviewer, ids, digest]).encode()).hexdigest()
+        if frozen is not None:
+            assignment_id = frozen['assignment_id']
         with closing(self._connect()) as db:
             reviews = [json.loads(row[0]) for row in db.execute(
                 'SELECT record FROM review_votes WHERE collection_id=? AND pair_id=? AND reviewer=? ORDER BY sequence',
@@ -426,13 +478,21 @@ class ReviewStore:
         eligible_ids = set(spec.get('pool_candidate_ids', [c['id'] for c in spec['candidates']]))
         candidates = sorted([c for c in spec['candidates'] if c['id'] in eligible_ids], key=lambda c: hashlib.sha256(
             _json([row['random_seed'], reviewer, c['id'], 'pool']).encode()).hexdigest())
+        frozen = None
+        if 'frozen_assignments' in spec:
+            frozen = next((item for item in spec['frozen_assignments'] if item['reviewer_slot'] == reviewer
+                           and item['kind'] == 'six_candidate_or_none'), None)
+            if frozen is None:
+                raise ReviewNotFound('Reviewer slot is not assigned to this frozen pool')
+            by_id = {candidate['id']: candidate for candidate in candidates}
+            candidates = [by_id[identifier] for identifier in frozen['candidate_ids']]
         for candidate in candidates:
             self.candidate_path(collection_id, candidate['id'])
         ordered = [{key: c[key] for key in ('id', 'sha256')} for c in candidates]
         expected = spec.get('pool_expected_count', len(candidates))
         complete = len(candidates) == expected
         return {'schema_version': 1, 'collection_id': collection_id, 'reviewer': reviewer,
-            'assignment_id': hashlib.sha256(_json([collection_id, reviewer, ordered, 'pool']).encode()).hexdigest(),
+            'assignment_id': frozen['assignment_id'] if frozen is not None else hashlib.sha256(_json([collection_id, reviewer, ordered, 'pool']).encode()).hexdigest(),
             'candidates': {str(i + 1): c for i, c in enumerate(candidates)},
             'presentation': spec.get('presentation'), 'expected_count': expected,
             'complete': complete, 'eligibility': 'eligible' if complete else 'incomplete_pool_excluded',

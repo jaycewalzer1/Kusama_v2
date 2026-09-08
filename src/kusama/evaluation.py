@@ -99,7 +99,24 @@ def prepare_protocol(output_dir: Path, config_path: Path = Path('configs/e0.yaml
                                   'reserve attempts, reasoning tokens, GPU time and wall time using measured throughput'],
                 'claims': 'Provisional assistant-authored holdouts; no generated images or collected judgments implied.'}
     immutable_json(root / 'manifest.json', manifest)
+    assignments = planned_assignments(manifest)
+    target = root / 'review_assignments.jsonl'
+    content = ''.join(json.dumps(row, sort_keys=True) + '\n' for row in assignments)
+    if target.exists() and target.read_text() != content:
+        raise ValueError('Immutable review assignments differ')
+    if not target.exists():
+        with target.open('x') as stream:
+            stream.write(content)
+    return manifest
+
+
+def planned_assignments(manifest):
+    """Reproduce the predeclared schedule from public protocol fields only."""
+    config = E0Config.model_validate(manifest['config'])
+    if config.protocol_id != manifest['protocol_id']:
+        raise ValueError('Protocol and configuration identity differ')
     assignments = []
+    briefs = manifest['briefs']
     for brief in briefs:
         bid = brief['brief_id']
         children = [f'{bid}-{condition}-s{seed}' for condition in CONDITIONS for seed in config.shared_edit_seeds]
@@ -119,14 +136,17 @@ def prepare_protocol(output_dir: Path, config_path: Path = Path('configs/e0.yaml
                                 'protocol_id': config.protocol_id, 'brief_id': bid, 'reviewer_slot': reviewer,
                                 'kind': 'six_candidate_or_none', 'candidate_ids': ordered,
                                 'allowed_none': True, 'status': 'awaiting_complete_pool_and_human_review'})
-    target = root / 'review_assignments.jsonl'
-    content = ''.join(json.dumps(row, sort_keys=True) + '\n' for row in assignments)
-    if target.exists() and target.read_text() != content:
-        raise ValueError('Immutable review assignments differ')
-    if not target.exists():
-        with target.open('x') as stream:
-            stream.write(content)
-    return manifest
+    return assignments
+
+
+def verified_assignments(root):
+    """Reject a changed, missing or incomplete review plan before execution."""
+    root = Path(root)
+    manifest = load_protocol(root)
+    actual = [json.loads(line) for line in (root / 'review_assignments.jsonl').read_text().splitlines()]
+    if actual != planned_assignments(manifest):
+        raise ValueError('Frozen review assignments differ from the predeclared protocol')
+    return actual
 
 
 def load_protocol(root):

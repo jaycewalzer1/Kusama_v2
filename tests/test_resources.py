@@ -73,6 +73,21 @@ def test_workload_lease_and_append_only_events(tmp_path,config):
             budget.db.execute('DELETE FROM resource_events')
 
 
+def test_measured_slow_edit_protects_handoff_even_without_caller_estimate(tmp_path, config, monkeypatch):
+    from kusama.costs import CostJournal
+    import kusama.resources as resources
+    with SessionBudget(tmp_path, config) as budget:
+        with CostJournal(tmp_path) as costs:
+            costs.start('fixture', 'slow-edit', 'black-forest-labs/FLUX.2-klein-base-4B', scope='backend_request')
+            costs.finish('fixture', 'slow-edit', runtime_seconds=600, outcome='succeeded')
+        assert budget.estimated_seconds('renderer') == 750
+        current = resources.now()
+        monkeypatch.setattr(resources, 'now', lambda: current + timedelta(hours=7, minutes=6))
+        with pytest.raises(BudgetExceeded, match='execution window'):
+            budget.reserve('would-run-through-handoff', 'renderer')
+        assert budget.summary()['renderer_attempts'] == 0
+
+
 @pytest.mark.parametrize('field,value',[('renderer_attempt_cap',161),('reasoning_token_cap',500001),('paid_api_usd_cap',1),('asset_byte_cap',3*1024**3),('schema_repair_cap',2),('active_gpu_workloads',2)])
 def test_hard_config_caps(field,value):
     with pytest.raises(ValidationError):OvernightConfig.model_validate({**load_config().model_dump(),field:value})

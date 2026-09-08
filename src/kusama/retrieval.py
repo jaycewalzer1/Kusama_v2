@@ -182,8 +182,9 @@ def source_edges(devices, claims, registered=()):
                     (device and edge.reference_id in device.get('reference_ids',[]))):
                 raise ValueError('Registered relationship evidence must resolve to its source')
         if edge.origin=='documented_source_statement' and not any(
-            claims_by_id.get(identifier,{}).get('status')=='documented_source_statement' for identifier in edge.evidence_ids):
-            raise ValueError('A documented-source edge requires an actual documented source claim')
+            claims_by_id.get(identifier,{}).get('status')=='documented_source_statement'
+            and claims_by_id[identifier].get('claim')==edge.statement for identifier in edge.evidence_ids):
+            raise ValueError('A documented-source edge requires the exact backing source claim; paraphrases remain interpretations')
         edges.append(edge.model_dump(mode='json'))
     if len({e['id'] for e in edges})!=len(edges):raise ValueError('Relationship edge IDs must be unique')
     return edges

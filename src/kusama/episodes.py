@@ -27,7 +27,8 @@ from .director import DirectorConfig, QwenDirector, _multimodal_json, MODEL_ID
 from .execution import restore_config
 from .experiment import Measurement, code_provenance, handle_termination
 from .inspiration import (Contract, ConnectionHypothesis, compile_connection, model_call,
-                          source_filename, validate_connection, _save_evidence)
+                          source_filename, validate_connection, _save_evidence,
+                          require_charged_invocation, load_metadata_sidecar, preflight_model_load)
 from .ledger import Ledger, SpecMismatch
 from .resources import SessionBudget, canonical
 from .reviews import ReviewStore
@@ -38,23 +39,20 @@ def _connections(ledger, run_id, directory, spec):
     connections = []
     for i, pair in enumerate(spec['source_pairs']):
         identifier = f'c{i + 1:02d}'
+        sidecar = load_metadata_sidecar(ledger, run_id, directory, spec, identifier,
+                                       [documents[x] for x in pair], connections)
+        if sidecar is not None:
+            connections.append(sidecar['output'])
+            continue
         result = None
         for suffix, attempt_index in [('', 2*i), ('_repair', 2*i+1)]:
             path = directory / f'proposal_{identifier}{suffix}.json'
             if path.exists() and ledger.get_attempt(run_id, attempt_index):
+                require_charged_invocation(ledger, run_id, attempt_index)
                 ledger.register_artifact(run_id, path.name, attempt_index=attempt_index, kind='response')
                 result = json.loads(path.read_text())
         if result and result.get('output') and not result.get('parse_error') and not result.get('inference_error'):
             connections.append(validate_connection(result['output'], identifier, [documents[x] for x in pair], connections))
-        else:
-            sidecar_path=directory/f'{identifier}_metadata_revalidation.json'
-            if sidecar_path.exists():
-                sidecar=json.loads(sidecar_path.read_text())
-                ledger.register_artifact(run_id,sidecar_path.name,kind='snapshot')
-                original=(directory/sidecar['source_response']).resolve()
-                if not original.is_relative_to(directory) or sha256(original)!=sidecar['source_sha256']:
-                    raise ValueError('Metadata sidecar source binding changed')
-                connections.append(validate_connection(sidecar['output'],identifier,[documents[x] for x in pair],connections))
     return connections
 
 
@@ -128,6 +126,8 @@ def render(run_directory, *, root=Path('artifacts/overnight'), backend_factory=F
     job_directory = directory / 'generation'
     with SessionBudget(root) as budget, Ledger(root / 'jobs.sqlite3') as ledger, ledger.lock(job_id), handle_termination():
         source_job = ledger.get_job(run_id)
+        if Path(source_job['directory']) != directory:
+            raise SpecMismatch('Run directory differs from registered inspiration job')
         ledger.verify_artifacts(run_id)
         connections = _connections(ledger, run_id, directory, source_job['spec'])
         if len(connections) < 6:
@@ -178,6 +178,7 @@ def render(run_directory, *, root=Path('artifacts/overnight'), backend_factory=F
                         attempt = ledger.get_attempt(job_id, i)
                         key = action['idempotency_key']
                         if path.exists() and attempt is not None:
+                            require_charged_invocation(ledger, job_id, i, budget, key, 'renderer')
                             record = image_record(path, image_id=action['id'], parent=None, seed=action['seed'], origin='frozen_flux_generation')
                             if metadata_path.exists() and json.loads(metadata_path.read_text())['sha256'] != record['sha256']:
                                 raise ValueError('Saved output hash differs from generated record')
@@ -201,6 +202,7 @@ def render(run_directory, *, root=Path('artifacts/overnight'), backend_factory=F
                         if path.exists():
                             raise ValueError('Image without charged invocation is not model execution evidence')
                         if not prepared:
+                            preflight_model_load(budget, 'renderer', estimated_seconds=180)
                             with tracked_local_call(root, job_id, 'flux-load-' + session_id, 'black-forest-labs/FLUX.2-klein-base-4B', scope='model_load') as cost:
                                 with Measurement(config.device) as measure:
                                     state['model'] = backend.prepare()
@@ -361,6 +363,7 @@ def propose_revisions(run_directory, *, root=Path('artifacts/overnight'), count=
                         'task':'Test a distinct local relationship in this actual whole composition, with a visible intervention that may falsify the proposed effect.'}
                     images=[(candidate['id'],parent)]+[(d['id'],directory/'sources'/source_filename(d)) for d in docs]
                     if ledger.get_attempt(job_id,i*2) is None and not prepared:
+                        preflight_model_load(budget, 'reasoning', estimated_seconds=90)
                         with tracked_local_call(root,job_id,'qwen-load-'+uuid.uuid4().hex[:12],MODEL_ID,scope='model_load'):
                             director.prepare()
                         prepared=True
@@ -369,7 +372,8 @@ def propose_revisions(run_directory, *, root=Path('artifacts/overnight'), count=
                             lambda v:LocalProposal.model_validate(v).model_dump(),sampling={'temperature':.8,'top_p':.95},
                             total_token_limit=8192,generation_seed=23+i),device=cfg.device)
                     if result.get('parse_error') and not result.get('inference_error') and spec['config']['schema_repair_cap']:
-                        if not prepared:
+                        if not prepared and ledger.get_attempt(job_id,i*2+1) is None:
+                            preflight_model_load(budget, 'reasoning', estimated_seconds=90)
                             with tracked_local_call(root,job_id,f'qwen-repair-load-{i}-'+uuid.uuid4().hex[:12],MODEL_ID,scope='model_load'):director.prepare()
                             prepared=True
                         repair={**request,'schema_error':result['parse_error'],'prior_response':result.get('raw_response'),
@@ -468,6 +472,7 @@ def observe(run_directory, *,root=Path('artifacts/overnight'),director_factory=Q
                     for member in ('parent','child'):
                         if sha256(Path(pair[member]['path']))!=pair[member]['sha256']:raise ValueError('Observation artifact changed')
                     if ledger.get_attempt(job_id,i) is None and not prepared:
+                        preflight_model_load(budget, 'reasoning', estimated_seconds=90)
                         with tracked_local_call(root,job_id,'observer-load-'+uuid.uuid4().hex[:12],MODEL_ID,scope='model_load'):director.prepare()
                         prepared=True
                     request={'requested_change':pair['requested'],'image_order':['parent','child'],

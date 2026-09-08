@@ -321,16 +321,16 @@ class ContinuationStore:
                             key = spec['invocation_keys'][str(seed)]
                             if not budget.reserve(key, 'renderer'):
                                 raise LedgerError('Existing session reservation cannot authorize repeat inference: ' + key)
-                            try:
-                                result = generate(prompt, seed, *args, **kwargs)
-                            except BaseException:
-                                budget.settle(key, 'uncertain')
-                                raise
-                            budget.settle(key, 'completed')
-                            return result
+                            # Returning pixels is not a durable result. The
+                            # controlled ledger commits raw bytes before the
+                            # session reservation is reconciled below.
+                            return generate(prompt, seed, *args, **kwargs)
                         backend.generate = budgeted_generate
                         return backend
-                    studio.run(spec['project_id'], spec['episode_id'], budgeted_factory)
+                    try:
+                        studio.run(spec['project_id'], spec['episode_id'], budgeted_factory)
+                    finally:
+                        self._reconcile_session(studio, spec, budget)
             else:
                 # Custom factories are controlled substitutes or already budgeted
                 # workers. Production CLI always uses the session wrapper above.
@@ -342,6 +342,65 @@ class ContinuationStore:
         write_json(directory / 'manifest.json', manifest)
         self.export_gallery(continuation_id)
         return manifest
+
+    def _reconcile_session(self, studio, spec, budget):
+        """Reconcile charges from committed action evidence, never authorize a retry."""
+        project = studio.get(spec['project_id'])
+        session = {row['key']: row for row in budget.summary()['calls']}
+        rows = []
+        for action_id in project['episodes'][spec['episode_id']]['action_ids']:
+            action = project['actions'][action_id]
+            job = studio.ledger.get_job(action['job_id'])
+            seed = job['spec']['plan']['seed']
+            key = spec['invocation_keys'][str(seed)]
+            attempt = studio.ledger.get_attempt(action['job_id'], 0)
+            registered = next((r for r in studio.ledger.artifacts(action['job_id'])
+                               if r['path'] == 'attempt_0_raw.png' and r['kind'] == 'raw_model_output'), None)
+            raw_path = Path(job['directory']) / 'attempt_0_raw.png'
+            valid_raw = bool(registered and raw_path.is_file() and sha256(raw_path) == registered['sha256'])
+            charged = bool(attempt and attempt['reserved'])
+            if charged and valid_raw:
+                evidence_status, reason = 'completed', 'Hash-verified raw bytes are registered in the charged action ledger'
+            elif charged and attempt['status'] == 'failed' and not raw_path.exists():
+                evidence_status, reason = 'failed', 'The charged action recorded a known failure without raw bytes'
+            elif key in session or charged:
+                evidence_status, reason = 'uncertain', 'Charge exists without committed raw evidence or a known terminal failure; never repeat automatically'
+            else:
+                evidence_status, reason = 'not_reserved', 'No session or local inference charge exists'
+            current = session.get(key)
+            before = current['status'] if current else None
+            discrepancy = None
+            if current:
+                if before in ('completed', 'failed'):
+                    if before != evidence_status:
+                        discrepancy = 'Immutable settled session history differs from current local evidence; retain both and reconcile explicitly'
+                elif before != evidence_status:
+                    budget.settle(key, evidence_status)
+            elif charged:
+                discrepancy = 'The local charge has no shared-session reservation; no reservation is fabricated retroactively'
+            after = (budget.summary()['calls'] if current else [])
+            after_status = next((r['status'] for r in after if r['key'] == key), None)
+            rows.append({'key': key, 'seed': seed, 'action_id': action_id, 'job_id': action['job_id'],
+                'local_attempt_status': attempt['status'] if attempt else None, 'local_charged': charged,
+                'registered_raw_sha256': registered['sha256'] if registered else None,
+                'raw_hash_verified': valid_raw, 'raw_file_present': raw_path.exists(),
+                'session_status_before': before, 'session_status_after': after_status,
+                'evidence_status': evidence_status, 'reason': reason, 'discrepancy': discrepancy})
+        report = {'schema_version': 1, 'continuation_id': spec['id'], 'origin': 'execution_accounting_audit',
+            'audited_at': now(), 'rows': rows, 'discrepancies': [r for r in rows if r['discrepancy']],
+            'policy': 'All reservations remain charged. Audit does not authorize inference or rewrite settled session history.',
+            'human_quality': None}
+        write_json(self.root / 'continuations' / spec['id'] / 'session_accounting.json', report)
+        return report
+
+    def reconcile_session(self, continuation_id):
+        """Reconcile a stopped worker without loading a model or dispatching work."""
+        from .resources import SessionBudget
+        spec = self._spec(continuation_id)
+        resource_root = Path(spec.get('resource_root', self.root)).resolve()
+        with Studio(self.root) as studio, studio.ledger.lock('continuation_' + continuation_id):
+            with SessionBudget(resource_root) as budget, budget.workload_lock():
+                return self._reconcile_session(studio, spec, budget)
 
     def _register_followup(self, project, spec):
         if project['episodes'][spec['episode_id']]['status'] in ('queued', 'running', 'interrupted'):

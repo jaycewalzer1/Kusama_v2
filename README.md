@@ -4,7 +4,7 @@ Start with [project direction, current evidence and next milestones](docs/projec
 
 This Python 3.11 project connects frozen `Qwen/Qwen3-VL-8B-Instruct` direction with frozen `black-forest-labs/FLUX.2-klein-base-4B` generation and editing. It saves reference inputs, proposals, images, lineage, resource usage and monetary accounting. Humans separately review finished quality and development potential and explicitly choose what advances. No training occurs.
 
-The [reference-informed workflow](docs/reference_loop.md) accepts a brief and a curated packet, proposes up to twelve directions, generates two realizations of each, and optionally records Qwen's visual observations and revision proposals. The [reference library](references/README.md) starts with Wangechi Mutu's process and a Maya memory packet for the first brief. Reference discovery and cultural research are currently curated by the operator; the app consumes and snapshots the selected packet.
+The [source-connected studio](docs/source_connected_studio.md) adds bounded official collection ingestion, whole/detail retrieval, source-grounded combinations, realized branching, local revisions and follow-up review. Use the `kusama` command for this workflow. The earlier [reference-informed workflow](docs/reference_loop.md) still accepts curated packets and generates sibling realizations. The [reference library](references/README.md) preserves its initial Mutu process and Maya memory packets. Automated collection retrieval remains bounded; it is not comprehensive cultural research or learned reference selection.
 
 The original three-call image/edit experiment remains available below. Saved technical success is separate from artistic success, which requires looking at the images and reviewing them.
 

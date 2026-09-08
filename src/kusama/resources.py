@@ -155,6 +155,26 @@ class SessionBudget:
                 'unsettled': [r for r in rows if r['status'] in ('running', 'uncertain')],
                 'calls': rows, 'paid_api_usd': 0, 'electricity_and_hardware_usd': None}
 
+    def estimated_seconds(self, kind, supplied=0):
+        """Use measured slow calls to protect handoff time, including edit latency.
+
+        This changes admission only, never a frozen renderer or prompt setting.
+        Model loads are excluded; a separate workload-level preflight may also
+        reserve them. The caller's more conservative estimate always wins.
+        """
+        estimate = max(float(supplied), 300 if kind == 'renderer' else 90)
+        path = self.root / 'costs.sqlite3'
+        if path.exists():
+            from .costs import CostJournal
+            with CostJournal(self.root, read_only=True) as costs:
+                for record in costs.summary()['records']:
+                    start, finish = record['start'], record['finish']
+                    model = start.get('model', '').casefold()
+                    relevant = 'flux' in model if kind == 'renderer' else 'qwen' in model
+                    if relevant and start.get('scope') in ('inference', 'backend_request') and finish:
+                        estimate = max(estimate, 1.25 * (finish.get('runtime_seconds') or 0))
+        return estimate
+
     def reserve(self, key, kind, max_tokens=0, estimated_seconds=0):
         if not isinstance(key, str) or not key.strip() or len(key) > 300:
             raise ValueError('A bounded stable invocation key is required')
@@ -166,6 +186,7 @@ class SessionBudget:
             raise ValueError('Reasoning must reserve tokens; renderer must not')
         if estimated_seconds < 0:
             raise ValueError('Estimate must be nonnegative')
+        effective_seconds = self.estimated_seconds(kind, estimated_seconds)
         with self.transaction():
             old = self.db.execute('SELECT * FROM calls WHERE key=?', (key,)).fetchone()
             if old:
@@ -173,7 +194,7 @@ class SessionBudget:
                     raise SpecMismatch('Reservation key reused with different resources')
                 return False
             dispatch_deadline = datetime.fromisoformat(self.deadline) - timedelta(minutes=self.config.handoff_reserve_minutes)
-            if now() + timedelta(seconds=estimated_seconds) >= dispatch_deadline:
+            if now() + timedelta(seconds=effective_seconds) >= dispatch_deadline:
                 raise BudgetExceeded('Session execution window exhausted; handoff reserve retained')
             disk = shutil.disk_usage(self.root)
             if disk.free < max(self.config.minimum_free_bytes, disk.total * self.config.minimum_free_fraction):
@@ -185,7 +206,9 @@ class SessionBudget:
                 raise BudgetExceeded('Session reasoning token cap exhausted')
             stamp = now().isoformat()
             self.db.execute('INSERT INTO calls VALUES(?,?,?, ?,NULL,?,?)', (key, kind, 'running', max_tokens, stamp, stamp))
-            self._event('reserved', {'key': key, 'kind': kind, 'max_tokens': max_tokens})
+            self._event('reserved', {'key': key, 'kind': kind, 'max_tokens': max_tokens,
+                                     'estimated_seconds': effective_seconds,
+                                     'time_policy': 'max(caller, conservative floor, 1.25 * measured slowest matching inference)'})
         self.export()
         return True
 

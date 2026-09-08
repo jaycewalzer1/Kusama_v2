@@ -236,3 +236,50 @@ def test_pool_subset_excludes_parent_without_changing_pairwise_members(tmp_path)
     store.register_collection('e0partial', title='Partial', brief='Fixture', candidates=candidates[:-1], pairs=pairs[:-1],
                               pool_candidate_ids=children[:-1], pool_expected_count=6)
     assert store.pool_assignment('e0partial', 'Reviewer')['eligibility'] == 'incomplete_pool_excluded'
+
+
+def frozen_plan():
+    return [{'reviewer_slot': 'reviewer-1', 'kind': 'parent_edit', 'pair_id': 'fixed-pair',
+             'assignment_id': 'a'*64, 'candidate_order': {'A': 'edit', 'B': 'parent'}},
+            {'reviewer_slot': 'reviewer-1', 'kind': 'six_candidate_or_none', 'assignment_id': 'b'*64,
+             'candidate_ids': ['edit', 'parent']}]
+
+
+def register_frozen(store, root, rows):
+    return store.register_collection('frozen', title='Frozen fixture', brief='Fixture only',
+        candidates=[{'id': 'parent', 'path': root/'parent.png'}, {'id': 'edit', 'path': root/'edit.png'}],
+        pairs=[{'id': 'fixed-pair', 'candidate_ids': ['parent', 'edit']}], frozen_assignments=rows)
+
+
+def test_frozen_assignment_exact_ids_orders_and_reviewer_contract(tmp_path):
+    store = collection(tmp_path)
+    register_frozen(store, tmp_path, frozen_plan())
+    register_frozen(store, tmp_path, list(reversed(frozen_plan())))  # Order-independent registration.
+    pair = store.comparison('frozen', 'fixed-pair', 'reviewer-1')
+    assert pair['assignment_id'] == 'a'*64
+    assert {key: row['id'] for key, row in pair['candidates'].items()} == {'A': 'edit', 'B': 'parent'}
+    pool = store.pool_assignment('frozen', 'reviewer-1')
+    assert pool['assignment_id'] == 'b'*64
+    assert [row['id'] for row in pool['candidates'].values()] == ['edit', 'parent']
+    vote = store.submit_vote('frozen', 'fixed-pair', vote_for(pair, 'fixedvote'))
+    assert vote['finished_quality']['preferred_candidate_id'] == 'edit'
+    with pytest.raises(ReviewNotFound, match='not assigned'):
+        store.comparison('frozen', 'fixed-pair', 'unassigned')
+    with pytest.raises(ReviewNotFound, match='not assigned'):
+        store.pool_assignment('frozen', 'unassigned')
+    assert store.comparison('frozen', 'fixed-pair', 'reviewer-1')['assignment_id'] == pair['assignment_id']
+
+
+@pytest.mark.parametrize('corruption', ['duplicate_slot', 'wrong_pair', 'wrong_order', 'duplicate_id', 'wrong_pool', 'missing_pool', 'unknown_fields'])
+def test_invalid_frozen_schedule_rejected_before_collection_write(tmp_path, corruption):
+    store = collection(tmp_path)
+    rows = frozen_plan()
+    if corruption == 'duplicate_slot': rows.append({**rows[0], 'assignment_id': 'c'*64})
+    elif corruption == 'wrong_pair': rows[0]['pair_id'] = 'absent'
+    elif corruption == 'wrong_order': rows[0]['candidate_order'] = {'A': 'parent', 'B': 'absent'}
+    elif corruption == 'duplicate_id': rows[1]['assignment_id'] = rows[0]['assignment_id']
+    elif corruption == 'wrong_pool': rows[1]['candidate_ids'] = ['parent', 'parent']
+    elif corruption == 'missing_pool': rows.pop()
+    else: rows[0]['invented'] = True
+    with pytest.raises(ReviewError): register_frozen(store, tmp_path, rows)
+    assert [row['id'] for row in store.collections()] == ['experiment']
