@@ -354,7 +354,7 @@ def _run_job(plan_path=None, config=None, backend_factory=FluxBackend, call_guar
                             attempt['pipeline_invoked'] = True
                             persist()
                         backend.on_inference_start = reserve_call
-                        measurement = Measurement(backend.execution_settings['device']) if backend_factory is FluxBackend else None
+                        measurement = Measurement(backend.execution_settings['device']) if isinstance(backend, FluxBackend) else None
                         phase = 'inference'
                         try:
                             with tracked_local_call(ledger.path.parent, job_id, f'attempt:{index}', MODEL_ID,

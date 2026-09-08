@@ -5,7 +5,7 @@ from PIL import Image
 import pytest
 from pydantic import ValidationError
 
-from kusama.reviews import ReviewConflict, ReviewError, ReviewStore
+from kusama.reviews import ReviewConflict, ReviewError, ReviewNotFound, ReviewStore
 
 
 def collection(root, name='experiment'):
@@ -147,3 +147,92 @@ def test_simultaneous_retry_saves_one_review(tmp_path):
         records = list(executor.map(lambda _: ReviewStore(tmp_path).submit_vote('experiment', 'before-after', vote), range(2)))
     assert records[0] == records[1]
     assert len(store.history('experiment')['votes']) == 1
+
+
+def test_situated_review_labels_exposure_and_nulls_keep_order(tmp_path):
+    store = collection(tmp_path)
+    comparison = store.comparison('experiment', 'before-after', 'Jayce')
+    vote = vote_for(comparison)
+    vote.update(open_reading='Two kinds of enclosure', felt_response='Uncertain',
+        readiness={'A': 'Y', 'B': None}, development_willingness={'A': 'N', 'B': 'U'},
+        exposure={'prior_exposure': 'images', 'context_revealed': True,
+                  'duration_seconds': 25.4, 'duration_source': 'browser_elapsed'})
+    vote['finished_quality'] = {'choice': 'incomparable'}
+    vote['development_potential'] = {'choice': None}
+    result = store.submit_vote('experiment', 'before-after', vote)
+    assert result['finished_quality']['choice'] == 'incomparable'
+    assert result['finished_quality']['preferred_candidate_id'] is None
+    assert result['development_potential']['choice'] is None
+    assert result['readiness']['A']['candidate_id'] == comparison['candidates']['A']['id']
+    assert result['readiness']['B']['response'] is None
+    assert result['development_willingness']['B']['image_sha256'] == comparison['candidates']['B']['sha256']
+    assert result['exposure']['duration_seconds'] == 25.4
+    assert store.submit_vote('experiment', 'before-after', vote) == result
+    assert store.history('experiment')['advancements'] == []
+
+
+def test_new_balanced_protocol_does_not_change_existing_assignments(tmp_path):
+    store = collection(tmp_path)
+    before = store.comparison('experiment', 'before-after', 'Jayce')
+    store.register_collection('protocol', title='Protocol', brief='Do not show this brief in statement-free condition',
+        candidates=[
+            {'id': 'a', 'path': tmp_path / 'parent.png'}, {'id': 'b', 'path': tmp_path / 'edit.png'}],
+        presentation={'condition': 'statement_free'})
+    assert store.comparison('experiment', 'before-after', 'Jayce') == before
+    assert store.comparison('protocol', 'pair-001', 'Jayce')['presentation']['condition'] == 'statement_free'
+    with pytest.raises(ValidationError, match='attributed author'):
+        store.register_collection('badcontext', title='Bad', brief='Brief', candidates=[
+            {'id': 'a', 'path': tmp_path / 'parent.png'}, {'id': 'b', 'path': tmp_path / 'edit.png'}],
+            presentation={'condition': 'supplied_context', 'supplied_context': 'A statement'})
+
+
+def test_pool_none_is_a_real_separate_immutable_choice(tmp_path):
+    store = collection(tmp_path)
+    assignment = store.pool_assignment('experiment', 'Viewer')
+    request = {'reviewer': 'Viewer', 'assignment_id': assignment['assignment_id'],
+               'submission_id': 'pool-1', 'choice': 'none'}
+    assert assignment['human_label'] is None
+    result = store.submit_pool_choice('experiment', request)
+    assert result['type'] == 'human_pool_selection' and result['choice'] == 'none'
+    assert result['selected_image_sha256'] is None
+    assert store.submit_pool_choice('experiment', request) == result
+    assert store.history('experiment') == {'votes': [], 'advancements': []}
+    assert store.pool_history('experiment') == [result]
+    candidate = assignment['candidates']['1']
+    chosen = store.submit_pool_choice('experiment', request | {'submission_id': 'pool-2', 'choice': 'candidate', 'candidate_id': candidate['id']})
+    assert chosen['selected_image_sha256'] == candidate['sha256']
+    with sqlite3.connect(store.database) as db, pytest.raises(sqlite3.IntegrityError, match='append-only'):
+        db.execute('DELETE FROM review_pool_votes')
+
+
+def test_incomplete_pool_is_explicitly_excluded(tmp_path):
+    store = collection(tmp_path)
+    store.register_collection('partial', title='Partial', brief='Brief', candidates=[
+        {'id': 'a', 'path': tmp_path / 'parent.png'}, {'id': 'b', 'path': tmp_path / 'edit.png'}], pool_expected_count=3)
+    assignment = store.pool_assignment('partial', 'Viewer')
+    assert assignment['eligibility'] == 'incomplete_pool_excluded'
+    with pytest.raises(ReviewConflict, match='Incomplete'):
+        store.submit_pool_choice('partial', {'reviewer': 'Viewer', 'assignment_id': assignment['assignment_id'],
+            'submission_id': 'none-for-partial', 'choice': 'none'})
+    assert store.pool_history('partial') == []
+
+
+def test_pool_subset_excludes_parent_without_changing_pairwise_members(tmp_path):
+    store = collection(tmp_path)
+    candidates = [{'id': 'parent', 'path': tmp_path / 'parent.png'}]
+    for i in range(6):
+        candidates.append({'id': f'child{i}', 'path': tmp_path / 'edit.png', 'parent_candidate_id': 'parent'})
+    children = [c['id'] for c in candidates[1:]]
+    pairs = [{'id': f'pair{i}', 'candidate_ids': ['parent', child], 'kind': 'before_after'} for i, child in enumerate(children)]
+    store.register_collection('e0', title='E0 pool mechanics', brief='Fixture', candidates=candidates, pairs=pairs,
+                              pool_candidate_ids=children, pool_expected_count=6)
+    assignment = store.pool_assignment('e0', 'Reviewer')
+    assert assignment['complete'] and len(assignment['candidates']) == 6
+    assert 'parent' not in {c['id'] for c in assignment['candidates'].values()}
+    assert 'parent' in {c['id'] for c in store.comparison('e0', 'pair0', 'Reviewer')['candidates'].values()}
+    with pytest.raises(ReviewNotFound):
+        store.submit_pool_choice('e0', {'reviewer': 'Reviewer', 'assignment_id': assignment['assignment_id'],
+            'submission_id': 'badparent', 'choice': 'candidate', 'candidate_id': 'parent'})
+    store.register_collection('e0partial', title='Partial', brief='Fixture', candidates=candidates[:-1], pairs=pairs[:-1],
+                              pool_candidate_ids=children[:-1], pool_expected_count=6)
+    assert store.pool_assignment('e0partial', 'Reviewer')['eligibility'] == 'incomplete_pool_excluded'

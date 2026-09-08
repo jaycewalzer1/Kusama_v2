@@ -94,6 +94,53 @@ def test_loopback_requests_need_no_login_but_cross_origin_is_blocked(tmp_path):
         assert app.get('/api/runs', headers={'Sec-Fetch-Site': 'cross-site'}).status_code == 403
 
 
+def test_source_and_region_routes_verify_registered_bytes_and_rights(tmp_path):
+    import sqlite3
+    from kusama.artifacts import sha256
+    root = tmp_path / 'corpus'
+    root.mkdir()
+    path = root / 'source.jpg'
+    Image.new('RGB', (64, 64), 'green').save(path)
+    asset = {'path': path.name, 'sha256': sha256(path)}
+    rights = {'image_display': {'status': 'allowed'}, 'derivatives': {'status': 'allowed'}}
+    reference = {'id': 'source', 'title': 'A source', 'view': asset, 'rights': rights}
+    region = {'id': 'region', 'reference_id': 'source', 'crop': asset, 'rights': rights}
+    with sqlite3.connect(root / 'corpus.sqlite3') as db:
+        for table in ('references_v1', 'regions_v1', 'claims_v1'):
+            db.execute(f'CREATE TABLE {table}(id TEXT PRIMARY KEY,payload TEXT)')
+        db.execute('INSERT INTO references_v1 VALUES (?,?)', ('source', json.dumps(reference)))
+        db.execute('INSERT INTO regions_v1 VALUES (?,?)', ('region', json.dumps(region)))
+    with client(tmp_path) as app:
+        assert app.get('/api/sources').json()['sources'][0]['id'] == 'source'
+        assert app.get('/api/sources/source').json()['regions'][0]['id'] == 'region'
+        assert app.get('/api/sources/source/image').content == path.read_bytes()
+        assert app.get('/api/source-regions/region/image').status_code == 200
+        path.write_bytes(b'changed')
+        assert app.get('/api/source-regions/region/image').status_code == 409
+        assert app.get('/api/sources/missing').status_code == 404
+    with sqlite3.connect(root / 'corpus.sqlite3') as db:
+        reference['rights']['image_display']['status'] = 'excluded'
+        db.execute('UPDATE references_v1 SET payload=? WHERE id=?', (json.dumps(reference), 'source'))
+    with client(tmp_path) as app:
+        assert app.get('/api/sources/source/image').status_code == 403
+
+
+def test_inspiration_images_are_registered_and_hash_checked(tmp_path):
+    from kusama.artifacts import sha256
+    directory = tmp_path / 'runs' / 'episode'
+    directory.mkdir(parents=True)
+    image = directory / 'image.png'
+    Image.new('RGB', (64, 64), 'red').save(image)
+    (directory / 'manifest.json').write_text(json.dumps({'kind': 'connection_inspiration', 'run_id': 'episode',
+        'status': 'needs_review', 'images': [{'id': 'one', 'path': image.name, 'sha256': sha256(image)}]}))
+    with client(tmp_path) as app:
+        assert app.get('/api/inspirations').json()['inspirations'][0]['directory_id'] == 'episode'
+        assert app.get('/api/inspirations/episode/images/one').content == image.read_bytes()
+        assert app.get('/api/inspirations/episode/images/two').status_code == 404
+        image.write_bytes(b'changed')
+        assert app.get('/api/inspirations/episode/images/one').status_code == 409
+
+
 def test_review_api_requires_local_json_and_preserves_independent_answers(tmp_path):
     from kusama.reviews import ReviewStore
     directory = saved_run(tmp_path)

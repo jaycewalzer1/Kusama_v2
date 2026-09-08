@@ -30,16 +30,27 @@
         <p id="comparison-kind" class="muted"></p>
         <div id="review-images"></div>
         <form id="vote-form">
+          <label class="review-notes">What do you see or read in these images? (optional, before the judgments)<textarea name="open_reading" rows="2" maxlength="8000"></textarea></label>
+          <label class="review-notes">What, if anything, do you feel? (optional)<textarea name="felt_response" rows="2" maxlength="8000"></textarea></label>
           <div class="judgment-grid">
             <fieldset><legend>Which is better finished work?</legend><p>Judge the image as it stands: coherence, resolution, and execution.</p>
-              <div class="choices"><label><input type="radio" name="finished_quality" value="A" required>A</label><label><input type="radio" name="finished_quality" value="B">B</label><label><input type="radio" name="finished_quality" value="tie">Tie</label><label><input type="radio" name="finished_quality" value="unsure">Unsure</label></div>
+              <div class="choices"><label><input type="radio" name="finished_quality" value="A" required>A</label><label><input type="radio" name="finished_quality" value="B">B</label><label><input type="radio" name="finished_quality" value="tie">Tie</label><label><input type="radio" name="finished_quality" value="unsure">Unsure</label><label><input type="radio" name="finished_quality" value="incomparable">Incomparable</label><label><input type="radio" name="finished_quality" value="decline">Decline</label></div>
               <label class="confidence">Confidence (optional)<select name="finished_quality_confidence"><option value="">Not specified</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
             </fieldset>
             <fieldset><legend>Which idea deserves further development?</legend><p>Judge what could become compelling after more work.</p>
-              <div class="choices"><label><input type="radio" name="development_potential" value="A" required>A</label><label><input type="radio" name="development_potential" value="B">B</label><label><input type="radio" name="development_potential" value="tie">Tie</label><label><input type="radio" name="development_potential" value="unsure">Unsure</label></div>
+              <div class="choices"><label><input type="radio" name="development_potential" value="A" required>A</label><label><input type="radio" name="development_potential" value="B">B</label><label><input type="radio" name="development_potential" value="tie">Tie</label><label><input type="radio" name="development_potential" value="unsure">Unsure</label><label><input type="radio" name="development_potential" value="incomparable">Incomparable</label><label><input type="radio" name="development_potential" value="decline">Decline</label></div>
               <label class="confidence">Confidence (optional)<select name="development_potential_confidence"><option value="">Not specified</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
             </fieldset>
           </div>
+          <details><summary>Readiness, willingness and viewing context (optional)</summary>
+            <div class="judgment-grid">
+              <label>Image A ready to show?<select name="readiness_A"><option value="">No response</option><option value="Y">Yes</option><option value="N">No</option><option value="U">Uncertain</option><option value="decline">Decline to judge</option></select></label>
+              <label>Image B ready to show?<select name="readiness_B"><option value="">No response</option><option value="Y">Yes</option><option value="N">No</option><option value="U">Uncertain</option><option value="decline">Decline to judge</option></select></label>
+              <label>Willing to develop image A?<select name="development_willingness_A"><option value="">No response</option><option value="Y">Yes</option><option value="N">No</option><option value="U">Uncertain</option><option value="decline">Decline to judge</option></select></label>
+              <label>Willing to develop image B?<select name="development_willingness_B"><option value="">No response</option><option value="Y">Yes</option><option value="N">No</option><option value="U">Uncertain</option><option value="decline">Decline to judge</option></select></label>
+            </div>
+            <label class="review-notes">Prior exposure before this comparison<select name="prior_exposure"><option value="unknown">Not specified / unknown</option><option value="none">Neither images nor statement</option><option value="images">Images only</option><option value="statement">Statement only</option><option value="images_and_statement">Images and statement</option></select></label>
+          </details>
           <label class="review-notes">What led to your choices? (optional)<textarea id="review-notes" name="notes" rows="3" maxlength="8000" placeholder="What works, what feels unresolved, or what you would try next"></textarea></label>
           <div class="review-submit"><button id="save-review" type="submit">Save both judgments</button><p id="vote-status" role="status"></p></div>
         </form>
@@ -47,8 +58,28 @@
           <p>This is a separate decision. Saving a judgment does not advance a candidate or start generation.</p>
           <form id="advance-form"><label>Candidate<select name="candidate_id" id="advance-candidate" required><option value="">Choose an image</option></select></label><label>Why advance it?<textarea name="reason" rows="2" maxlength="8000" required></textarea></label><button type="submit">Record development choice</button><p id="advance-status" role="status"></p></form>
         </details>
-        <details><summary>Image provenance and your review history</summary><pre id="review-provenance"></pre><div id="review-history"></div></details>
+        <details id="pool-details"><summary>Choose from the complete pool, including none</summary>
+          <p>This records a separate selection from the entire saved pool. It does not advance work or start generation.</p>
+          <button type="button" id="load-pool">Load neutral pool</button><p id="pool-status" role="status"></p>
+          <div id="pool-images" class="explorer-images"></div>
+          <form id="pool-form" hidden>
+            <label>Selection criterion<select name="criterion"><option value="finished_quality">Best finished work</option><option value="development_potential">Most worth developing</option></select></label>
+            <label>Your choice<select id="pool-choice" name="choice" required><option value="">Choose an image or response</option></select></label>
+            <label>Reason (optional)<textarea name="notes" rows="2" maxlength="8000"></textarea></label>
+            <button type="submit">Save pool selection</button>
+          </form>
+        </details>
+        <details id="review-provenance-details"><summary>Image provenance and your review history</summary><pre id="review-provenance"></pre><div id="review-history"></div></details>
       </div>
+    </section>
+    <section id="development-explorer" aria-label="Inspiration and development">
+      <details><summary>Inspiration explorer and development gallery · context and provenance visible</summary>
+        <p>Browsing sources, statements or lineage can affect later judgments. Report that prior exposure when reviewing.</p>
+        <h2>Saved continuations</h2><div id="continuation-gallery"></div>
+        <h2>Connection proposals</h2><div id="inspiration-list"></div>
+        <h2>Source detail</h2><label>Source<select id="source-select"><option value="">Choose a source</option></select></label>
+        <div id="source-detail"></div><p id="explorer-status" role="status"></p>
+      </details>
     </section>
     <section aria-label="Studio projects">
       <h2>Projects</h2>

@@ -17,12 +17,12 @@ import sqlite3
 from typing import Literal
 
 from PIL import Image
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .artifacts import sha256
 
 
-Choice = Literal['A', 'B', 'tie', 'unsure']
+Choice = Literal['A', 'B', 'tie', 'unsure', 'incomparable', 'decline']
 
 
 class ReviewError(ValueError):
@@ -39,8 +39,39 @@ class ReviewConflict(ReviewError):
 
 class Answer(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    choice: Choice
+    choice: Choice | None
     confidence: Literal['low', 'medium', 'high'] | None = None
+
+
+class SituatedAnswers(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    A: Literal['Y', 'N', 'U', 'decline'] | None = None
+    B: Literal['Y', 'N', 'U', 'decline'] | None = None
+
+
+class Exposure(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    prior_exposure: Literal['none', 'images', 'statement', 'images_and_statement', 'unknown'] = 'unknown'
+    context_revealed: bool = False
+    overview_opened: bool = False
+    duration_seconds: float | None = Field(default=None, ge=0, le=86400, allow_inf_nan=False)
+    duration_source: Literal['browser_elapsed', 'reviewer_reported', 'unrecorded'] = 'unrecorded'
+
+
+class Presentation(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    condition: Literal['statement_free', 'supplied_context'] = 'statement_free'
+    supplied_context: str = Field(default='', max_length=8000)
+    context_author: str | None = Field(default=None, max_length=200)
+    viewing_conditions: str = Field(default='Screen; actual device and environment not independently measured', max_length=2000)
+
+    @model_validator(mode='after')
+    def truthful_context(self):
+        if self.condition == 'supplied_context' and (not self.supplied_context or not self.context_author):
+            raise ValueError('Supplied context requires text and attributed author')
+        if self.condition == 'statement_free' and self.supplied_context:
+            raise ValueError('Statement-free assignments cannot contain a statement')
+        return self
 
 
 class Vote(BaseModel):
@@ -51,6 +82,11 @@ class Vote(BaseModel):
     finished_quality: Answer
     development_potential: Answer
     notes: str = Field(default='', max_length=8000)
+    open_reading: str | None = Field(default=None, max_length=8000)
+    felt_response: str | None = Field(default=None, max_length=8000)
+    readiness: SituatedAnswers | None = None
+    development_willingness: SituatedAnswers | None = None
+    exposure: Exposure | None = None
 
 
 class Advancement(BaseModel):
@@ -59,6 +95,24 @@ class Advancement(BaseModel):
     candidate_id: str = Field(min_length=1, max_length=100)
     reason: str = Field(min_length=1, max_length=8000)
     submission_id: str = Field(pattern=r'^[A-Za-z0-9_-]{1,100}$')
+
+
+class PoolChoice(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    reviewer: str = Field(min_length=1, max_length=200)
+    assignment_id: str = Field(min_length=1, max_length=64)
+    submission_id: str = Field(pattern=r'^[A-Za-z0-9_-]{1,100}$')
+    choice: Literal['candidate', 'none', 'unsure', 'decline']
+    candidate_id: str | None = None
+    criterion: Literal['finished_quality', 'development_potential'] = 'finished_quality'
+    notes: str = Field(default='', max_length=8000)
+    exposure: Exposure | None = None
+
+    @model_validator(mode='after')
+    def candidate_or_none(self):
+        if (self.choice == 'candidate') != (self.candidate_id is not None):
+            raise ValueError('Only a candidate choice may include a candidate ID')
+        return self
 
 
 def _json(value):
@@ -104,8 +158,12 @@ class ReviewStore:
                     sequence INTEGER PRIMARY KEY, submission_id TEXT UNIQUE NOT NULL,
                     collection_id TEXT NOT NULL, reviewer TEXT NOT NULL,
                     request TEXT NOT NULL, record TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS review_pool_votes (
+                    sequence INTEGER PRIMARY KEY, submission_id TEXT UNIQUE NOT NULL,
+                    collection_id TEXT NOT NULL, reviewer TEXT NOT NULL,
+                    request TEXT NOT NULL, record TEXT NOT NULL);
             ''')
-            for table in ('review_collections', 'review_votes', 'review_advancements'):
+            for table in ('review_collections', 'review_votes', 'review_advancements', 'review_pool_votes'):
                 for operation in ('UPDATE', 'DELETE'):
                     db.execute(f'''CREATE TRIGGER IF NOT EXISTS {table}_no_{operation.lower()}
                         BEFORE {operation} ON {table} BEGIN
@@ -135,7 +193,8 @@ class ReviewStore:
             image.verify()
         return path
 
-    def register_collection(self, collection_id, *, title, brief, candidates, pairs=None):
+    def register_collection(self, collection_id, *, title, brief, candidates, pairs=None, presentation=None,
+                            pool_expected_count=None, pool_candidate_ids=None):
         """Freeze image hashes and a comparison plan; identical registration is idempotent.
 
         Candidate: id, path, label; optional direction_id, parent_candidate_id, studio.
@@ -194,6 +253,19 @@ class ReviewStore:
             normalized_pairs.append({'id': pair_id, 'candidate_ids': list(members), 'kind': kind})
         specification = {'schema_version': 1, 'id': collection_id, 'title': _text(title, 1000),
                          'brief': _text(brief), 'candidates': records, 'pairs': normalized_pairs}
+        if presentation is not None:
+            specification.update(schema_version=2, presentation=Presentation.model_validate(presentation).model_dump())
+        if pool_candidate_ids is not None:
+            if (not isinstance(pool_candidate_ids, (list, tuple)) or not pool_candidate_ids
+                    or len(set(pool_candidate_ids)) != len(pool_candidate_ids)
+                    or not set(pool_candidate_ids) <= ids):
+                raise ReviewError('Pool candidate IDs must be a nonempty unique subset of registered candidates')
+            specification['pool_candidate_ids'] = list(pool_candidate_ids)
+        pool_count = len(pool_candidate_ids) if pool_candidate_ids is not None else len(records)
+        if pool_expected_count is not None:
+            if type(pool_expected_count) is not int or not pool_count <= pool_expected_count <= 100:
+                raise ReviewError('Expected pool count must include every designated pool candidate and be at most 100')
+            specification['pool_expected_count'] = pool_expected_count
         with closing(self._connect(write=True)) as db, db:
             db.execute('BEGIN IMMEDIATE')
             row = db.execute('SELECT specification FROM review_collections WHERE id=?', (collection_id,)).fetchone()
@@ -254,7 +326,16 @@ class ReviewStore:
             raise ReviewNotFound('Unknown comparison')
         digest = hashlib.sha256(_json([row['random_seed'], pair_id, reviewer]).encode()).hexdigest()
         ids = list(pair['candidate_ids'])
-        if int(digest, 16) % 2:
+        if spec.get('schema_version', 1) >= 2:
+            # Alternate sides in a reviewer-specific shuffled pair schedule.
+            # Every complete even-sized queue has exactly balanced orientation.
+            schedule = sorted(spec['pairs'], key=lambda p: hashlib.sha256(
+                _json([row['random_seed'], reviewer, p['id']]).encode()).hexdigest())
+            index = next(i for i, p in enumerate(schedule) if p['id'] == pair_id)
+            reverse = (index + int(hashlib.sha256(_json([row['random_seed'], reviewer]).encode()).hexdigest(), 16)) % 2
+        else:
+            reverse = int(digest, 16) % 2
+        if reverse:
             ids.reverse()
         candidates = {c['id']: c for c in spec['candidates']}
         for candidate_id in ids:
@@ -267,24 +348,37 @@ class ReviewStore:
         return {'collection_id': collection_id, 'pair_id': pair_id, 'kind': pair['kind'],
                 'assignment_id': assignment_id, 'reviewer': reviewer,
                 'candidates': {position: candidates[candidate_id] for position, candidate_id in zip(('A', 'B'), ids)},
+                'presentation': spec.get('presentation'),
                 'reviews': reviews}
 
     def submit_vote(self, collection_id, pair_id, vote: Vote | dict):
         vote = Vote.model_validate(vote)
+        # Preserve retry compatibility with older submissions lacking new fields.
         requested = vote.model_dump()
+        for field in ('open_reading', 'felt_response', 'readiness', 'development_willingness', 'exposure'):
+            if requested[field] is None:
+                requested.pop(field)
         comparison = self.comparison(collection_id, pair_id, vote.reviewer)
         if comparison['assignment_id'] != vote.assignment_id:
             raise ReviewConflict('Comparison assignment changed; reload the images before voting')
         answers = {}
         for dimension in ('finished_quality', 'development_potential'):
             answer = requested[dimension]
-            choice = answer['choice']
+            choice = answer.get('choice')
+            answer = {'choice': choice, 'confidence': answer.get('confidence')}
             answers[dimension] = answer | {'preferred_candidate_id':
                 comparison['candidates'][choice]['id'] if choice in ('A', 'B') else None}
         record = {'schema_version': 1, 'type': 'human_pairwise_review', 'created_at': _now(),
                   'collection_id': collection_id, 'pair_id': pair_id, **requested, **answers,
                   'candidate_order': {position: {'id': c['id'], 'sha256': c['sha256']}
                                       for position, c in comparison['candidates'].items()}}
+        if comparison.get('presentation') is not None:
+            record['presentation'] = comparison['presentation']
+        for dimension in ('readiness', 'development_willingness'):
+            if requested.get(dimension) is not None:
+                record[dimension] = {position: {'response': requested[dimension].get(position),
+                    'candidate_id': c['id'], 'image_sha256': c['sha256']}
+                    for position, c in comparison['candidates'].items()}
         with closing(self._connect(write=True)) as db, db:
             db.execute('BEGIN IMMEDIATE')
             previous = db.execute('SELECT * FROM review_votes WHERE submission_id=?', (vote.submission_id,)).fetchone()
@@ -324,3 +418,58 @@ class ReviewStore:
             return {name: [json.loads(r[0]) for r in db.execute(
                 f'SELECT record FROM {table} WHERE collection_id=? ORDER BY sequence', (collection_id,))]
                     for name, table in (('votes', 'review_votes'), ('advancements', 'review_advancements'))}
+
+    def pool_assignment(self, collection_id, reviewer):
+        reviewer = _text(reviewer, 200)
+        row = self._row(collection_id)
+        spec = json.loads(row['specification'])
+        eligible_ids = set(spec.get('pool_candidate_ids', [c['id'] for c in spec['candidates']]))
+        candidates = sorted([c for c in spec['candidates'] if c['id'] in eligible_ids], key=lambda c: hashlib.sha256(
+            _json([row['random_seed'], reviewer, c['id'], 'pool']).encode()).hexdigest())
+        for candidate in candidates:
+            self.candidate_path(collection_id, candidate['id'])
+        ordered = [{key: c[key] for key in ('id', 'sha256')} for c in candidates]
+        expected = spec.get('pool_expected_count', len(candidates))
+        complete = len(candidates) == expected
+        return {'schema_version': 1, 'collection_id': collection_id, 'reviewer': reviewer,
+            'assignment_id': hashlib.sha256(_json([collection_id, reviewer, ordered, 'pool']).encode()).hexdigest(),
+            'candidates': {str(i + 1): c for i, c in enumerate(candidates)},
+            'presentation': spec.get('presentation'), 'expected_count': expected,
+            'complete': complete, 'eligibility': 'eligible' if complete else 'incomplete_pool_excluded',
+            'human_label': None}
+
+    def submit_pool_choice(self, collection_id, choice: PoolChoice | dict):
+        choice = PoolChoice.model_validate(choice)
+        assignment = self.pool_assignment(collection_id, choice.reviewer)
+        if not assignment['complete']:
+            raise ReviewConflict('Incomplete pools cannot receive standard pool selections')
+        if assignment['assignment_id'] != choice.assignment_id:
+            raise ReviewConflict('Pool assignment changed; reload before selecting')
+        candidates = list(assignment['candidates'].values())
+        chosen = next((c for c in candidates if c['id'] == choice.candidate_id), None)
+        if choice.choice == 'candidate' and chosen is None:
+            raise ReviewNotFound('Unknown candidate in this pool')
+        requested = choice.model_dump()
+        record = {'schema_version': 1, 'type': 'human_pool_selection', 'created_at': _now(),
+            'collection_id': collection_id, **requested, 'candidate_order': {
+                position: {'id': c['id'], 'sha256': c['sha256']} for position, c in assignment['candidates'].items()},
+            'selected_image_sha256': chosen['sha256'] if chosen else None,
+            'presentation': assignment['presentation'], 'complete_pool': True}
+        with closing(self._connect(write=True)) as db, db:
+            db.execute('BEGIN IMMEDIATE')
+            previous = db.execute('SELECT * FROM review_pool_votes WHERE submission_id=?', (choice.submission_id,)).fetchone()
+            if previous:
+                if (previous['collection_id'], previous['request']) != (collection_id, _json(requested)):
+                    raise ReviewConflict('Submission ID already used for a different pool choice')
+                return json.loads(previous['record'])
+            db.execute('INSERT INTO review_pool_votes(submission_id,collection_id,reviewer,request,record) VALUES(?,?,?,?,?)',
+                       (choice.submission_id, collection_id, choice.reviewer, _json(requested), _json(record)))
+        return record
+
+    def pool_history(self, collection_id):
+        self.collection(collection_id)
+        with closing(self._connect()) as db:
+            if not db.execute("SELECT 1 FROM sqlite_master WHERE name='review_pool_votes'").fetchone():
+                return []
+            return [json.loads(row[0]) for row in db.execute(
+                'SELECT record FROM review_pool_votes WHERE collection_id=? ORDER BY sequence', (collection_id,))]

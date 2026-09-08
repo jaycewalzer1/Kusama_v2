@@ -59,6 +59,7 @@ class Direction(Model):
     relationship: str = ''
     relationship_kind: Literal['proposed_analogy', 'documented_relationship'] = 'proposed_analogy'
     plan: str = Field(min_length=1)
+    realization_group: str | None = Field(default=None, pattern=r'^[A-Za-z0-9_-]{1,64}$')
 
     @model_validator(mode='after')
     def check_sources(self):
@@ -80,8 +81,11 @@ class ProposalBatch(Model):
     def unique_directions(self):
         if len({a.id for a in self.directions}) != len(self.directions):
             raise ValueError('Direction IDs must be unique within a batch')
-        if len({a.intended_change for a in self.directions}) != len(self.directions):
-            raise ValueError('Directions must state distinct intended changes')
+        for change in {a.intended_change for a in self.directions}:
+            repeated = [a for a in self.directions if a.intended_change == change]
+            if len(repeated) > 1 and (not repeated[0].realization_group or
+                    len({a.realization_group for a in repeated}) != 1):
+                raise ValueError('Directions must state distinct intended changes unless explicitly grouped as seed realizations')
         return self
 
 
@@ -287,6 +291,9 @@ class Studio:
     def propose(self, project_id, episode_id, batch_path):
         batch_path = Path(batch_path).resolve()
         batch = ProposalBatch.model_validate_json(batch_path.read_text()).model_dump()
+        for direction in batch['directions']:
+            if direction.get('realization_group') is None:
+                direction.pop('realization_group', None)
         with self.locked(project_id) as project:
             episode = self._episode(project, episode_id)
             existing = episode['batches'].get(batch['id'])

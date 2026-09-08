@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "session_hours": 8.0,
+  "handoff_reserve_minutes": 45,
+  "renderer_attempt_cap": 160,
+  "reasoning_token_cap": 500000,
+  "per_call_total_tokens": 8192,
+  "paid_api_usd_cap": 0.0,
+  "asset_byte_cap": 2147483648,
+  "minimum_free_bytes": 21474836480,
+  "minimum_free_fraction": 0.15,
+  "reference_target": 200,
+  "reference_cap": 300,
+  "download_attempt_cap": 3,
+  "schema_repair_cap": 1,
+  "active_gpu_workloads": 1,
+  "cache_dir": ".cache/huggingface",
+  "device": "mps",
+  "clip_revision": "3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268",
+  "render_profiles": {
+    "flux_base4b_1024_v1": {"width": 1024, "height": 1024, "steps": 50, "guidance": 4.0, "precision": "bf16", "offload": "model", "vae_tiling": true},
+    "flux_base4b_study_512_v1": {"width": 512, "height": 640, "steps": 50, "guidance": 4.0, "precision": "bf16", "offload": "model", "vae_tiling": true}
+  },
+  "default_render_profile": "flux_base4b_study_512_v1",
+  "episode_allocation": {"initial": 6, "ordinary": 4, "protected_continuations": 4, "finishing_intervention": 2},
+  "full_episode_allocation": {"initial": 24, "ordinary": 48, "protected_fresh": 16, "protected_continuations": 16, "finishing": 16, "intervention": 8},
+  "shelf_allocation": {"relevant": 24, "distant": 12, "underrepresented": 12},
+  "director": {"temperature": 0.8, "top_p": 0.95, "action_output_tokens": 512, "composition_output_tokens": 2048, "max_reference_images": 2, "max_image_pixels": 262144},
+  "observer": {"temperature": 0.0, "output_tokens": 256},
+  "seed": 23
+}

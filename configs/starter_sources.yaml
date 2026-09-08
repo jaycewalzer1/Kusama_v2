@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "root": "artifacts/overnight/corpus",
+  "target": 200,
+  "max_bytes": 2147483648,
+  "max_asset_bytes": 12582912,
+  "max_request_attempts": 3,
+  "long_edge": 1024,
+  "crops_per_reference": 2,
+  "per_provider": {
+    "cleveland": 60,
+    "artic": 50,
+    "met": 40,
+    "smithsonian": 50
+  },
+  "queries": [
+    "weave",
+    "vessel",
+    "mask",
+    "instrument",
+    "map",
+    "ornament",
+    "enclosure",
+    "shell",
+    "wing",
+    "repair",
+    "procession",
+    "landscape",
+    "architecture",
+    "crowd",
+    "empty space",
+    "repetition",
+    "root",
+    "textile",
+    "joint",
+    "tension",
+    "network",
+    "packaging"
+  ],
+  "smithsonian_units": [
+    "nasm",
+    "nmnhminsci",
+    "nmnhbotany",
+    "nmnhento",
+    "chndm"
+  ],
+  "query_limit": 6,
+  "smithsonian_stream_bytes": 524288
+}

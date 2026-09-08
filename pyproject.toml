@@ -26,6 +26,7 @@ dependencies = [
 ]
 
 [project.scripts]
+kusama = "kusama.cli:main"
 kusama-first-edit = "kusama.experiment:main"
 kusama-edit = "kusama.controlled:main"
 kusama-benchmark = "kusama.benchmark:main"
