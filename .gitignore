@@ -1,0 +1,33 @@
+# Python and local environments
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+.env
+.env.*
+!.env.example
+
+# Local model caches, downloaded weights, and generated experiments
+.cache/
+artifacts/
+outputs/
+runs/
+models/
+weights/
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.bin
+
+# Operating system and editor state
+.DS_Store
+.idea/
+.vscode/

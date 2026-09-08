@@ -1,0 +1,34 @@
+{
+  "name": "Controlled edit verification and repair pilot",
+  "max_calls": 7,
+  "cases": [
+    {
+      "id": "mountain_broad",
+      "plan": "mountain_broad.json"
+    },
+    {
+      "id": "mountain_tight",
+      "plan": "mountain_tight.json"
+    },
+    {
+      "id": "mountain_masked",
+      "plan": "mountain_masked.json"
+    },
+    {
+      "id": "circle_broad",
+      "plan": "circle_broad.json"
+    },
+    {
+      "id": "circle_tight",
+      "plan": "circle_tight.json"
+    },
+    {
+      "id": "poster_broad",
+      "plan": "poster_broad.json"
+    },
+    {
+      "id": "poster_tight",
+      "plan": "poster_tight.json"
+    }
+  ]
+}

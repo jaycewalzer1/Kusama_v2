@@ -1,0 +1,37 @@
+{
+  "parent": "../../artifacts/20260907T190926.622194Z_de125bc5/parent.png",
+  "parent_sha256": "f23302736be704e039b860f2ba717a9951816ba07b024e60dfbcbb233b6912e8",
+  "instruction": "Reduce the person to one-third height, feet fixed at the same ground location.",
+  "target": "The solitary person on the foreground rock",
+  "allowed_mask": "../controlled/allowed_mask.png",
+  "object_mask": "../controlled/person_mask.png",
+  "method": "geometric",
+  "scale": 0.3333333333333333,
+  "anchor": [
+    351,
+    871
+  ],
+  "repair_prompt": "An empty rocky ledge in front of distant forest and a mountain slope. Continue the surrounding collage textures naturally. No people, no person, no silhouette.",
+  "seed": 23,
+  "max_calls": 1,
+  "crop": [
+    224,
+    608,
+    480,
+    928
+  ],
+  "visual_checks": [
+    "Was the entire original person removed, without leaving a ghost or a second person?",
+    "Does the smaller person stand naturally on the same rock?",
+    "Do the repaired mountain, forest and rock textures join naturally at the mask boundary?",
+    "Does the mountain feel larger and more overwhelming?"
+  ],
+  "author": "Codex: manually traced approximate person mask; requires visual review",
+  "verification": {
+    "observer": "grounding_dino",
+    "label": "person",
+    "operation": "resize",
+    "height_tolerance": 0.2,
+    "position_tolerance": 6
+  }
+}

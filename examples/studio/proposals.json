@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "id": "scale-options",
+  "parent_artifact_id": "root",
+  "author": "Kusama development example",
+  "origin": "development_example",
+  "directions": [
+    {
+      "id": "small",
+      "title": "Small figure",
+      "intended_change": "Make the figure small enough to emphasize isolation.",
+      "preservation_constraints": [
+        "Keep framing and protected landscape",
+        "Keep ground anchor"
+      ],
+      "plan": "small.json"
+    },
+    {
+      "id": "medium",
+      "title": "Medium figure",
+      "intended_change": "Keep the figure legible while increasing the landscape\u2019s dominance.",
+      "preservation_constraints": [
+        "Keep framing and protected landscape",
+        "Keep ground anchor"
+      ],
+      "plan": "medium.json"
+    },
+    {
+      "id": "half",
+      "title": "Half figure",
+      "intended_change": "Explore a middle scale between presence and disappearance.",
+      "preservation_constraints": [
+        "Keep framing and protected landscape",
+        "Keep ground anchor"
+      ],
+      "plan": "half.json"
+    }
+  ]
+}

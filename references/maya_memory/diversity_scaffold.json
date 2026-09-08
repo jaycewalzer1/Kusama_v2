@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-09-08T02:25:08.681251+00:00",
+  "packet": "packet-v3.json",
+  "previous_packet": "packet-v2.json",
+  "author": "Codex root agent; operator-authored compositional scaffolding, not the user or Qwen",
+  "reason": "Actual V2 Qwen output collapsed to six closely related fragmented-body compositions; seventh call repeated a title and was rejected. Assign distinct pictorial structures before committing to 24 renders.",
+  "evidence_run": "../../artifacts/20260908T020935_creative_6cd3bb17",
+  "source_changes": "None; all 12 source references and 4 images retained. Brief adds structural use of sources; new explicit challenges and prompt-handoff constraint.",
+  "training": "None; only inference instructions change.",
+  "limits": "Challenges aim to improve variety; adherence and artistic success require inspection. The raw Qwen responses remain the authority for what Qwen actually proposed."
+}

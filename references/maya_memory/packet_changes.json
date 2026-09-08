@@ -1,0 +1,10 @@
+{
+  "from": "packet.json",
+  "to": "packet-v2.json",
+  "changes": [
+    "Identify the Palín textile as Poqomam, using the museum's community attribution."
+  ],
+  "reason": "Independent source audit; no change to the user's brief or assumed personal identity.",
+  "previous_run": "20260908T015317_creative_c514a8c7",
+  "previous_snapshot_unchanged": true
+}

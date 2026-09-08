@@ -1,0 +1,66 @@
+[
+  {
+    "path": "references/mutu_process/assets/family-tree.jpg",
+    "source_url": "https://nasher.duke.edu/stories/wangechi-mutu-family-tree/",
+    "asset_url": "https://nasher.duke.edu/wp-content/uploads/2018/01/nasher-mutu-family-tree-two-1.jpg",
+    "resolved_url": "https://nasher.duke.edu/wp-content/uploads/2018/01/nasher-mutu-family-tree-two-1.jpg",
+    "sha256": "644c49cd95c13fae3f1d1e473bc0d85f3e8e18bd61e8bbf3ca1e9b4b1d91f3a9",
+    "bytes": 341737,
+    "size": [
+      1080,
+      1405
+    ],
+    "content_type": "image/jpeg",
+    "retrieved_at": "2026-09-08T01:48:12.745507+00:00",
+    "purpose": "Local frozen-model visual reference study; original bytes retained, no training",
+    "transformations": "None; downloaded the stated public web rendition"
+  },
+  {
+    "path": "references/mutu_process/assets/nairobi-studio.jpg",
+    "source_url": "https://art21.org/2021/07/21/weekly-watchlist-wangechi-mutu-returns-to-nature/",
+    "asset_url": "https://art21.org/wp-content/uploads/2021/07/mutu-sky-master-cuts.00_05_43_23-1400x788.jpg",
+    "resolved_url": "https://art21.org/wp-content/uploads/2021/07/mutu-sky-master-cuts.00_05_43_23-1400x788.jpg",
+    "sha256": "1d14d86dd9256eb7c874b85489cdb6046680f061232c2cc4294c9b6108d6ea7c",
+    "bytes": 78364,
+    "size": [
+      1400,
+      788
+    ],
+    "content_type": "image/jpeg",
+    "retrieved_at": "2026-09-08T01:48:12.566825+00:00",
+    "purpose": "Local frozen-model visual reference study; original bytes retained, no training",
+    "transformations": "None; downloaded the stated public web rendition"
+  },
+  {
+    "path": "references/maya_memory/assets/dresden-codex-sequence-01.jpg",
+    "source_url": "https://www.loc.gov/item/2021667917/",
+    "asset_url": "https://tile.loc.gov/image-services/iiif/service:gdc:gdcwdl:wd:l_:11:62:1:wdl_11621:00000001/full/pct:12.5/0/default.jpg",
+    "resolved_url": "https://tile.loc.gov/image-services/iiif/service:gdc:gdcwdl:wd:l_:11:62:1:wdl_11621:00000001/full/pct:12.5/0/default.jpg",
+    "sha256": "65b0a99071abb18e4b8dafb9633de8b40fed24aca9122f899b69a9a2a4824600",
+    "bytes": 106642,
+    "size": [
+      485,
+      957
+    ],
+    "content_type": "image/jpeg",
+    "retrieved_at": "2026-09-08T01:48:13.387307+00:00",
+    "purpose": "Local frozen-model visual reference study; original bytes retained, no training",
+    "transformations": "None; downloaded the stated public web rendition"
+  },
+  {
+    "path": "references/maya_memory/assets/maize-god-whistle.jpg",
+    "source_url": "https://www.metmuseum.org/art/collection/search/312915",
+    "asset_url": "https://images.metmuseum.org/CRDImages/ao/web-large/DT9945.jpg",
+    "resolved_url": "https://images.metmuseum.org/CRDImages/ao/web-large/DT9945.jpg",
+    "sha256": "7c551e59c930a87fc6500373692f64c6f5b94db3afc7ffa128540cd3f458535c",
+    "bytes": 135677,
+    "size": [
+      499,
+      624
+    ],
+    "content_type": "image/jpeg",
+    "retrieved_at": "2026-09-08T01:48:13.035396+00:00",
+    "purpose": "Local frozen-model visual reference study; original bytes retained, no training",
+    "transformations": "None; downloaded the stated public web rendition"
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "question": "How does the figure’s scale change the feeling of isolation in this landscape?",
+  "stakes": "Development example for testing alternative directions, not an approved artistic position.",
+  "position": "Use the existing mountain collage as a controlled starting point.",
+  "viewing_conditions": "Side-by-side images on a development screen.",
+  "constraints": ["Preserve the frame and protected landscape", "Keep the figure’s ground anchor fixed"],
+  "unresolved": ["Which scale creates a productive tension?", "Does the repaired landscape remain convincing?"]
+}

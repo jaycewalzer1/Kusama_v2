@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kusama studio</title>
+  <link rel="stylesheet" href="/static/dashboard.css">
+  <script src="/static/dashboard.js" defer></script>
+</head>
+<body>
+  <header>
+    <div><h1>Kusama studio</h1><p class="subtitle">Make, compare, and choose what develops next</p></div>
+    <button id="refresh" type="button">Refresh</button>
+  </header>
+  <main>
+    <p id="error" role="alert" hidden></p>
+    <section id="review" aria-labelledby="review-heading">
+      <div class="review-heading"><div><p class="eyebrow">Human review</p><h2 id="review-heading">Two images. Two separate judgments.</h2></div><p id="review-progress" role="status"></p></div>
+      <p class="review-intro">A finished piece and an idea worth developing can be different choices. Tie means equally good; unsure means you cannot confidently tell.</p>
+      <div class="review-controls">
+        <label>Your reviewer name<input id="reviewer" type="text" maxlength="200" autocomplete="nickname" placeholder="Enter your name"></label>
+        <label>Experiment<select id="review-collection"><option value="">No comparisons registered yet</option></select></label>
+        <button type="button" id="start-review">Open comparison</button>
+      </div>
+      <p id="review-status" role="status">Saved experiments will appear here when their images are ready.</p>
+      <div id="review-workspace" hidden>
+        <p id="review-brief"></p>
+        <details id="collection-overview"><summary>All images in this experiment</summary><p>Browse every direction and realization, or prepare a development choice from any candidate.</p><div id="collection-images"></div></details>
+        <div class="comparison-navigation"><button id="previous-pair" type="button">Previous</button><label>Comparison<select id="review-pair"></select></label><button id="next-pair" type="button">Next</button></div>
+        <p id="comparison-kind" class="muted"></p>
+        <div id="review-images"></div>
+        <form id="vote-form">
+          <div class="judgment-grid">
+            <fieldset><legend>Which is better finished work?</legend><p>Judge the image as it stands: coherence, resolution, and execution.</p>
+              <div class="choices"><label><input type="radio" name="finished_quality" value="A" required>A</label><label><input type="radio" name="finished_quality" value="B">B</label><label><input type="radio" name="finished_quality" value="tie">Tie</label><label><input type="radio" name="finished_quality" value="unsure">Unsure</label></div>
+              <label class="confidence">Confidence (optional)<select name="finished_quality_confidence"><option value="">Not specified</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
+            </fieldset>
+            <fieldset><legend>Which idea deserves further development?</legend><p>Judge what could become compelling after more work.</p>
+              <div class="choices"><label><input type="radio" name="development_potential" value="A" required>A</label><label><input type="radio" name="development_potential" value="B">B</label><label><input type="radio" name="development_potential" value="tie">Tie</label><label><input type="radio" name="development_potential" value="unsure">Unsure</label></div>
+              <label class="confidence">Confidence (optional)<select name="development_potential_confidence"><option value="">Not specified</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
+            </fieldset>
+          </div>
+          <label class="review-notes">What led to your choices? (optional)<textarea id="review-notes" name="notes" rows="3" maxlength="8000" placeholder="What works, what feels unresolved, or what you would try next"></textarea></label>
+          <div class="review-submit"><button id="save-review" type="submit">Save both judgments</button><p id="vote-status" role="status"></p></div>
+        </form>
+        <details id="advance-details"><summary>Choose a candidate to develop next</summary>
+          <p>This is a separate decision. Saving a judgment does not advance a candidate or start generation.</p>
+          <form id="advance-form"><label>Candidate<select name="candidate_id" id="advance-candidate" required><option value="">Choose an image</option></select></label><label>Why advance it?<textarea name="reason" rows="2" maxlength="8000" required></textarea></label><button type="submit">Record development choice</button><p id="advance-status" role="status"></p></form>
+        </details>
+        <details><summary>Image provenance and your review history</summary><pre id="review-provenance"></pre><div id="review-history"></div></details>
+      </div>
+    </section>
+    <section aria-label="Studio projects">
+      <h2>Projects</h2>
+      <div id="projects">No studio projects yet.</div>
+    </section>
+    <div class="section-heading"><h2>Runs</h2><p id="list-status" role="status">Loading runs…</p></div>
+    <div class="table-scroll">
+      <table aria-label="Runs">
+        <thead><tr><th scope="col">Run</th><th scope="col">Kind</th><th scope="col">Status</th><th scope="col">Calls</th><th scope="col">Verification</th></tr></thead>
+        <tbody id="runs"></tbody>
+      </table>
+    </div>
+    <section id="detail" aria-label="Selected run" hidden>
+      <h2 id="run-name"></h2>
+      <p id="run-brief" hidden></p>
+      <p id="detail-status" role="status"></p>
+      <dl id="run-facts"></dl>
+      <pre id="run-error" class="error" hidden></pre>
+      <div id="images"></div>
+      <details><summary>Files</summary><ul id="files"></ul></details>
+      <details id="raw-details">
+        <summary>Raw JSON</summary>
+        <pre id="raw"></pre>
+      </details>
+    </section>
+  </main>
+</body>
+</html>

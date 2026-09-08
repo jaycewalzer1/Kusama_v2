@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "id": "mutu-process-v1",
+  "title": "Wangechi Mutu: process, material, culture and documented connections",
+  "brief": "Study Wangechi Mutu as the original inspiration for ambitious original paintings. Attend to process, culturally situated context and how formal invention carries meaning. The active experiment uses a separate Maya memory packet selected for the user's brief.",
+  "references": [
+    {
+      "id": "mutu-family-tree",
+      "title": "Family Tree: one collage from a suite of thirteen",
+      "url": "https://nasher.duke.edu/stories/wangechi-mutu-family-tree/",
+      "provenance": "Primary institutional source, accessed 2026-09-08; context paraphrased by Codex.",
+      "permitted_uses": "Image © Wangechi Mutu; photograph Peter Paul Geoffrion, Nasher Museum. Local visual study; no open license or publication permission claimed; no training.",
+      "source_family": "Wangechi Mutu / Kenyan-American contemporary art",
+      "context": "Nasher identifies Family Tree as a suite of thirteen mixed-media works on paper. The supplied museum photograph shows one densely assembled hybrid portrait. Visible eyes, bodily fragments, plant and animal forms, machine imagery, paint and glitter form an unstable but commanding figure. This is an example of Mutu's contemporary artistic language, not evidence about Maya culture.",
+      "relationship_to_brief": "Study collage as a structural method: meaningful fragments form an original, self-possessed figure.",
+      "image_path": "assets/family-tree.jpg",
+      "maker": "Wangechi Mutu",
+      "date": "2012",
+      "medium": "Mixed-media collage on paper"
+    },
+    {
+      "id": "mutu-earth-process",
+      "title": "Nairobi studio: ordinary materials and ecological relationships",
+      "url": "https://art21.org/2021/07/21/weekly-watchlist-wangechi-mutu-returns-to-nature/",
+      "provenance": "Primary institutional source, accessed 2026-09-08; context paraphrased by Codex.",
+      "permitted_uses": "Production still © Art21, Inc. 2021. Local reference study; no open license or publication permission claimed; no training.",
+      "source_family": "Wangechi Mutu / documented Nairobi studio process",
+      "context": "Art21 film co-director Jackie Lebo describes wood, everyday khanga patterns and soil as starting materials in Mutu's Nairobi studio. The account connects their transformation to femininity, colonization and ecological interdependence. The supplied image is a production still showing studio work, not a finished painting or Maya cultural evidence.",
+      "relationship_to_brief": "Study material transformation and ecological interdependence; expand beyond surface resemblance.",
+      "image_path": "assets/nairobi-studio.jpg",
+      "maker": "Art21; film co-directed by Jackie Lebo",
+      "date": "2021",
+      "medium": "Documentary production still"
+    },
+    {
+      "id": "mutu-practice",
+      "title": "Wangechi Mutu: hybridity, representation and material",
+      "url": "https://art21.org/artist/wangechi-mutu/",
+      "provenance": "Primary institutional source, accessed 2026-09-08; short paraphrase by Codex.",
+      "permitted_uses": "Sourced paraphrase for local research; original text retains its copyright; no training.",
+      "source_family": "Kenyan-American / Nairobi and New York / contemporary practice",
+      "context": "Art21 describes Mutu's use of ink and paint on Mylar, fragments from magazines and illustrations, and hybrid bodies linking human, plant, animal and machine. It locates the work in questions of representation, colonial history and consumption. Her sculpture also uses Kenyan soil, paper pulp and bronze.",
+      "relationship_to_brief": "Study the relationship between surface, body and the politics of representation. These are documented aspects of an individual practice, not a summary of Kenyan culture.",
+      "maker": "Art21; Wangechi Mutu"
+    },
+    {
+      "id": "mutu-statement",
+      "title": "The NewOnes, will free Us: artist's statement",
+      "url": "https://www.metmuseum.org/press-releases/wangechi-mutu-artist-statement-2019-exhibitions",
+      "provenance": "Primary institutional source, accessed 2026-09-08; short paraphrase by Codex.",
+      "permitted_uses": "Sourced paraphrase for local research; original text retains its copyright; no training.",
+      "source_family": "Artist testimony / women, authority and burden",
+      "context": "Mutu describes an interest in the contradictory relation between women's status and the burdens they carry. In her seated figures, adornment and reflective discs become speculative instruments for different futures. The figures belong to no single place or historical moment.",
+      "relationship_to_brief": "Documented artistic intention: transform a convention into a new proposition about agency. Invent new forms serving a brief instead of borrowing adornment without context.",
+      "maker": "Wangechi Mutu"
+    },
+    {
+      "id": "mutu-caryatid",
+      "title": "The NewOnes: release from the load-bearing role",
+      "url": "https://www.metmuseum.org/exhibitions/listings/2019/facade-commission-wangechi-mutu",
+      "provenance": "Primary institutional source, accessed 2026-09-08; short paraphrase by Codex.",
+      "permitted_uses": "Sourced paraphrase for local research; original text retains its copyright; no training.",
+      "source_family": "Mutu / cross-cultural caryatid comparison",
+      "context": "The Met frames Mutu's facade commission as a reworking of caryatids: figures made to provide structural or symbolic support. Her bronze women are released from that function. The interpretation connects gender and racial politics to a form found in multiple histories.",
+      "relationship_to_brief": "Documented relationship at the level of the caryatid convention. Specific African and European examples keep distinct locations, periods and social roles.",
+      "maker": "The Metropolitan Museum of Art"
+    },
+    {
+      "id": "luba-hemba-stool",
+      "title": "Prestige Stool: Female Caryatid",
+      "url": "https://www.metmuseum.org/art/collection/search/310434",
+      "provenance": "Primary institutional source, accessed 2026-09-08; short paraphrase by Codex.",
+      "permitted_uses": "Sourced paraphrase for local research; original text retains its copyright; no training.",
+      "source_family": "Luba or Hemba peoples / Democratic Republic of the Congo",
+      "context": "The Met catalogs this wooden female caryatid stool as Luba or Hemba, with beads. Its attribution is explicitly qualified. This is a Central African object tradition, geographically and historically distinct from Mutu's Kenyan background.",
+      "relationship_to_brief": "Comparative reference for supporting a seat with a human figure. Do not claim this exact object influenced Mutu or call it a Kenyan tradition.",
+      "maker": "Luba or Hemba artist; attribution uncertain"
+    },
+    {
+      "id": "kenya-environment",
+      "title": "Wangari Maathai: environment, democracy and peace",
+      "url": "https://www.nobelprize.org/nobel_prizes/peace/laureates/2004/maathai-lecture.html",
+      "provenance": "Primary institutional source, accessed 2026-09-08; short paraphrase by Codex.",
+      "permitted_uses": "Sourced paraphrase for local research; original text retains its copyright; no training.",
+      "source_family": "Kenya / environmental and political context",
+      "context": "In her 2004 Nobel lecture, Wangari Maathai connects environmental protection with democracy and peace. This supplies a Kenyan political and ecological context for thinking about land beyond its appearance as a landscape.",
+      "relationship_to_brief": "Proposed thematic adjacency, not a documented influence on Mutu: land, collective care and power can motivate material and compositional decisions.",
+      "maker": "Wangari Maathai"
+    }
+  ],
+  "creative_constraints": [
+    "Keep documented influences separate from proposed comparisons.",
+    "Preserve differences among Kenyan, diasporic, Luba/Hemba and other contexts.",
+    "No training; references are inference-time material.",
+    "Create original works whose formal decisions serve the brief."
+  ]
+}

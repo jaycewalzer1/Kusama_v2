@@ -1,0 +1,26 @@
+{
+  "parent": "circle_parent.png",
+  "parent_sha256": "4bcc067d865b427b328d9776a659fdb655ef7e1a2a55831be910ae1c26b7e140",
+  "instruction": "Remove the red circle completely. Fill its former location with the same flat warm cream background. Preserve all other shapes and lines.",
+  "target": "red circle",
+  "allowed_mask": "circle_allowed.png",
+  "object_mask": "circle_object.png",
+  "method": "masked",
+  "seed": 23,
+  "max_calls": 1,
+  "visual_checks": [
+    "Did the requested change occur without extra shapes, remnants or artifacts?",
+    "Do repaired boundaries look natural and preserve the simple illustration style?"
+  ],
+  "verification": {
+    "observer": "color",
+    "operation": "remove",
+    "source_color": "red",
+    "background_rgb": [
+      235,
+      228,
+      210
+    ]
+  },
+  "author": "Procedural calibration fixture with known annotations; not a natural-image benchmark"
+}

@@ -1,0 +1,26 @@
+{
+  "parent": "poster_parent.png",
+  "parent_sha256": "d1ae008a9f64b4249bf5c4f374a9f15c4e1fc212f23611c0be8350510e722f67",
+  "instruction": "Change only the green rectangle to saturated blue. Keep its exact rectangular shape, size and position, and preserve the flat cream background and all other shapes.",
+  "target": "green rectangle",
+  "allowed_mask": "poster_allowed.png",
+  "object_mask": "poster_object.png",
+  "method": "masked",
+  "seed": 23,
+  "max_calls": 1,
+  "visual_checks": [
+    "Did the requested change occur without extra shapes, remnants or artifacts?",
+    "Do repaired boundaries look natural and preserve the simple illustration style?"
+  ],
+  "verification": {
+    "observer": "color",
+    "operation": "recolor",
+    "source_color": "green",
+    "target_color": "blue"
+  },
+  "author": "Procedural calibration fixture with known annotations; not a natural-image benchmark",
+  "repair_policy": {
+    "padding": 4,
+    "feather": 2
+  }
+}
