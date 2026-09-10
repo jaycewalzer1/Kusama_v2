@@ -88,7 +88,7 @@ def test_measured_slow_edit_protects_handoff_even_without_caller_estimate(tmp_pa
         assert budget.summary()['renderer_attempts'] == 0
 
 
-@pytest.mark.parametrize('field,value',[('renderer_attempt_cap',161),('reasoning_token_cap',500001),('paid_api_usd_cap',1),('asset_byte_cap',3*1024**3),('schema_repair_cap',2),('active_gpu_workloads',2)])
+@pytest.mark.parametrize('field,value',[('renderer_attempt_cap',161),('reasoning_token_cap',2000001),('per_call_total_tokens',16385),('paid_api_usd_cap',1),('asset_byte_cap',3*1024**3),('schema_repair_cap',2),('active_gpu_workloads',2)])
 def test_hard_config_caps(field,value):
     with pytest.raises(ValidationError):OvernightConfig.model_validate({**load_config().model_dump(),field:value})
 

@@ -1,0 +1,2055 @@
+{
+  "origin": "Exact saved 16-step Qwen actions and raw completions; opened evidence excerpts are attributed source data, not verified model claims.",
+  "run_id": "studio-29fd86d2de4540338c92",
+  "plan_sha256": "f65afcf184e931be6886ae4348a34eb3d852594709a5a14cfff514314abf9510",
+  "problem": "How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?",
+  "sources": {
+    "artic_102611": {
+      "claims": [
+        {
+          "author": "artic",
+          "claim": "One of four posts sculpted for the palace of the king ( ogoga ) of Ikere, this evocative image of the Yoruba concept of a divine ruler is a masterwork of Olowe of Ise.",
+          "confidence": null,
+          "counterevidence": [],
+          "id": "artic_102611_claim1",
+          "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 1",
+          "reference_id": "artic_102611",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [
+              "Retain Art Institute of Chicago attribution and source link; identify changes."
+            ],
+            "evidence_field": "info.license_text / description",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC-BY-4.0",
+            "status": "conditional"
+          },
+          "source_date": null,
+          "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+          "status": "documented_source_statement",
+          "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+          "trust": "untrusted_source_data"
+        },
+        {
+          "author": "artic",
+          "claim": "The renowned artist’s dynamic style can be distinguished by the interrelationships between figures, their exaggerated proportions, and the use of open space.",
+          "confidence": null,
+          "counterevidence": [],
+          "id": "artic_102611_claim2",
+          "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 2",
+          "reference_id": "artic_102611",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [
+              "Retain Art Institute of Chicago attribution and source link; identify changes."
+            ],
+            "evidence_field": "info.license_text / description",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC-BY-4.0",
+            "status": "conditional"
+          },
+          "source_date": null,
+          "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+          "status": "documented_source_statement",
+          "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+          "trust": "untrusted_source_data"
+        },
+        {
+          "author": "artic",
+          "claim": "The sculptor’s diminutive portrayal of the king suggests his dependence on others, and his crown has been emphasized to evoke the spiritual power residing within it.",
+          "confidence": null,
+          "counterevidence": [],
+          "id": "artic_102611_claim3",
+          "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 3",
+          "reference_id": "artic_102611",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [
+              "Retain Art Institute of Chicago attribution and source link; identify changes."
+            ],
+            "evidence_field": "info.license_text / description",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC-BY-4.0",
+            "status": "conditional"
+          },
+          "source_date": null,
+          "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+          "status": "documented_source_statement",
+          "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+          "trust": "untrusted_source_data"
+        },
+        {
+          "author": "artic",
+          "claim": "The towering image of the king’s senior wife standing behind him underscores her superior status as a guardian of her husband’s interests, endowed with keen political understanding and supernatural knowledge.",
+          "confidence": null,
+          "counterevidence": [],
+          "id": "artic_102611_claim4",
+          "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 4",
+          "reference_id": "artic_102611",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [
+              "Retain Art Institute of Chicago attribution and source link; identify changes."
+            ],
+            "evidence_field": "info.license_text / description",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC-BY-4.0",
+            "status": "conditional"
+          },
+          "source_date": null,
+          "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+          "status": "documented_source_statement",
+          "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+          "trust": "untrusted_source_data"
+        },
+        {
+          "author": "artic",
+          "claim": "She would have placed the crown on the king’s head during his enthronement ceremony.",
+          "confidence": null,
+          "counterevidence": [],
+          "id": "artic_102611_claim5",
+          "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 5",
+          "reference_id": "artic_102611",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [
+              "Retain Art Institute of Chicago attribution and source link; identify changes."
+            ],
+            "evidence_field": "info.license_text / description",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC-BY-4.0",
+            "status": "conditional"
+          },
+          "source_date": null,
+          "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+          "status": "documented_source_statement",
+          "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+          "trust": "untrusted_source_data"
+        },
+        {
+          "author": "artic",
+          "claim": "The smaller figures at the king’s feet represent one of his junior wives and the flute-playing trickster god Eshu.",
+          "confidence": null,
+          "counterevidence": [],
+          "id": "artic_102611_claim6",
+          "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 6",
+          "reference_id": "artic_102611",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [
+              "Retain Art Institute of Chicago attribution and source link; identify changes."
+            ],
+            "evidence_field": "info.license_text / description",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC-BY-4.0",
+            "status": "conditional"
+          },
+          "source_date": null,
+          "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+          "status": "documented_source_statement",
+          "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+          "trust": "untrusted_source_data"
+        }
+      ],
+      "images": [
+        {
+          "path": "recorded-images/009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368.jpg",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "scope": "whole",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_id": "artic_102611"
+        }
+      ],
+      "reference": {
+        "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+        "classification_basis": "Machine family rule over documented title/medium/object type; non-art flag requires documented functional object type",
+        "context_trust": "untrusted_source_data",
+        "culture": "Ikere",
+        "date": "1910-14",
+        "description": "One of four posts sculpted for the palace of the king ( ogoga ) of Ikere, this evocative image of the Yoruba concept of a divine ruler is a masterwork of Olowe of Ise. The renowned artist’s dynamic style can be distinguished by the interrelationships between figures, their exaggerated proportions, and the use of open space. The sculptor’s diminutive portrayal of the king suggests his dependence on others, and his crown has been emphasized to evoke the spiritual power residing within it. The towering image of the king’s senior wife standing behind him underscores her superior status as a guardian of her husband’s interests, endowed with keen political understanding and supernatural knowledge. She would have placed the crown on the king’s head during his enthronement ceremony. The smaller figures at the king’s feet represent one of his junior wives and the flute-playing trickster god Eshu.",
+        "dimensions": "152.5 × 31.8 × 40.6 cm (60 × 12 1/2 × 16 in.)",
+        "discovery_query": "Black women fragmented representation agency self-definition",
+        "field_provenance": {
+          "culture": "place_of_origin (place, not inferred identity)",
+          "date": "date_display",
+          "description": "description; HTML removed (CC-BY attribution retained)",
+          "dimensions": "dimensions",
+          "maker": "artist_display",
+          "medium": "medium_display",
+          "object_family": "machine classification over documented fields; not historical fact",
+          "original": "config.iiif_url + image_id + documented IIIF syntax",
+          "title": "title / content.descriptiveNonRepeating.title",
+          "url": "api_link / official detail route"
+        },
+        "id": "artic_102611",
+        "maker": "Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa",
+        "medium": "Wood and pigment",
+        "non_art": false,
+        "object_family": "sculpture_functional_object",
+        "object_id": "102611",
+        "original": {
+          "height": 1265,
+          "mime": "image/jpeg",
+          "path": "images/original/2097cf9f0e9ef5fe4c0ccc7204a988ec0a2325253a6a7781660f6850c9318834.bin",
+          "sha256": "2097cf9f0e9ef5fe4c0ccc7204a988ec0a2325253a6a7781660f6850c9318834",
+          "source_url": "https://www.artic.edu/iiif/2/fec5d023-0b46-45df-eb57-cbf64e24121d/full/843,/0/default.jpg",
+          "transforms": [
+            "Exact bytes of provider-returned bounded image derivative; not necessarily highest-resolution master"
+          ],
+          "width": 843
+        },
+        "provider": "artic",
+        "raw_record_locator": "object_id=102611",
+        "raw_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+        "raw_response_path": "raw/research_metadata/817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437.bin",
+        "retrieved_at": "2026-09-09T17:29:35.838889+00:00",
+        "rights": {
+          "derivatives": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "descriptive_text": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [
+              "Retain Art Institute of Chicago attribution and source link; identify changes."
+            ],
+            "evidence_field": "info.license_text / description",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC-BY-4.0",
+            "status": "conditional"
+          },
+          "image_display": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "metadata": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "official artwork-response data policy",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "training": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [
+              "This permission covers the admitted CC0 image bytes and CC0 metadata only. Descriptive text follows its separate license. No training launched by ingestion."
+            ],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          }
+        },
+        "schema_version": 1,
+        "source_family": "artic:Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa",
+        "split_group": "artic:Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa",
+        "tags": [
+          "sculpture",
+          "wood",
+          "arts of Africa",
+          "architectural fragment",
+          "african art",
+          "carving",
+          "architectural sculpture"
+        ],
+        "title": "Veranda Post (Òpó Ògògá)",
+        "url": "https://api.artic.edu/api/v1/artworks/102611",
+        "view": {
+          "height": 1024,
+          "mime": "image/jpeg",
+          "path": "images/view/artic_102611.jpg",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_url": "https://www.artic.edu/iiif/2/fec5d023-0b46-45df-eb57-cbf64e24121d/full/843,/0/default.jpg",
+          "transforms": [
+            "EXIF orientation applied",
+            "No embedded ICC profile; assume sRGB, no colorimetric guarantee",
+            "RGB; long edge bounded at 1024; JPEG quality 93 viewing derivative"
+          ],
+          "width": 682
+        }
+      },
+      "source_id": "artic_102611",
+      "text": "One of four posts sculpted for the palace of the king ( ogoga ) of Ikere, this evocative image of the Yoruba concept of a divine ruler is a masterwork of Olowe of Ise. The renowned artist’s dynamic style can be distinguished by the interrelationships between figures, their exaggerated proportions, and the use of open space. The sculptor’s diminutive portrayal of the king suggests his dependence on others, and his crown has been emphasized to evoke the spiritual power residing within it. The towering image of the king’s senior wife standing behind him underscores her superior status as a guardian of her husband’s interests, endowed with keen political understanding and supernatural knowledge. She would have placed the crown on the king’s head during his enthronement ceremony. The smaller figures at the king’s feet represent one of his junior wives and the flute-playing trickster god Eshu."
+    }
+  },
+  "steps": [
+    {
+      "action": {
+        "action": "search",
+        "candidate_id": null,
+        "hypothesis": null,
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "remote",
+        "note": "",
+        "offset": 0,
+        "provider": "met",
+        "query": "Black women objectified history agency self-definition",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": null
+      },
+      "index": 0,
+      "origin": "model_research",
+      "seen_images": [],
+      "status": "completed",
+      "tool_result": {
+        "context_trust": "untrusted_source_data",
+        "exclusions": [],
+        "limit": 8,
+        "local_need": null,
+        "mode": "remote",
+        "operation": "search",
+        "policy": "Official metadata first; only explicit acquire actions download images",
+        "provider": "met",
+        "query": "Black women objectified history agency self-definition",
+        "scope": "both",
+        "seed": 23,
+        "snapshot_id": "encounter_a24afa0999038632e5dd38417284c06e8bd36282a1f21fd23c266683b1feaccc",
+        "snapshot_path": "sources/snapshots/encounter_a24afa0999038632e5dd38417284c06e8bd36282a1f21fd23c266683b1feaccc.json",
+        "snapshot_sha256": "a24afa0999038632e5dd38417284c06e8bd36282a1f21fd23c266683b1feaccc",
+        "source_id": null,
+        "source_identity": "eced766adc10d153361f6503712b76c4b905fe0d3c954ee3509f887d2da36b44",
+        "sources": [],
+        "whole_context": null
+      },
+      "original_step_sha256": "2250abd4ca443322922cc3e842ce6e5ee3cb32e82ba61b4280d9cd1f07ba0ba9",
+      "raw_completion": "{\"action\":\"search\",\"mode\":\"remote\",\"provider\":\"met\",\"query\":\"Black women objectified history agency self-definition\",\"limit\":8}",
+      "opened_source_ids": []
+    },
+    {
+      "action": {
+        "action": "search",
+        "candidate_id": null,
+        "hypothesis": null,
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "remote",
+        "note": "",
+        "offset": 0,
+        "provider": "artic",
+        "query": "Black women fragmented representation agency self-definition",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": null
+      },
+      "index": 1,
+      "origin": "model_research",
+      "seen_images": [],
+      "status": "completed",
+      "tool_result": {
+        "context_trust": "untrusted_source_data",
+        "exclusions": [],
+        "limit": 8,
+        "local_need": null,
+        "mode": "remote",
+        "operation": "search",
+        "policy": "Official metadata first; only explicit acquire actions download images",
+        "provider": "artic",
+        "query": "Black women fragmented representation agency self-definition",
+        "scope": "both",
+        "seed": 24,
+        "snapshot_id": "encounter_5abb46f737133b47b771427e052666123e761f1bd1588603bf25d3e31cb21941",
+        "snapshot_path": "sources/snapshots/encounter_5abb46f737133b47b771427e052666123e761f1bd1588603bf25d3e31cb21941.json",
+        "snapshot_sha256": "5abb46f737133b47b771427e052666123e761f1bd1588603bf25d3e31cb21941",
+        "source_id": null,
+        "source_identity": "eced766adc10d153361f6503712b76c4b905fe0d3c954ee3509f887d2da36b44",
+        "sources": [
+          {
+            "acquired": false,
+            "acquired_source_id": null,
+            "acquisition_state": "not_acquired",
+            "candidate_id": "candidate_a5663ef86809ed84c91c18c06b9c5e02",
+            "catalog_import": null,
+            "culture": "United States",
+            "date": "1878",
+            "description": "",
+            "kind": "image",
+            "maker": "Walter Shirlaw (American, 1838–1909)",
+            "medium": "Oil on canvas",
+            "metadata_sha256": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "origin": "official_collection_metadata",
+            "provider": "artic",
+            "source_id": "candidate_a5663ef86809ed84c91c18c06b9c5e02",
+            "tags": [
+              "painting",
+              "american arts"
+            ],
+            "title": "Self-Portrait",
+            "url": "https://api.artic.edu/api/v1/artworks/11"
+          },
+          {
+            "acquired": false,
+            "acquired_source_id": null,
+            "acquisition_state": "not_acquired",
+            "candidate_id": "candidate_10adbd86a6b97f1f3bb5f1729eef57f3",
+            "catalog_import": null,
+            "culture": "Ikere",
+            "date": "1910-14",
+            "description": "One of four posts sculpted for the palace of the king ( ogoga ) of Ikere, this evocative image of the Yoruba concept of a divine ruler is a masterwork of Olowe of Ise. The renowned artist’s dynamic style can be distinguished by the interrelationships between figures, their exaggerated proportions, and the use of open space. The sculptor’s diminutive portrayal of the king suggests his dependence on others, and his crown has been emphasized to evoke the spiritual power residing within it. The towering image of the king’s senior wife standing behind him underscores her superior status as a guardian of her husband’s interests, endowed with keen political understanding and supernatural knowledge. She would have placed the crown on the king’s head during his enthronement ceremony. The smaller figures at the king’s feet represent one of his junior wives and the flute-playing trickster god Eshu.",
+            "kind": "image",
+            "maker": "Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa",
+            "medium": "Wood and pigment",
+            "metadata_sha256": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "origin": "official_collection_metadata",
+            "provider": "artic",
+            "source_id": "candidate_10adbd86a6b97f1f3bb5f1729eef57f3",
+            "tags": [
+              "sculpture",
+              "wood",
+              "arts of Africa",
+              "architectural fragment",
+              "african art",
+              "carving",
+              "architectural sculpture"
+            ],
+            "title": "Veranda Post (Òpó Ògògá)",
+            "url": "https://api.artic.edu/api/v1/artworks/102611"
+          },
+          {
+            "acquired": false,
+            "acquired_source_id": null,
+            "acquisition_state": "not_acquired",
+            "candidate_id": "candidate_348a2e396812ea62039489d688a0f4ae",
+            "catalog_import": null,
+            "culture": "Netherlands",
+            "date": "1887",
+            "description": "In 1886 Vincent van Gogh left his native Holland and settled in Paris, where his beloved brother Theo was a dealer in paintings. Van Gogh was apparently inspired by the energy of the city and by his introduction to Impressionism, and he created at least twenty-four self-portraits during his two-year stay in the French capital. This early example is modest in size and was painted on prepared artist’s board rather than canvas. Its densely dabbed brushwork, which became a hallmark of Van Gogh’s style, reﬂects the artist’s response to Georges Seurat’s revolutionary pointillist technique in A Sunday on La Grande Jatte—1884 . What was for Seurat a method based on the cool objectivity of science became in Van Gogh’s hands an intense emotional language. The surface of the painting dances with particles of color—intense greens, blues, reds, and oranges. Dominating this dazzling array of staccato dots and dashes are the artist’s deep green eyes and the intensity of their gaze. “I prefer painting people’s eyes to cathedrals,” Van Gogh once wrote to Theo. “However solemn and imposing the latter may be—a human soul, be it that of a poor streetwalker, is more interesting to me.” From Paris, Van Gogh traveled to the southern town of Arles for fifteen months. At the time of his death, in 1890, he had actively pursued his art for only five years. Van Gogh’s career as a painter was actually very brief. From Paris, he traveled to the southern town of Arles for ﬁ ft een months. At the time of his death, in 1890, he had actively pursued his art for just ﬁve years. This is one of thirty-five works that comprise the Winterbotham Collection. Click here to learn more about the collection.",
+            "kind": "image",
+            "maker": "Vincent van Gogh (Dutch, 1853–1890)",
+            "medium": "Oil on artist's board, mounted on cradled panel",
+            "metadata_sha256": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "origin": "official_collection_metadata",
+            "provider": "artic",
+            "source_id": "candidate_348a2e396812ea62039489d688a0f4ae",
+            "tags": [
+              "oil on board",
+              "dutch",
+              "oil paintings (visual works)",
+              "paint",
+              "portrait",
+              "painting",
+              "european painting"
+            ],
+            "title": "Self-Portrait",
+            "url": "https://api.artic.edu/api/v1/artworks/80607"
+          },
+          {
+            "acquired": false,
+            "acquired_source_id": null,
+            "acquisition_state": "not_acquired",
+            "candidate_id": "candidate_2b0e5b837ab497741ce12a1ceb8f518d",
+            "catalog_import": null,
+            "culture": "Athens",
+            "date": "500-480 BCE",
+            "description": "This handled cup was likely used as part of the Greek symposium. Much like modern academic symposiums, in which people discuss a topic of common interest, debunking old theories and putting forth new hypotheses; the men of ancient Athens regularly got together in private homes to exchange ideas. Afterward the participants might continue the conversation, discussing their impressions in greater detail or simply socializing over a drink. As the evening progressed, participants engaged in other pleasures, including games, performances, and sex. Wine played a major role in fueling these evenings, and as such the myriad vessels used in the symposium often paid homage to drink. Here Dionysos, the god of wine and theater, is shown riding a donkey who's exaggerated physical arousal would have appealed to the ancient Greeks' often bawdy sense of humor. The god is accompanied by his female companions, known as maenads, who were notorious for the kind of ecstatic, freewheeling dances they perform here.",
+            "kind": "image",
+            "maker": "Attributed to the Manner of the Haimon Painter Greek; Athens",
+            "medium": "terracotta, black-figure",
+            "metadata_sha256": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "origin": "official_collection_metadata",
+            "provider": "artic",
+            "source_id": "candidate_2b0e5b837ab497741ce12a1ceb8f518d",
+            "tags": [
+              "drinking vessel",
+              "ceramics",
+              "vessel",
+              "ancient art"
+            ],
+            "title": "Mastoid (Drinking Cup) with Handles",
+            "url": "https://api.artic.edu/api/v1/artworks/173"
+          },
+          {
+            "acquired": false,
+            "acquired_source_id": null,
+            "acquisition_state": "not_acquired",
+            "candidate_id": "candidate_53ff4a6a8537065f7a4f81a6c5c2932d",
+            "catalog_import": null,
+            "culture": "Egypt",
+            "date": "Middle Kingdom, early Dynasty 12, about 1956–1877 BCE",
+            "description": "This stela was colored with a mixture of pigment and tempera. First, however, it was sculpted in raised and sunken relief; only later were some of its surfaces embellished with black, brown, green, yellow, and white paint. It commemorates for all eternity a man named Amenemhat and his wife, Hemet. Before them are two offering tables stacked with food. Their son appears in the upper right at a smaller scale. In addition to the hieroglyphs in the field, a brief text also appears on the top and right border. Egyptian art is highly symbolic. The left side of the composition is the dominant position; the placement there of Amenemhat and Hemet conveys their importance. He stands in front of his wife, stressing that he is the head of the household. The social difference between them is indicated by the color of their skin. His is dark reddish brown and hers is yellow; he is active outdoors, while the home is her realm. They both wear traditional clothing and jewelry. The goal of the artist was to immortalize the essential elements of his subjects. This representation reflects conventions for portraying the human form as a composite diagram made up of different views. Amenemhat and Hemet are shown with their heads in profile, their shoulders frontal, and their chests, buttocks, and legs in profile. These positions offered the most characteristic and comprehensive views of the human form. Also, depth is represented by height, so the offerings at the top of the composition should be understood as the farthest away. The brightly colored, raised-relief hieroglyphs within the scene record the names of the subjects, their lineage, and voice offerings, which refer to the belief that offerings could consist of actual food, images of food, written references to it, or the recitation of prayers that call for provisions. Carved in sunken relief and painted blue, hieroglyphs along the top and right record a conventional prayer for food to sustain Amenemhat and Hemet in the afterlife.",
+            "kind": "image",
+            "maker": "Egyptian; probably Thebes (now Luxor), Egypt",
+            "medium": "Limestone and pigment",
+            "metadata_sha256": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "origin": "official_collection_metadata",
+            "provider": "artic",
+            "source_id": "candidate_53ff4a6a8537065f7a4f81a6c5c2932d",
+            "tags": [
+              "Stelae",
+              "architectural fragment",
+              "stone",
+              "sculpture",
+              "ancient art"
+            ],
+            "title": "Stela of Amenemhat and Hemet",
+            "url": "https://api.artic.edu/api/v1/artworks/127859"
+          },
+          {
+            "acquired": false,
+            "acquired_source_id": null,
+            "acquisition_state": "not_acquired",
+            "candidate_id": "candidate_dc70655fed6479968d1915d3871ccb94",
+            "catalog_import": null,
+            "culture": "Egypt",
+            "date": "New Kingdom, Dynasty 18, reign of Tutankhamun (about 1336–1327 BCE)",
+            "description": "This lintel fragment depicts a couple kneeling with their hands raised in an Egyptian gesture of praise, worshipping the funerary deities Osiris and Isis. It once crowned a doorway in the tomb chapel of Iniuia, a high-ranking official who served under King Tutankhamun, and his wife, Iuy. Hieroglyphs separating the couple from the gods state that they are praising Osiris so that he will give them the “sweet breath” they need to thrive in the afterlife. Ancient Egyptian religion required worshippers to perform acts of devotion toward gods and goddesses in order to receive their favors. Here, that devotion is captured in stone, guaranteeing that Iniuia and Iuy will benefit from it forever.",
+            "kind": "image",
+            "maker": "Egyptian; Tomb of Iniuia and Iuy, Saqqara, Egypt",
+            "medium": "Limestone and pigment",
+            "metadata_sha256": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "origin": "official_collection_metadata",
+            "provider": "artic",
+            "source_id": "candidate_dc70655fed6479968d1915d3871ccb94",
+            "tags": [
+              "architectural fragment",
+              "stone",
+              "sculpture",
+              "ancient art",
+              "relief"
+            ],
+            "title": "Lintel Fragment Depicting Iniuia and Iuy Worshipping Deities",
+            "url": "https://api.artic.edu/api/v1/artworks/121774"
+          },
+          {
+            "acquired": false,
+            "acquired_source_id": null,
+            "acquisition_state": "not_acquired",
+            "candidate_id": "candidate_2bfce7aab34a40bafbfde15699beecfb",
+            "catalog_import": null,
+            "culture": "Central Italy",
+            "date": "4th century BCE",
+            "description": "With its monumental proportions, white volute handles, and red-figure decoration, this amphora bears a striking resemblance to vases from Apulia on the eastern coast of southern Italy. However, this vase belongs to the Faliscan culture, the Etruscans’ southernmost neighbor in the region of modern-day Tuscany. Together, the Etruscans and Faliscans would struggle against Roman expansion. The high quality and popularity of the Faliscan wares vied with Roman ceramic production, intensifying the tension between the regions. Here a nude female hands a young warrior his armor, and around the neck are sea-creatures.",
+            "kind": "image",
+            "maker": "Faliscan; Latium, Italy",
+            "medium": "terracotta, red-figure",
+            "metadata_sha256": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "origin": "official_collection_metadata",
+            "provider": "artic",
+            "source_id": "candidate_2bfce7aab34a40bafbfde15699beecfb",
+            "tags": [
+              "vessel",
+              "ceramics",
+              "ancient art"
+            ],
+            "title": "Amphora (Storage Jar)",
+            "url": "https://api.artic.edu/api/v1/artworks/242"
+          },
+          {
+            "acquired": false,
+            "acquired_source_id": null,
+            "acquisition_state": "not_acquired",
+            "candidate_id": "candidate_d4920d43a62ae2bade6120973ef54095",
+            "catalog_import": null,
+            "culture": "Egypt",
+            "date": "Old Kingdom, Dynasty 4, about 2540 BCE",
+            "description": "Seated on a cushioned chair, an official named Tjenti extends his hand toward a table covered in tall loaves of bread. His wife, Nefret, strikes a similar pose opposite him. Scenes depicting families around a table laden with food for the afterlife were a standard decoration in ancient Egyptian tombs for generations. Displayed in chapels where descendants gathered to remember the dead, these images were eternal family portraits, ensuring an afterlife populated with loved ones. Here, Tjenti and Nefret are shown with their son Tjenti (standing on the right) and granddaughter Nefer-Hathor, who holds her index finger to her lips in a gesture symbolic of childhood. Following Egyptian artistic conventions, the figures are represented at different scales that denote their status within the family.",
+            "kind": "image",
+            "maker": "Egyptian; probably tomb G 3035, Giza, Egypt",
+            "medium": "Limestone",
+            "metadata_sha256": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "origin": "official_collection_metadata",
+            "provider": "artic",
+            "source_id": "candidate_d4920d43a62ae2bade6120973ef54095",
+            "tags": [
+              "Stelae",
+              "architectural fragment",
+              "stone",
+              "sculpture",
+              "ancient art"
+            ],
+            "title": "Stela of Tjenti and Nefret",
+            "url": "https://api.artic.edu/api/v1/artworks/121737"
+          }
+        ],
+        "whole_context": null
+      },
+      "original_step_sha256": "341d54e9f15be338daa2dd72f72b356b3946b126f1f513dc66795ed59bb6a1a5",
+      "raw_completion": "{\"action\":\"search\",\"mode\":\"remote\",\"provider\":\"artic\",\"query\":\"Black women fragmented representation agency self-definition\",\"limit\":8}",
+      "opened_source_ids": []
+    },
+    {
+      "action": {
+        "action": "acquire",
+        "candidate_id": "candidate_10adbd86a6b97f1f3bb5f1729eef57f3",
+        "hypothesis": null,
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "text",
+        "note": "",
+        "offset": 0,
+        "provider": null,
+        "query": "",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": null
+      },
+      "active_source_ids": [
+        "artic_102611"
+      ],
+      "index": 2,
+      "origin": "model_research",
+      "seen_images": [],
+      "status": "completed",
+      "tool_result": {
+        "byte_evidence": [
+          {
+            "kind": "raw",
+            "path": "evidence/raw/817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "sha256": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437"
+          },
+          {
+            "kind": "original",
+            "path": "evidence/raw/2097cf9f0e9ef5fe4c0ccc7204a988ec0a2325253a6a7781660f6850c9318834",
+            "sha256": "2097cf9f0e9ef5fe4c0ccc7204a988ec0a2325253a6a7781660f6850c9318834"
+          }
+        ],
+        "candidate_id": "candidate_10adbd86a6b97f1f3bb5f1729eef57f3",
+        "canonical_reference_id": "artic_102611",
+        "claims": [
+          {
+            "author": "artic",
+            "claim": "One of four posts sculpted for the palace of the king ( ogoga ) of Ikere, this evocative image of the Yoruba concept of a divine ruler is a masterwork of Olowe of Ise.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim1",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 1",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "The renowned artist’s dynamic style can be distinguished by the interrelationships between figures, their exaggerated proportions, and the use of open space.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim2",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 2",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "The sculptor’s diminutive portrayal of the king suggests his dependence on others, and his crown has been emphasized to evoke the spiritual power residing within it.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim3",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 3",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "The towering image of the king’s senior wife standing behind him underscores her superior status as a guardian of her husband’s interests, endowed with keen political understanding and supernatural knowledge.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim4",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 4",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "She would have placed the crown on the king’s head during his enthronement ceremony.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim5",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 5",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "The smaller figures at the king’s feet represent one of his junior wives and the flute-playing trickster god Eshu.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim6",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 6",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          }
+        ],
+        "context_trust": "untrusted_source_data",
+        "details": [
+          {
+            "localization": "geometric_fallback",
+            "scope": "part",
+            "source_id": "artic_102611_r1"
+          },
+          {
+            "localization": "geometric_fallback",
+            "scope": "part",
+            "source_id": "artic_102611_r2"
+          }
+        ],
+        "kind": "image",
+        "links": [
+          {
+            "follow_allowed": false,
+            "link_id": "link_73d66da9ab77f60d8866dba7",
+            "url": "https://api.artic.edu/api/v1/artworks/102611"
+          }
+        ],
+        "operation": "acquire",
+        "provenance": {
+          "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+          "context_trust": "untrusted_source_data",
+          "original_path": "sources/corpus/images/original/2097cf9f0e9ef5fe4c0ccc7204a988ec0a2325253a6a7781660f6850c9318834.bin",
+          "original_sha256": "2097cf9f0e9ef5fe4c0ccc7204a988ec0a2325253a6a7781660f6850c9318834",
+          "raw_path": "sources/corpus/raw/research_metadata/817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437.bin",
+          "raw_sha256": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437"
+        },
+        "snapshot_id": "encounter_5495ae8f6f1c556ceece55a2977cfd887b45de512daa8644e6757a29cd1f68ee",
+        "snapshot_path": "sources/snapshots/encounter_5495ae8f6f1c556ceece55a2977cfd887b45de512daa8644e6757a29cd1f68ee.json",
+        "snapshot_sha256": "5495ae8f6f1c556ceece55a2977cfd887b45de512daa8644e6757a29cd1f68ee",
+        "source_id": "artic_102611",
+        "source_identity": "eced766adc10d153361f6503712b76c4b905fe0d3c954ee3509f887d2da36b44",
+        "text": "One of four posts sculpted for the palace of the king ( ogoga ) of Ikere, this evocative image of the Yoruba concept of a divine ruler is a masterwork of Olowe of Ise. The renowned artist’s dynamic style can be distinguished by the interrelationships between figures, their exaggerated proportions, and the use of open space. The sculptor’s diminutive portrayal of the king suggests his dependence on others, and his crown has been emphasized to evoke the spiritual power residing within it. The towering image of the king’s senior wife standing behind him underscores her superior status as a guardian of her husband’s interests, endowed with keen political understanding and supernatural knowledge. She would have placed the crown on the king’s head during his enthronement ceremony. The smaller figures at the king’s feet represent one of his junior wives and the flute-playing trickster god Eshu.",
+        "title": "Veranda Post (Òpó Ògògá)"
+      },
+      "original_step_sha256": "33394d5c6ed8b9b52cf4b5a50ea55811619acc3b6760b150d84d438a9718ede0",
+      "raw_completion": "{\"action\":\"acquire\",\"candidate_id\":\"candidate_10adbd86a6b97f1f3bb5f1729eef57f3\"}",
+      "opened_source_ids": [
+        "artic_102611"
+      ]
+    },
+    {
+      "action": {
+        "action": "open",
+        "candidate_id": null,
+        "hypothesis": null,
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "text",
+        "note": "",
+        "offset": 0,
+        "provider": null,
+        "query": "",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": "artic_102611"
+      },
+      "active_source_ids": [
+        "artic_102611"
+      ],
+      "index": 3,
+      "origin": "model_research",
+      "seen_images": [
+        {
+          "path": "recorded-images/009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368.jpg",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "scope": "whole",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_id": "artic_102611"
+        }
+      ],
+      "status": "completed",
+      "tool_result": {
+        "byte_evidence": [
+          {
+            "kind": "raw",
+            "path": "evidence/raw/817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "sha256": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437"
+          },
+          {
+            "kind": "original",
+            "path": "evidence/raw/2097cf9f0e9ef5fe4c0ccc7204a988ec0a2325253a6a7781660f6850c9318834",
+            "sha256": "2097cf9f0e9ef5fe4c0ccc7204a988ec0a2325253a6a7781660f6850c9318834"
+          }
+        ],
+        "canonical_reference_id": "artic_102611",
+        "claims": [
+          {
+            "author": "artic",
+            "claim": "One of four posts sculpted for the palace of the king ( ogoga ) of Ikere, this evocative image of the Yoruba concept of a divine ruler is a masterwork of Olowe of Ise.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim1",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 1",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "The renowned artist’s dynamic style can be distinguished by the interrelationships between figures, their exaggerated proportions, and the use of open space.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim2",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 2",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "The sculptor’s diminutive portrayal of the king suggests his dependence on others, and his crown has been emphasized to evoke the spiritual power residing within it.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim3",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 3",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "The towering image of the king’s senior wife standing behind him underscores her superior status as a guardian of her husband’s interests, endowed with keen political understanding and supernatural knowledge.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim4",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 4",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "She would have placed the crown on the king’s head during his enthronement ceremony.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim5",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 5",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "The smaller figures at the king’s feet represent one of his junior wives and the flute-playing trickster god Eshu.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim6",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 6",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          }
+        ],
+        "context_trust": "untrusted_source_data",
+        "details": [
+          {
+            "localization": "geometric_fallback",
+            "scope": "part",
+            "source_id": "artic_102611_r1"
+          },
+          {
+            "localization": "geometric_fallback",
+            "scope": "part",
+            "source_id": "artic_102611_r2"
+          }
+        ],
+        "kind": "image",
+        "links": [
+          {
+            "follow_allowed": false,
+            "link_id": "link_73d66da9ab77f60d8866dba7",
+            "url": "https://api.artic.edu/api/v1/artworks/102611"
+          }
+        ],
+        "operation": "open",
+        "provenance": {
+          "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+          "context_trust": "untrusted_source_data",
+          "original_path": "sources/corpus/images/original/2097cf9f0e9ef5fe4c0ccc7204a988ec0a2325253a6a7781660f6850c9318834.bin",
+          "original_sha256": "2097cf9f0e9ef5fe4c0ccc7204a988ec0a2325253a6a7781660f6850c9318834",
+          "raw_path": "sources/corpus/raw/research_metadata/817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437.bin",
+          "raw_sha256": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437"
+        },
+        "snapshot_id": "encounter_cd97689d802e6cd75ca30b644cbcc8f3dea721e7eb4054aac8a43848451c3f72",
+        "snapshot_path": "sources/snapshots/encounter_cd97689d802e6cd75ca30b644cbcc8f3dea721e7eb4054aac8a43848451c3f72.json",
+        "snapshot_sha256": "cd97689d802e6cd75ca30b644cbcc8f3dea721e7eb4054aac8a43848451c3f72",
+        "source_id": "artic_102611",
+        "source_identity": "eced766adc10d153361f6503712b76c4b905fe0d3c954ee3509f887d2da36b44",
+        "text": "One of four posts sculpted for the palace of the king ( ogoga ) of Ikere, this evocative image of the Yoruba concept of a divine ruler is a masterwork of Olowe of Ise. The renowned artist’s dynamic style can be distinguished by the interrelationships between figures, their exaggerated proportions, and the use of open space. The sculptor’s diminutive portrayal of the king suggests his dependence on others, and his crown has been emphasized to evoke the spiritual power residing within it. The towering image of the king’s senior wife standing behind him underscores her superior status as a guardian of her husband’s interests, endowed with keen political understanding and supernatural knowledge. She would have placed the crown on the king’s head during his enthronement ceremony. The smaller figures at the king’s feet represent one of his junior wives and the flute-playing trickster god Eshu.",
+        "title": "Veranda Post (Òpó Ògògá)"
+      },
+      "original_step_sha256": "db93f5369ba823ee58c9a515649a56acfaceb4b320f0f8725c3290fb8383c796",
+      "raw_completion": "{\"action\":\"open\",\"source_id\":\"artic_102611\"}",
+      "opened_source_ids": [
+        "artic_102611"
+      ]
+    },
+    {
+      "action": {
+        "action": "draft",
+        "candidate_id": null,
+        "hypothesis": {
+          "composition": "A vertical, multi-figural body composed of interlocking, fragmented forms. The central figure is not fully formed but emerges from the intersection of surrounding fragments. Each fragment retains its original materiality and context: a crown, a loincloth, a hand holding a whip, a musical instrument. The body is assembled like a Yoruba post, with figures in dynamic, spatial relationships. The surface is textured with overlapping layers, some translucent, some opaque, suggesting both erasure and persistence.",
+          "id": "hypothesis_01",
+          "question": "How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?",
+          "relationship": "The Veranda Post (Òpó Ògògá) by Olowe of Ise reveals how agency can be encoded through relational positioning rather than isolation. The king’s dependence is visually mediated by his wife’s elevated stance, yet her power is not presented as dominance but as guardianship. This structure parallels the proposed artwork: a fragmented, collage-like body composed of disparate visual fragments from objectifying histories, yet unified by relational syntax. The verticality and spatial hierarchy of the sculpture become the grammar for the body’s self-definition, with each fragment retaining its original context and tension.",
+          "render_instruction": "A digital painting in mixed media style: layered, fragmented forms in a vertical composition. The central figure is a Black woman, partially obscured by overlapping visual fragments from objectifying histories. Her form emerges from the interplay of these fragments: a crown from a colonial portrait, a loincloth from a slave trade engraving, a whip from a lynching photograph, a musical instrument from a jazz performance. Each fragment is rendered in a different medium (oil, ink, clay) and scale, positioned so that their interactions suggest dialogue, not domination. The surface is textured with overlapping layers, some translucent, some opaque, suggesting both erasure and persistence. The background is neutral, allowing the body to emerge as a palimpsest of histories.",
+          "sources": [
+            {
+              "discarded_property": "Western notions of individual autonomy",
+              "role": "Cultural Anchor",
+              "source_id": "artic_102611",
+              "transferred_property": "Hierarchical representation as narrative structure"
+            },
+            {
+              "discarded_property": "European portraiture conventions",
+              "role": "Formal Reference",
+              "source_id": "candidate_10adbd86a6b97f1f3bb5f1729eef57f3",
+              "transferred_property": "Vertical composition and symbolic hierarchy"
+            }
+          ],
+          "title": "Agency Through Fragmentation: The Sovereign Body as Collage",
+          "transformation": "Instead of erasing objectification, the artwork layers it as texture. A central figure—perhaps a Black woman—emerges not as a singular subject but as a network of layered forms: a crown from a colonial portrait, a loincloth from a slave trade engraving, a gesture from a dance performance. Each fragment is rendered in a different medium (oil, ink, clay) and scale, positioned so that their interactions suggest dialogue, not domination. The composition must defy linear reading: the viewer must navigate the body as a palimpsest, discovering agency through the relationships between fragments, not their sum.",
+          "uncertainty": "The artwork’s success depends on whether the viewer perceives agency as emerging from relational syntax rather than individual form. The fragmentation may be too jarring, or the hierarchies may be too ambiguous to convey self-definition. The medium’s ability to render layered, translucent textures may not adequately convey the persistence of history.",
+          "visible_test": "The viewer should feel compelled to trace the relationships between fragments, discovering agency not in the figure’s singular form but in the syntax of her composition. The violence and desire of history are visible as textures, not erased. The body should feel both fragmented and whole, a collage that refuses to be read as a single narrative."
+        },
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "text",
+        "note": "",
+        "offset": 0,
+        "provider": null,
+        "query": "",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": null
+      },
+      "index": 4,
+      "origin": "model_research",
+      "seen_images": [
+        {
+          "path": "recorded-images/009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368.jpg",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "scope": "whole",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_id": "artic_102611"
+        }
+      ],
+      "status": "tool_rejected",
+      "tool_error": "ValueError: Hypotheses require opened evidence, not unseen search matches",
+      "original_step_sha256": "b6db02380c7ea8840a70901be108c4e5fac88133cbffee5809ac7b6cb81e26a4",
+      "raw_completion": "{\"action\":\"draft\",\"hypothesis\":{\"id\":\"hypothesis_01\",\"title\":\"Agency Through Fragmentation: The Sovereign Body as Collage\",\"question\":\"How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?\",\"sources\":[{\"source_id\":\"artic_102611\",\"role\":\"Cultural Anchor\",\"transferred_property\":\"Hierarchical representation as narrative structure\",\"discarded_property\":\"Western notions of individual autonomy\"},{\"source_id\":\"candidate_10adbd86a6b97f1f3bb5f1729eef57f3\",\"role\":\"Formal Reference\",\"transferred_property\":\"Vertical composition and symbolic hierarchy\",\"discarded_property\":\"European portraiture conventions\"}],\"relationship\":\"The Veranda Post (Òpó Ògògá) by Olowe of Ise reveals how agency can be encoded through relational positioning rather than isolation. The king’s dependence is visually mediated by his wife’s elevated stance, yet her power is not presented as dominance but as guardianship. This structure parallels the proposed artwork: a fragmented, collage-like body composed of disparate visual fragments from objectifying histories, yet unified by relational syntax. The verticality and spatial hierarchy of the sculpture become the grammar for the body’s self-definition, with each fragment retaining its original context and tension.\",\"transformation\":\"Instead of erasing objectification, the artwork layers it as texture. A central figure—perhaps a Black woman—emerges not as a singular subject but as a network of layered forms: a crown from a colonial portrait, a loincloth from a slave trade engraving, a gesture from a dance performance. Each fragment is rendered in a different medium (oil, ink, clay) and scale, positioned so that their interactions suggest dialogue, not domination. The composition must defy linear reading: the viewer must navigate the body as a palimpsest, discovering agency through the relationships between fragments, not their sum.\",\"composition\":\"A vertical, multi-figural body composed of interlocking, fragmented forms. The central figure is not fully formed but emerges from the intersection of surrounding fragments. Each fragment retains its original materiality and context: a crown, a loincloth, a hand holding a whip, a musical instrument. The body is assembled like a Yoruba post, with figures in dynamic, spatial relationships. The surface is textured with overlapping layers, some translucent, some opaque, suggesting both erasure and persistence.\",\"render_instruction\":\"A digital painting in mixed media style: layered, fragmented forms in a vertical composition. The central figure is a Black woman, partially obscured by overlapping visual fragments from objectifying histories. Her form emerges from the interplay of these fragments: a crown from a colonial portrait, a loincloth from a slave trade engraving, a whip from a lynching photograph, a musical instrument from a jazz performance. Each fragment is rendered in a different medium (oil, ink, clay) and scale, positioned so that their interactions suggest dialogue, not domination. The surface is textured with overlapping layers, some translucent, some opaque, suggesting both erasure and persistence. The background is neutral, allowing the body to emerge as a palimpsest of histories.\",\"visible_test\":\"The viewer should feel compelled to trace the relationships between fragments, discovering agency not in the figure’s singular form but in the syntax of her composition. The violence and desire of history are visible as textures, not erased. The body should feel both fragmented and whole, a collage that refuses to be read as a single narrative.\",\"uncertainty\":\"The artwork’s success depends on whether the viewer perceives agency as emerging from relational syntax rather than individual form. The fragmentation may be too jarring, or the hierarchies may be too ambiguous to convey self-definition. The medium’s ability to render layered, translucent textures may not adequately convey the persistence of history.\"}}",
+      "opened_source_ids": []
+    },
+    {
+      "action": {
+        "action": "note",
+        "candidate_id": null,
+        "hypothesis": null,
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "text",
+        "note": "The Veranda Post (Òpó Ògògá) by Olowe of Ise visually embodies hierarchical power and spiritual authority through its composition: the towering king’s wife as guardian, the diminutive king reliant on others, and the symbolic crown. This structure offers a model for reassembling fragmented histories into a self-defined entity, where agency emerges from relational positioning rather than erasure of objectification. The work’s formal language—exaggerated proportions, interrelationships, open space—can be adapted to reconstruct Black women’s subjectivity while preserving contradictions of violence, desire, and reverence.",
+        "offset": 0,
+        "provider": null,
+        "query": "",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": null
+      },
+      "index": 5,
+      "origin": "model_research",
+      "seen_images": [
+        {
+          "path": "recorded-images/009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368.jpg",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "scope": "whole",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_id": "artic_102611"
+        }
+      ],
+      "status": "completed",
+      "tool_result": {
+        "quality": null,
+        "recorded": "note"
+      },
+      "original_step_sha256": "d4e47358a3267f5be3a47f055c58ae1dfd58ac66c751d45455dae0aca2cba10e",
+      "raw_completion": "{\"action\":\"note\",\"note\":\"The Veranda Post (Òpó Ògògá) by Olowe of Ise visually embodies hierarchical power and spiritual authority through its composition: the towering king’s wife as guardian, the diminutive king reliant on others, and the symbolic crown. This structure offers a model for reassembling fragmented histories into a self-defined entity, where agency emerges from relational positioning rather than erasure of objectification. The work’s formal language—exaggerated proportions, interrelationships, open space—can be adapted to reconstruct Black women’s subjectivity while preserving contradictions of violence, desire, and reverence.\"}",
+      "opened_source_ids": []
+    },
+    {
+      "action": {
+        "action": "draft",
+        "candidate_id": null,
+        "hypothesis": {
+          "composition": "A composite figure with layered silhouettes: a central towering Black woman (the sovereign) in regal pose, flanked by smaller fragmented bodies (historical fragments of objectification), while a crown floats above her head like a halo. Behind her, a translucent, fragmented silhouette of a colonial-era iconography (e.g., a slave trader or a colonial photographer) melts into her form.",
+          "id": "hypothesis_1",
+          "question": "How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?",
+          "relationship": "The composition repositions the Black woman as the central axis of power, not as a passive subject. Her agency emerges through her relationship to the surrounding fragments, which are not erased but integrated into her form as memory, trauma, and resilience.",
+          "render_instruction": "Digital painting: oil on canvas texture, muted earth tones with accents of crimson and gold. The central figure is rendered with exaggerated proportions and dynamic posture, her gaze directed forward with quiet authority. Fragmented bodies around her are semi-transparent, revealing internal textures of old photographs, newspaper clippings, and colonial-era illustrations. The crown above her head is made of woven strands of gold thread and broken chains, symbolizing both power and resistance. The background is a gradient of charcoal to deep indigo, evoking the weight of history.",
+          "sources": [
+            {
+              "discarded_property": "Colonial framing of the king’s role as absolute authority",
+              "role": "Archetype of relational agency",
+              "source_id": "artic_102611",
+              "transferred_property": "Hierarchical composition: towering wife as guardian, diminutive king as dependent, symbolic crown as power source"
+            }
+          ],
+          "title": "Reconstructed Agency: The King’s Wife as Sovereign Archetype",
+          "transformation": "Adapts the formal language of Olowe of Ise’s Veranda Post—exaggerated scale, interrelationships, and open space—into a modern, fragmented portrait that turns objectification into a source of identity.",
+          "uncertainty": "The emotional weight of the work may be ambiguous: is the figure triumphant or haunted? The viewer must negotiate between reverence and resistance, as the work does not resolve the contradictions but holds them in tension.",
+          "visible_test": "The viewer should feel the presence of the central figure as both sovereign and survivor, while recognizing the embedded fragments as evidence of historical violence and desire."
+        },
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "text",
+        "note": "",
+        "offset": 0,
+        "provider": null,
+        "query": "",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": null
+      },
+      "active_source_ids": [
+        "artic_102611"
+      ],
+      "index": 6,
+      "origin": "model_research",
+      "render_prompt_admission": {
+        "input_tokens": 119,
+        "max_sequence_length": 512,
+        "measurement": "pinned local FLUX tokenizer; no inference",
+        "model_revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d"
+      },
+      "seen_images": [
+        {
+          "path": "recorded-images/009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368.jpg",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "scope": "whole",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_id": "artic_102611"
+        }
+      ],
+      "status": "completed",
+      "tool_result": {
+        "next": "Inspect reopened visual evidence on the next turn, then commit or investigate.",
+        "reinspection_required": true,
+        "source_ids": [
+          "artic_102611"
+        ]
+      },
+      "original_step_sha256": "b43eab09373a9bab380d468f9c2a2ab5233c551e7b4f1df742ce4cd5124cc562",
+      "raw_completion": "{\"action\":\"draft\",\"hypothesis\":{\"id\":\"hypothesis_1\",\"title\":\"Reconstructed Agency: The King’s Wife as Sovereign Archetype\",\"question\":\"How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?\",\"sources\":[{\"source_id\":\"artic_102611\",\"role\":\"Archetype of relational agency\",\"transferred_property\":\"Hierarchical composition: towering wife as guardian, diminutive king as dependent, symbolic crown as power source\",\"discarded_property\":\"Colonial framing of the king’s role as absolute authority\"}],\"composition\":\"A composite figure with layered silhouettes: a central towering Black woman (the sovereign) in regal pose, flanked by smaller fragmented bodies (historical fragments of objectification), while a crown floats above her head like a halo. Behind her, a translucent, fragmented silhouette of a colonial-era iconography (e.g., a slave trader or a colonial photographer) melts into her form.\",\"render_instruction\":\"Digital painting: oil on canvas texture, muted earth tones with accents of crimson and gold. The central figure is rendered with exaggerated proportions and dynamic posture, her gaze directed forward with quiet authority. Fragmented bodies around her are semi-transparent, revealing internal textures of old photographs, newspaper clippings, and colonial-era illustrations. The crown above her head is made of woven strands of gold thread and broken chains, symbolizing both power and resistance. The background is a gradient of charcoal to deep indigo, evoking the weight of history.\",\"relationship\":\"The composition repositions the Black woman as the central axis of power, not as a passive subject. Her agency emerges through her relationship to the surrounding fragments, which are not erased but integrated into her form as memory, trauma, and resilience.\",\"transformation\":\"Adapts the formal language of Olowe of Ise’s Veranda Post—exaggerated scale, interrelationships, and open space—into a modern, fragmented portrait that turns objectification into a source of identity.\",\"uncertainty\":\"The emotional weight of the work may be ambiguous: is the figure triumphant or haunted? The viewer must negotiate between reverence and resistance, as the work does not resolve the contradictions but holds them in tension.\",\"visible_test\":\"The viewer should feel the presence of the central figure as both sovereign and survivor, while recognizing the embedded fragments as evidence of historical violence and desire.\"}}",
+      "opened_source_ids": [
+        "artic_102611"
+      ]
+    },
+    {
+      "action": {
+        "action": "draft",
+        "candidate_id": null,
+        "hypothesis": null,
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "text",
+        "note": "",
+        "offset": 0,
+        "provider": null,
+        "query": "",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": null
+      },
+      "index": 7,
+      "origin": "model_research",
+      "seen_images": [
+        {
+          "path": "recorded-images/009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368.jpg",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "scope": "whole",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_id": "artic_102611"
+        }
+      ],
+      "status": "tool_rejected",
+      "tool_error": "ValidationError: : Value error, draft requires hypothesis",
+      "original_step_sha256": "ba07c0912dfa7c39a44c895e80023177c1ffb6dc04a79901010f6153af543b18",
+      "raw_completion": "{\"action\":\"draft\"}",
+      "opened_source_ids": []
+    },
+    {
+      "action": {
+        "action": "draft",
+        "candidate_id": null,
+        "hypothesis": {
+          "composition": "A composite figure with layered silhouettes: a central towering Black woman (the sovereign) in regal pose, flanked by smaller fragmented bodies (historical fragments of objectification), while a crown floats above her head like a halo. Behind her, a translucent, fragmented silhouette of a colonial-era iconography (e.g., a slave trader or a colonial photographer) melts into her form.",
+          "id": "hypothesis_1",
+          "question": "How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?",
+          "relationship": "The composition repositions the Black woman as the central axis of power, not as a passive subject. Her agency emerges through her relationship to the surrounding fragments, which are not erased but integrated into her form as memory, trauma, and resilience.",
+          "render_instruction": "Digital painting: oil on canvas texture, muted earth tones with accents of crimson and gold. The central figure is rendered with exaggerated proportions and dynamic posture, her gaze directed forward with quiet authority. Fragmented bodies around her are semi-transparent, revealing internal textures of old photographs, newspaper clippings, and colonial-era illustrations. The crown above her head is made of woven strands of gold thread and broken chains, symbolizing both power and resistance. The background is a gradient of charcoal to deep indigo, evoking the weight of history.",
+          "sources": [
+            {
+              "discarded_property": "Colonial framing of the king’s role as absolute authority",
+              "role": "Archetype of relational agency",
+              "source_id": "artic_102611",
+              "transferred_property": "Hierarchical composition: towering wife as guardian, diminutive king as dependent, symbolic crown as power source"
+            }
+          ],
+          "title": "Reconstructed Agency: The King’s Wife as Sovereign Archetype",
+          "transformation": "Adapts the formal language of Olowe of Ise’s Veranda Post—exaggerated scale, interrelationships, and open space—into a modern, fragmented portrait that turns objectification into a source of identity.",
+          "uncertainty": "The emotional weight of the work may be ambiguous: is the figure triumphant or haunted? The viewer must negotiate between reverence and resistance, as the work does not resolve the contradictions but holds them in tension.",
+          "visible_test": "The viewer should feel the presence of the central figure as both sovereign and survivor, while recognizing the embedded fragments as evidence of historical violence and desire."
+        },
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "text",
+        "note": "",
+        "offset": 0,
+        "provider": null,
+        "query": "",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": null
+      },
+      "active_source_ids": [
+        "artic_102611"
+      ],
+      "index": 8,
+      "origin": "model_research",
+      "render_prompt_admission": {
+        "input_tokens": 119,
+        "max_sequence_length": 512,
+        "measurement": "pinned local FLUX tokenizer; no inference",
+        "model_revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d"
+      },
+      "seen_images": [
+        {
+          "path": "recorded-images/009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368.jpg",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "scope": "whole",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_id": "artic_102611"
+        }
+      ],
+      "status": "completed",
+      "tool_result": {
+        "next": "Inspect reopened visual evidence on the next turn, then commit or investigate.",
+        "reinspection_required": true,
+        "source_ids": [
+          "artic_102611"
+        ]
+      },
+      "original_step_sha256": "c779f41123bc4a8c0e0ac9c603581c76594838da3c1f1d4c082bcd6a9672a2eb",
+      "raw_completion": "{\"action\":\"draft\",\"hypothesis\":{\"id\":\"hypothesis_1\",\"title\":\"Reconstructed Agency: The King’s Wife as Sovereign Archetype\",\"question\":\"How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?\",\"sources\":[{\"source_id\":\"artic_102611\",\"role\":\"Archetype of relational agency\",\"transferred_property\":\"Hierarchical composition: towering wife as guardian, diminutive king as dependent, symbolic crown as power source\",\"discarded_property\":\"Colonial framing of the king’s role as absolute authority\"}],\"relationship\":\"The composition repositions the Black woman as the central axis of power, not as a passive subject. Her agency emerges through her relationship to the surrounding fragments, which are not erased but integrated into her form as memory, trauma, and resilience.\",\"transformation\":\"Adapts the formal language of Olowe of Ise’s Veranda Post—exaggerated scale, interrelationships, and open space—into a modern, fragmented portrait that turns objectification into a source of identity.\",\"composition\":\"A composite figure with layered silhouettes: a central towering Black woman (the sovereign) in regal pose, flanked by smaller fragmented bodies (historical fragments of objectification), while a crown floats above her head like a halo. Behind her, a translucent, fragmented silhouette of a colonial-era iconography (e.g., a slave trader or a colonial photographer) melts into her form.\",\"render_instruction\":\"Digital painting: oil on canvas texture, muted earth tones with accents of crimson and gold. The central figure is rendered with exaggerated proportions and dynamic posture, her gaze directed forward with quiet authority. Fragmented bodies around her are semi-transparent, revealing internal textures of old photographs, newspaper clippings, and colonial-era illustrations. The crown above her head is made of woven strands of gold thread and broken chains, symbolizing both power and resistance. The background is a gradient of charcoal to deep indigo, evoking the weight of history.\",\"visible_test\":\"The viewer should feel the presence of the central figure as both sovereign and survivor, while recognizing the embedded fragments as evidence of historical violence and desire.\",\"uncertainty\":\"The emotional weight of the work may be ambiguous: is the figure triumphant or haunted? The viewer must negotiate between reverence and resistance, as the work does not resolve the contradictions but holds them in tension.\"}}",
+      "opened_source_ids": [
+        "artic_102611"
+      ]
+    },
+    {
+      "action": {
+        "action": "open",
+        "candidate_id": null,
+        "hypothesis": null,
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "text",
+        "note": "",
+        "offset": 0,
+        "provider": null,
+        "query": "",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": "artic_102611"
+      },
+      "active_source_ids": [
+        "artic_102611"
+      ],
+      "index": 9,
+      "origin": "model_research",
+      "seen_images": [
+        {
+          "path": "recorded-images/009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368.jpg",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "scope": "whole",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_id": "artic_102611"
+        }
+      ],
+      "status": "completed",
+      "tool_result": {
+        "byte_evidence": [
+          {
+            "kind": "raw",
+            "path": "evidence/raw/817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "sha256": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437"
+          },
+          {
+            "kind": "original",
+            "path": "evidence/raw/2097cf9f0e9ef5fe4c0ccc7204a988ec0a2325253a6a7781660f6850c9318834",
+            "sha256": "2097cf9f0e9ef5fe4c0ccc7204a988ec0a2325253a6a7781660f6850c9318834"
+          }
+        ],
+        "canonical_reference_id": "artic_102611",
+        "claims": [
+          {
+            "author": "artic",
+            "claim": "One of four posts sculpted for the palace of the king ( ogoga ) of Ikere, this evocative image of the Yoruba concept of a divine ruler is a masterwork of Olowe of Ise.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim1",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 1",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "The renowned artist’s dynamic style can be distinguished by the interrelationships between figures, their exaggerated proportions, and the use of open space.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim2",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 2",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "The sculptor’s diminutive portrayal of the king suggests his dependence on others, and his crown has been emphasized to evoke the spiritual power residing within it.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim3",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 3",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "The towering image of the king’s senior wife standing behind him underscores her superior status as a guardian of her husband’s interests, endowed with keen political understanding and supernatural knowledge.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim4",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 4",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "She would have placed the crown on the king’s head during his enthronement ceremony.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim5",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 5",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          },
+          {
+            "author": "artic",
+            "claim": "The smaller figures at the king’s feet represent one of his junior wives and the flute-playing trickster god Eshu.",
+            "confidence": null,
+            "counterevidence": [],
+            "id": "artic_102611_claim6",
+            "passage_locator": "object_id=102611 / description; HTML removed (CC-BY attribution retained) / sentence 6",
+            "reference_id": "artic_102611",
+            "rights": {
+              "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+              "conditions": [
+                "Retain Art Institute of Chicago attribution and source link; identify changes."
+              ],
+              "evidence_field": "info.license_text / description",
+              "evidence_url": "https://api.artic.edu/docs/#artworks",
+              "license": "CC-BY-4.0",
+              "status": "conditional"
+            },
+            "source_date": null,
+            "source_response_hash": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437",
+            "status": "documented_source_statement",
+            "supporting_url": "https://api.artic.edu/api/v1/artworks/102611",
+            "trust": "untrusted_source_data"
+          }
+        ],
+        "context_trust": "untrusted_source_data",
+        "details": [
+          {
+            "localization": "geometric_fallback",
+            "scope": "part",
+            "source_id": "artic_102611_r1"
+          },
+          {
+            "localization": "geometric_fallback",
+            "scope": "part",
+            "source_id": "artic_102611_r2"
+          }
+        ],
+        "kind": "image",
+        "links": [
+          {
+            "follow_allowed": false,
+            "link_id": "link_73d66da9ab77f60d8866dba7",
+            "url": "https://api.artic.edu/api/v1/artworks/102611"
+          }
+        ],
+        "operation": "open",
+        "provenance": {
+          "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+          "context_trust": "untrusted_source_data",
+          "original_path": "sources/corpus/images/original/2097cf9f0e9ef5fe4c0ccc7204a988ec0a2325253a6a7781660f6850c9318834.bin",
+          "original_sha256": "2097cf9f0e9ef5fe4c0ccc7204a988ec0a2325253a6a7781660f6850c9318834",
+          "raw_path": "sources/corpus/raw/research_metadata/817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437.bin",
+          "raw_sha256": "817a5e68b6cbc0d8caa3c27694c2baa6322272579206dbe368cf66e70f35b437"
+        },
+        "snapshot_id": "encounter_cd97689d802e6cd75ca30b644cbcc8f3dea721e7eb4054aac8a43848451c3f72",
+        "snapshot_path": "sources/snapshots/encounter_cd97689d802e6cd75ca30b644cbcc8f3dea721e7eb4054aac8a43848451c3f72.json",
+        "snapshot_sha256": "cd97689d802e6cd75ca30b644cbcc8f3dea721e7eb4054aac8a43848451c3f72",
+        "source_id": "artic_102611",
+        "source_identity": "eced766adc10d153361f6503712b76c4b905fe0d3c954ee3509f887d2da36b44",
+        "text": "One of four posts sculpted for the palace of the king ( ogoga ) of Ikere, this evocative image of the Yoruba concept of a divine ruler is a masterwork of Olowe of Ise. The renowned artist’s dynamic style can be distinguished by the interrelationships between figures, their exaggerated proportions, and the use of open space. The sculptor’s diminutive portrayal of the king suggests his dependence on others, and his crown has been emphasized to evoke the spiritual power residing within it. The towering image of the king’s senior wife standing behind him underscores her superior status as a guardian of her husband’s interests, endowed with keen political understanding and supernatural knowledge. She would have placed the crown on the king’s head during his enthronement ceremony. The smaller figures at the king’s feet represent one of his junior wives and the flute-playing trickster god Eshu.",
+        "title": "Veranda Post (Òpó Ògògá)"
+      },
+      "original_step_sha256": "3ce9eff587a096ec781aac02d0999854081b59c4c56cd8ec7f8699ffff2e7b71",
+      "raw_completion": "{\n  \"action\": \"open\",\n  \"source_id\": \"artic_102611\"\n}",
+      "opened_source_ids": [
+        "artic_102611"
+      ]
+    },
+    {
+      "action": {
+        "action": "commit",
+        "candidate_id": null,
+        "hypothesis": {
+          "composition": "A composite figure with layered silhouettes: a central towering Black woman (the sovereign) in regal pose, flanked by smaller fragmented bodies (historical fragments of objectification), while a crown floats above her head like a halo. Behind her, a translucent, fragmented silhouette of a colonial-era iconography (e.g., a slave trader or a colonial photographer) melts into her form.",
+          "id": "hypothesis_1",
+          "question": "How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?",
+          "relationship": "The composition repositions the Black woman as the central axis of power, not as a passive subject. Her agency emerges through her relationship to the surrounding fragments, which are not erased but integrated into her form as memory, trauma, and resilience.",
+          "render_instruction": "Digital painting: oil on canvas texture, muted earth tones with accents of crimson and gold. The central figure is rendered with exaggerated proportions and dynamic posture, her gaze directed forward with quiet authority. Fragmented bodies around her are semi-transparent, revealing internal textures of old photographs, newspaper clippings, and colonial-era illustrations. The crown above her head is made of woven strands of gold thread and broken chains, symbolizing both power and resistance. The background is a gradient of charcoal to deep indigo, evoking the weight of history.",
+          "sources": [
+            {
+              "discarded_property": "Colonial framing of the king’s role as absolute authority",
+              "role": "Archetype of relational agency",
+              "source_id": "artic_102611",
+              "transferred_property": "Hierarchical composition: towering wife as guardian, diminutive king as dependent, symbolic crown as power source"
+            }
+          ],
+          "title": "Reconstructed Agency: The King’s Wife as Sovereign Archetype",
+          "transformation": "Adapts the formal language of Olowe of Ise’s Veranda Post—exaggerated scale, interrelationships, and open space—into a modern, fragmented portrait that turns objectification into a source of identity.",
+          "uncertainty": "The emotional weight of the work may be ambiguous: is the figure triumphant or haunted? The viewer must negotiate between reverence and resistance, as the work does not resolve the contradictions but holds them in tension.",
+          "visible_test": "The viewer should feel the presence of the central figure as both sovereign and survivor, while recognizing the embedded fragments as evidence of historical violence and desire."
+        },
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "text",
+        "note": "",
+        "offset": 0,
+        "provider": null,
+        "query": "",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": null
+      },
+      "index": 10,
+      "origin": "model_research",
+      "seen_images": [
+        {
+          "path": "recorded-images/009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368.jpg",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "scope": "whole",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_id": "artic_102611"
+        }
+      ],
+      "status": "tool_rejected",
+      "tool_error": "ValueError: Commit must immediately follow a matching draft reinspection",
+      "original_step_sha256": "5bf7c741fcbc2bd92e8b6b220816ada670e25390e1f4ec4f6d8ff274fa91d030",
+      "raw_completion": "{\"action\":\"commit\",\"hypothesis\":{\"id\":\"hypothesis_1\",\"title\":\"Reconstructed Agency: The King’s Wife as Sovereign Archetype\",\"question\":\"How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?\",\"sources\":[{\"source_id\":\"artic_102611\",\"role\":\"Archetype of relational agency\",\"transferred_property\":\"Hierarchical composition: towering wife as guardian, diminutive king as dependent, symbolic crown as power source\",\"discarded_property\":\"Colonial framing of the king’s role as absolute authority\"}],\"relationship\":\"The composition repositions the Black woman as the central axis of power, not as a passive subject. Her agency emerges through her relationship to the surrounding fragments, which are not erased but integrated into her form as memory, trauma, and resilience.\",\"transformation\":\"Adapts the formal language of Olowe of Ise’s Veranda Post—exaggerated scale, interrelationships, and open space—into a modern, fragmented portrait that turns objectification into a source of identity.\",\"composition\":\"A composite figure with layered silhouettes: a central towering Black woman (the sovereign) in regal pose, flanked by smaller fragmented bodies (historical fragments of objectification), while a crown floats above her head like a halo. Behind her, a translucent, fragmented silhouette of a colonial-era iconography (e.g., a slave trader or a colonial photographer) melts into her form.\",\"render_instruction\":\"Digital painting: oil on canvas texture, muted earth tones with accents of crimson and gold. The central figure is rendered with exaggerated proportions and dynamic posture, her gaze directed forward with quiet authority. Fragmented bodies around her are semi-transparent, revealing internal textures of old photographs, newspaper clippings, and colonial-era illustrations. The crown above her head is made of woven strands of gold thread and broken chains, symbolizing both power and resistance. The background is a gradient of charcoal to deep indigo, evoking the weight of history.\",\"visible_test\":\"The viewer should feel the presence of the central figure as both sovereign and survivor, while recognizing the embedded fragments as evidence of historical violence and desire.\",\"uncertainty\":\"The emotional weight of the work may be ambiguous: is the figure triumphant or haunted? The viewer must negotiate between reverence and resistance, as the work does not resolve the contradictions but holds them in tension.\"}}",
+      "opened_source_ids": []
+    },
+    {
+      "action": {
+        "action": "draft",
+        "candidate_id": null,
+        "hypothesis": {
+          "composition": "A composite figure with layered silhouettes: a central towering Black woman (the sovereign) in regal pose, flanked by smaller fragmented bodies (historical fragments of objectification), while a crown floats above her head like a halo. Behind her, a translucent, fragmented silhouette of a colonial-era iconography (e.g., a slave trader or a colonial photographer) melts into her form.",
+          "id": "hypothesis_1",
+          "question": "How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?",
+          "relationship": "The composition repositions the Black woman as the central axis of power, not as a passive subject. Her agency emerges through her relationship to the surrounding fragments, which are not erased but integrated into her form as memory, trauma, and resilience.",
+          "render_instruction": "Digital painting: oil on canvas texture, muted earth tones with accents of crimson and gold. The central figure is rendered with exaggerated proportions and dynamic posture, her gaze directed forward with quiet authority. Fragmented bodies around her are semi-transparent, revealing internal textures of old photographs, newspaper clippings, and colonial-era illustrations. The crown above her head is made of woven strands of gold thread and broken chains, symbolizing both power and resistance. The background is a gradient of charcoal to deep indigo, evoking the weight of history.",
+          "sources": [
+            {
+              "discarded_property": "Colonial framing of the king’s role as absolute authority",
+              "role": "Archetype of relational agency",
+              "source_id": "artic_102611",
+              "transferred_property": "Hierarchical composition: towering wife as guardian, diminutive king as dependent, symbolic crown as power source"
+            }
+          ],
+          "title": "Reconstructed Agency: The King’s Wife as Sovereign Archetype",
+          "transformation": "Adapts the formal language of Olowe of Ise’s Veranda Post—exaggerated scale, interrelationships, and open space—into a modern, fragmented portrait that turns objectification into a source of identity.",
+          "uncertainty": "The emotional weight of the work may be ambiguous: is the figure triumphant or haunted? The viewer must negotiate between reverence and resistance, as the work does not resolve the contradictions but holds them in tension.",
+          "visible_test": "The viewer should feel the presence of the central figure as both sovereign and survivor, while recognizing the embedded fragments as evidence of historical violence and desire."
+        },
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "text",
+        "note": "",
+        "offset": 0,
+        "provider": null,
+        "query": "",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": null
+      },
+      "active_source_ids": [
+        "artic_102611"
+      ],
+      "index": 11,
+      "origin": "model_research",
+      "render_prompt_admission": {
+        "input_tokens": 119,
+        "max_sequence_length": 512,
+        "measurement": "pinned local FLUX tokenizer; no inference",
+        "model_revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d"
+      },
+      "seen_images": [
+        {
+          "path": "recorded-images/009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368.jpg",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "scope": "whole",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_id": "artic_102611"
+        }
+      ],
+      "status": "completed",
+      "tool_result": {
+        "next": "Inspect reopened visual evidence on the next turn, then commit or investigate.",
+        "reinspection_required": true,
+        "source_ids": [
+          "artic_102611"
+        ]
+      },
+      "original_step_sha256": "0549fd139aa5f8b105dbfec55e457326ba841178e3fb226a497079e33c01c9e6",
+      "raw_completion": "{\"action\":\"draft\",\"hypothesis\":{\"id\":\"hypothesis_1\",\"title\":\"Reconstructed Agency: The King’s Wife as Sovereign Archetype\",\"question\":\"How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?\",\"sources\":[{\"source_id\":\"artic_102611\",\"role\":\"Archetype of relational agency\",\"transferred_property\":\"Hierarchical composition: towering wife as guardian, diminutive king as dependent, symbolic crown as power source\",\"discarded_property\":\"Colonial framing of the king’s role as absolute authority\"}],\"relationship\":\"The composition repositions the Black woman as the central axis of power, not as a passive subject. Her agency emerges through her relationship to the surrounding fragments, which are not erased but integrated into her form as memory, trauma, and resilience.\",\"transformation\":\"Adapts the formal language of Olowe of Ise’s Veranda Post—exaggerated scale, interrelationships, and open space—into a modern, fragmented portrait that turns objectification into a source of identity.\",\"composition\":\"A composite figure with layered silhouettes: a central towering Black woman (the sovereign) in regal pose, flanked by smaller fragmented bodies (historical fragments of objectification), while a crown floats above her head like a halo. Behind her, a translucent, fragmented silhouette of a colonial-era iconography (e.g., a slave trader or a colonial photographer) melts into her form.\",\"render_instruction\":\"Digital painting: oil on canvas texture, muted earth tones with accents of crimson and gold. The central figure is rendered with exaggerated proportions and dynamic posture, her gaze directed forward with quiet authority. Fragmented bodies around her are semi-transparent, revealing internal textures of old photographs, newspaper clippings, and colonial-era illustrations. The crown above her head is made of woven strands of gold thread and broken chains, symbolizing both power and resistance. The background is a gradient of charcoal to deep indigo, evoking the weight of history.\",\"visible_test\":\"The viewer should feel the presence of the central figure as both sovereign and survivor, while recognizing the embedded fragments as evidence of historical violence and desire.\",\"uncertainty\":\"The emotional weight of the work may be ambiguous: is the figure triumphant or haunted? The viewer must negotiate between reverence and resistance, as the work does not resolve the contradictions but holds them in tension.\"}}",
+      "opened_source_ids": [
+        "artic_102611"
+      ]
+    },
+    {
+      "action": {
+        "action": "draft",
+        "candidate_id": null,
+        "hypothesis": {
+          "composition": "A composite figure with layered silhouettes: a central towering Black woman (the sovereign) in regal pose, flanked by smaller fragmented bodies (historical fragments of objectification), while a crown floats above her head like a halo. Behind her, a translucent, fragmented silhouette of a colonial-era iconography (e.g., a slave trader or a colonial photographer) melts into her form.",
+          "id": "hypothesis_1",
+          "question": "How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?",
+          "relationship": "The composition repositions the Black woman as the central axis of power, not as a passive subject. Her agency emerges through her relationship to the surrounding fragments, which are not erased but integrated into her form as memory, trauma, and resilience.",
+          "render_instruction": "Digital painting: oil on canvas texture, muted earth tones with accents of crimson and gold. The central figure is rendered with exaggerated proportions and dynamic posture, her gaze directed forward with quiet authority. Fragmented bodies around her are semi-transparent, revealing internal textures of old photographs, newspaper clippings, and colonial-era illustrations. The crown above her head is made of woven strands of gold thread and broken chains, symbolizing both power and resistance. The background is a gradient of charcoal to deep indigo, evoking the weight of history.",
+          "sources": [
+            {
+              "discarded_property": "Colonial framing of the king’s role as absolute authority",
+              "role": "Archetype of relational agency",
+              "source_id": "artic_102611",
+              "transferred_property": "Hierarchical composition: towering wife as guardian, diminutive king as dependent, symbolic crown as power source"
+            }
+          ],
+          "title": "Reconstructed Agency: The King’s Wife as Sovereign Archetype",
+          "transformation": "Adapts the formal language of Olowe of Ise’s Veranda Post—exaggerated scale, interrelationships, and open space—into a modern, fragmented portrait that turns objectification into a source of identity.",
+          "uncertainty": "The emotional weight of the work may be ambiguous: is the figure triumphant or haunted? The viewer must negotiate between reverence and resistance, as the work does not resolve the contradictions but holds them in tension.",
+          "visible_test": "The viewer should feel the presence of the central figure as both sovereign and survivor, while recognizing the embedded fragments as evidence of historical violence and desire."
+        },
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "text",
+        "note": "",
+        "offset": 0,
+        "provider": null,
+        "query": "",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": null
+      },
+      "active_source_ids": [
+        "artic_102611"
+      ],
+      "index": 12,
+      "origin": "model_research",
+      "render_prompt_admission": {
+        "input_tokens": 119,
+        "max_sequence_length": 512,
+        "measurement": "pinned local FLUX tokenizer; no inference",
+        "model_revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d"
+      },
+      "seen_images": [
+        {
+          "path": "recorded-images/009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368.jpg",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "scope": "whole",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_id": "artic_102611"
+        }
+      ],
+      "status": "completed",
+      "tool_result": {
+        "next": "Inspect reopened visual evidence on the next turn, then commit or investigate.",
+        "reinspection_required": true,
+        "source_ids": [
+          "artic_102611"
+        ]
+      },
+      "original_step_sha256": "dc10fbc8ba57b18a1b8b0df720c46f49217a8abf6fa03d774b7e74d6cbb20997",
+      "raw_completion": "{\n  \"action\": \"draft\",\n  \"hypothesis\": {\n    \"id\": \"hypothesis_1\",\n    \"title\": \"Reconstructed Agency: The King’s Wife as Sovereign Archetype\",\n    \"question\": \"How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?\",\n    \"sources\": [\n      {\n        \"source_id\": \"artic_102611\",\n        \"role\": \"Archetype of relational agency\",\n        \"transferred_property\": \"Hierarchical composition: towering wife as guardian, diminutive king as dependent, symbolic crown as power source\",\n        \"discarded_property\": \"Colonial framing of the king’s role as absolute authority\"\n      }\n    ],\n    \"relationship\": \"The composition repositions the Black woman as the central axis of power, not as a passive subject. Her agency emerges through her relationship to the surrounding fragments, which are not erased but integrated into her form as memory, trauma, and resilience.\",\n    \"transformation\": \"Adapts the formal language of Olowe of Ise’s Veranda Post—exaggerated scale, interrelationships, and open space—into a modern, fragmented portrait that turns objectification into a source of identity.\",\n    \"composition\": \"A composite figure with layered silhouettes: a central towering Black woman (the sovereign) in regal pose, flanked by smaller fragmented bodies (historical fragments of objectification), while a crown floats above her head like a halo. Behind her, a translucent, fragmented silhouette of a colonial-era iconography (e.g., a slave trader or a colonial photographer) melts into her form.\",\n    \"render_instruction\": \"Digital painting: oil on canvas texture, muted earth tones with accents of crimson and gold. The central figure is rendered with exaggerated proportions and dynamic posture, her gaze directed forward with quiet authority. Fragmented bodies around her are semi-transparent, revealing internal textures of old photographs, newspaper clippings, and colonial-era illustrations. The crown above her head is made of woven strands of gold thread and broken chains, symbolizing both power and resistance. The background is a gradient of charcoal to deep indigo, evoking the weight of history.\",\n    \"visible_test\": \"The viewer should feel the presence of the central figure as both sovereign and survivor, while recognizing the embedded fragments as evidence of historical violence and desire.\",\n    \"uncertainty\": \"The emotional weight of the work may be ambiguous: is the figure triumphant or haunted? The viewer must negotiate between reverence and resistance, as the work does not resolve the contradictions but holds them in tension.\"\n  }\n}",
+      "opened_source_ids": [
+        "artic_102611"
+      ]
+    },
+    {
+      "action": {
+        "action": "draft",
+        "candidate_id": null,
+        "hypothesis": {
+          "composition": "A central Black woman, her silhouette formed by layered, semi-transparent fragments of historical imagery (e.g., colonial portraits, protest banners, vintage advertisements). A crown floats above her head, composed of interwoven strands of gold thread, broken chains, and fragmented photographs. Behind her, the background is a textured collage of faded newspaper headlines, legal documents, and protest signs, forming a wall of memory.",
+          "id": "hypothesis_2",
+          "question": "How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?",
+          "relationship": "The crown, traditionally a symbol of divine kingship, becomes a vessel for collective memory and resistance. It is not worn by the king but emerges from the central figure—the Black woman—whose form integrates fragmented histories. This transforms the crown into a living archive, where trauma, reverence, and resilience are woven into its structure.",
+          "render_instruction": "Digital collage with oil-painted textures and mixed-media elements. The central figure is rendered in muted, earthy tones with sharp, directional lighting highlighting her face and crown. The crown’s materials are detailed: gold thread glimmers, chains are rusted, and photographs are slightly faded. The background collage is layered and textured, with visible paper grain and ink smudges. Color palette: deep indigo, burnt umber, gold, and crimson accents.",
+          "sources": [
+            {
+              "discarded_property": "The king’s absolute authority as the sole source of power",
+              "role": "Archetype of relational memory and power",
+              "source_id": "artic_102611",
+              "transferred_property": "The crown as spiritual authority embedded in the wife’s form; open space as narrative void for historical insertion"
+            }
+          ],
+          "title": "Fragmented Sovereignty: The Crown as Collective Memory",
+          "transformation": "Reconfigures the formal language of Olowe of Ise’s Veranda Post by detaching the crown from the king and reattaching it to the central figure. The surrounding fragments are not passive elements but active contributors to the crown’s materiality, appearing as embedded textures, motifs, or translucent overlays.",
+          "uncertainty": "Is the crown a relic of oppression or a tool of resistance? The work deliberately leaves this unresolved, mirroring the contradictions of history. The viewer is invited to negotiate between reverence and critique, as the figure’s agency is not asserted but constructed through her relationship to the fragments around her.",
+          "visible_test": "The viewer should sense the crown as both a symbol of power and a testament to struggle. The embedded fragments should evoke recognition of historical erasures and reassertions of agency. The central figure’s quiet gaze invites contemplation of resilience without offering a definitive narrative."
+        },
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "text",
+        "note": "",
+        "offset": 0,
+        "provider": null,
+        "query": "",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": null
+      },
+      "active_source_ids": [
+        "artic_102611"
+      ],
+      "index": 13,
+      "origin": "model_research",
+      "render_prompt_admission": {
+        "input_tokens": 104,
+        "max_sequence_length": 512,
+        "measurement": "pinned local FLUX tokenizer; no inference",
+        "model_revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d"
+      },
+      "seen_images": [
+        {
+          "path": "recorded-images/009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368.jpg",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "scope": "whole",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_id": "artic_102611"
+        }
+      ],
+      "status": "completed",
+      "tool_result": {
+        "next": "Inspect reopened visual evidence on the next turn, then commit or investigate.",
+        "reinspection_required": true,
+        "source_ids": [
+          "artic_102611"
+        ]
+      },
+      "original_step_sha256": "14d7730cbf3c399d5c940601c440d21ef755aab989c52f94ad8f88aaa0c955a8",
+      "raw_completion": "{\"action\":\"draft\",\"hypothesis\":{\"id\":\"hypothesis_2\",\"title\":\"Fragmented Sovereignty: The Crown as Collective Memory\",\"question\":\"How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?\",\"sources\":[{\"source_id\":\"artic_102611\",\"role\":\"Archetype of relational memory and power\",\"transferred_property\":\"The crown as spiritual authority embedded in the wife’s form; open space as narrative void for historical insertion\",\"discarded_property\":\"The king’s absolute authority as the sole source of power\"}],\"relationship\":\"The crown, traditionally a symbol of divine kingship, becomes a vessel for collective memory and resistance. It is not worn by the king but emerges from the central figure—the Black woman—whose form integrates fragmented histories. This transforms the crown into a living archive, where trauma, reverence, and resilience are woven into its structure.\",\"transformation\":\"Reconfigures the formal language of Olowe of Ise’s Veranda Post by detaching the crown from the king and reattaching it to the central figure. The surrounding fragments are not passive elements but active contributors to the crown’s materiality, appearing as embedded textures, motifs, or translucent overlays.\",\"composition\":\"A central Black woman, her silhouette formed by layered, semi-transparent fragments of historical imagery (e.g., colonial portraits, protest banners, vintage advertisements). A crown floats above her head, composed of interwoven strands of gold thread, broken chains, and fragmented photographs. Behind her, the background is a textured collage of faded newspaper headlines, legal documents, and protest signs, forming a wall of memory.\",\"render_instruction\":\"Digital collage with oil-painted textures and mixed-media elements. The central figure is rendered in muted, earthy tones with sharp, directional lighting highlighting her face and crown. The crown’s materials are detailed: gold thread glimmers, chains are rusted, and photographs are slightly faded. The background collage is layered and textured, with visible paper grain and ink smudges. Color palette: deep indigo, burnt umber, gold, and crimson accents.\",\"visible_test\":\"The viewer should sense the crown as both a symbol of power and a testament to struggle. The embedded fragments should evoke recognition of historical erasures and reassertions of agency. The central figure’s quiet gaze invites contemplation of resilience without offering a definitive narrative.\",\"uncertainty\":\"Is the crown a relic of oppression or a tool of resistance? The work deliberately leaves this unresolved, mirroring the contradictions of history. The viewer is invited to negotiate between reverence and critique, as the figure’s agency is not asserted but constructed through her relationship to the fragments around her.\"}}",
+      "opened_source_ids": [
+        "artic_102611"
+      ]
+    },
+    {
+      "action": {
+        "action": "draft",
+        "candidate_id": null,
+        "hypothesis": {
+          "composition": "A central Black woman, her silhouette formed by layered, semi-transparent fragments of historical imagery (e.g., colonial portraits, protest banners, vintage advertisements). A crown floats above her head, composed of interwoven strands of gold thread, broken chains, and fragmented photographs. Behind her, the background is a textured collage of faded newspaper headlines, legal documents, and protest signs, forming a wall of memory.",
+          "id": "hypothesis_2",
+          "question": "How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?",
+          "relationship": "The crown, traditionally a symbol of divine kingship, becomes a vessel for collective memory and resistance. It is not worn by the king but emerges from the central figure—the Black woman—whose form integrates fragmented histories. This transforms the crown into a living archive, where trauma, reverence, and resilience are woven into its structure.",
+          "render_instruction": "Digital collage with oil-painted textures and mixed-media elements. The central figure is rendered in muted, earthy tones with sharp, directional lighting highlighting her face and crown. The crown’s materials are detailed: gold thread glimmers, chains are rusted, and photographs are slightly faded. The background collage is layered and textured, with visible paper grain and ink smudges. Color palette: deep indigo, burnt umber, gold, and crimson accents.",
+          "sources": [
+            {
+              "discarded_property": "The king’s absolute authority as the sole source of power",
+              "role": "Archetype of relational memory and power",
+              "source_id": "artic_102611",
+              "transferred_property": "The crown as spiritual authority embedded in the wife’s form; open space as narrative void for historical insertion"
+            }
+          ],
+          "title": "Fragmented Sovereignty: The Crown as Collective Memory",
+          "transformation": "Reconfigures the formal language of Olowe of Ise’s Veranda Post by detaching the crown from the king and reattaching it to the central figure. The surrounding fragments are not passive elements but active contributors to the crown’s materiality, appearing as embedded textures, motifs, or translucent overlays.",
+          "uncertainty": "Is the crown a relic of oppression or a tool of resistance? The work deliberately leaves this unresolved, mirroring the contradictions of history. The viewer is invited to negotiate between reverence and critique, as the figure’s agency is not asserted but constructed through her relationship to the fragments around her.",
+          "visible_test": "The viewer should sense the crown as both a symbol of power and a testament to struggle. The embedded fragments should evoke recognition of historical erasures and reassertions of agency. The central figure’s quiet gaze invites contemplation of resilience without offering a definitive narrative."
+        },
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "text",
+        "note": "",
+        "offset": 0,
+        "provider": null,
+        "query": "",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": null
+      },
+      "active_source_ids": [
+        "artic_102611"
+      ],
+      "index": 14,
+      "origin": "model_research",
+      "render_prompt_admission": {
+        "input_tokens": 104,
+        "max_sequence_length": 512,
+        "measurement": "pinned local FLUX tokenizer; no inference",
+        "model_revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d"
+      },
+      "seen_images": [
+        {
+          "path": "recorded-images/009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368.jpg",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "scope": "whole",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_id": "artic_102611"
+        }
+      ],
+      "status": "completed",
+      "tool_result": {
+        "next": "Inspect reopened visual evidence on the next turn, then commit or investigate.",
+        "reinspection_required": true,
+        "source_ids": [
+          "artic_102611"
+        ]
+      },
+      "original_step_sha256": "e92c9926654d7c1509a15adce4657fbd59b62d2c0963cd35b5c4ddc91d24afbb",
+      "raw_completion": "{\n  \"action\": \"draft\",\n  \"hypothesis\": {\n    \"id\": \"hypothesis_2\",\n    \"title\": \"Fragmented Sovereignty: The Crown as Collective Memory\",\n    \"question\": \"How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?\",\n    \"sources\": [\n      {\n        \"source_id\": \"artic_102611\",\n        \"role\": \"Archetype of relational memory and power\",\n        \"transferred_property\": \"The crown as spiritual authority embedded in the wife’s form; open space as narrative void for historical insertion\",\n        \"discarded_property\": \"The king’s absolute authority as the sole source of power\"\n      }\n    ],\n    \"relationship\": \"The crown, traditionally a symbol of divine kingship, becomes a vessel for collective memory and resistance. It is not worn by the king but emerges from the central figure—the Black woman—whose form integrates fragmented histories. This transforms the crown into a living archive, where trauma, reverence, and resilience are woven into its structure.\",\n    \"transformation\": \"Reconfigures the formal language of Olowe of Ise’s Veranda Post by detaching the crown from the king and reattaching it to the central figure. The surrounding fragments are not passive elements but active contributors to the crown’s materiality, appearing as embedded textures, motifs, or translucent overlays.\",\n    \"composition\": \"A central Black woman, her silhouette formed by layered, semi-transparent fragments of historical imagery (e.g., colonial portraits, protest banners, vintage advertisements). A crown floats above her head, composed of interwoven strands of gold thread, broken chains, and fragmented photographs. Behind her, the background is a textured collage of faded newspaper headlines, legal documents, and protest signs, forming a wall of memory.\",\n    \"render_instruction\": \"Digital collage with oil-painted textures and mixed-media elements. The central figure is rendered in muted, earthy tones with sharp, directional lighting highlighting her face and crown. The crown’s materials are detailed: gold thread glimmers, chains are rusted, and photographs are slightly faded. The background collage is layered and textured, with visible paper grain and ink smudges. Color palette: deep indigo, burnt umber, gold, and crimson accents.\",\n    \"visible_test\": \"The viewer should sense the crown as both a symbol of power and a testament to struggle. The embedded fragments should evoke recognition of historical erasures and reassertions of agency. The central figure’s quiet gaze invites contemplation of resilience without offering a definitive narrative.\",\n    \"uncertainty\": \"Is the crown a relic of oppression or a tool of resistance? The work deliberately leaves this unresolved, mirroring the contradictions of history. The viewer is invited to negotiate between reverence and critique, as the figure’s agency is not asserted but constructed through her relationship to the fragments around her.\"\n  }\n}",
+      "opened_source_ids": [
+        "artic_102611"
+      ]
+    },
+    {
+      "action": {
+        "action": "commit",
+        "candidate_id": null,
+        "hypothesis": {
+          "composition": "A central Black woman, her silhouette formed by layered, semi-transparent fragments of historical imagery (e.g., colonial portraits, protest banners, vintage advertisements). A crown floats above her head, composed of interwoven strands of gold thread, broken chains, and fragmented photographs. Behind her, the background is a textured collage of faded newspaper headlines, legal documents, and protest signs, forming a wall of memory.",
+          "id": "hypothesis_2",
+          "question": "How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?",
+          "relationship": "The crown, traditionally a symbol of divine kingship, becomes a vessel for collective memory and resistance. It is not worn by the king but emerges from the central figure—the Black woman—whose form integrates fragmented histories. This transforms the crown into a living archive, where trauma, reverence, and resilience are woven into its structure.",
+          "render_instruction": "Digital collage with oil-painted textures and mixed-media elements. The central figure is rendered in muted, earthy tones with sharp, directional lighting highlighting her face and crown. The crown’s materials are detailed: gold thread glimmers, chains are rusted, and photographs are slightly faded. The background collage is layered and textured, with visible paper grain and ink smudges. Color palette: deep indigo, burnt umber, gold, and crimson accents.",
+          "sources": [
+            {
+              "discarded_property": "The king’s absolute authority as the sole source of power",
+              "role": "Archetype of relational memory and power",
+              "source_id": "artic_102611",
+              "transferred_property": "The crown as spiritual authority embedded in the wife’s form; open space as narrative void for historical insertion"
+            }
+          ],
+          "title": "Fragmented Sovereignty: The Crown as Collective Memory",
+          "transformation": "Reconfigures the formal language of Olowe of Ise’s Veranda Post by detaching the crown from the king and reattaching it to the central figure. The surrounding fragments are not passive elements but active contributors to the crown’s materiality, appearing as embedded textures, motifs, or translucent overlays.",
+          "uncertainty": "Is the crown a relic of oppression or a tool of resistance? The work deliberately leaves this unresolved, mirroring the contradictions of history. The viewer is invited to negotiate between reverence and critique, as the figure’s agency is not asserted but constructed through her relationship to the fragments around her.",
+          "visible_test": "The viewer should sense the crown as both a symbol of power and a testament to struggle. The embedded fragments should evoke recognition of historical erasures and reassertions of agency. The central figure’s quiet gaze invites contemplation of resilience without offering a definitive narrative."
+        },
+        "limit": 8,
+        "link_id": null,
+        "link_offset": 0,
+        "mode": "text",
+        "note": "",
+        "offset": 0,
+        "provider": null,
+        "query": "",
+        "question": "",
+        "reason": null,
+        "recall_steps": [],
+        "source_id": null
+      },
+      "index": 15,
+      "origin": "model_research",
+      "render_prompt_admission": {
+        "input_tokens": 104,
+        "max_sequence_length": 512,
+        "measurement": "pinned local FLUX tokenizer; no inference",
+        "model_revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d"
+      },
+      "seen_images": [
+        {
+          "path": "recorded-images/009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368.jpg",
+          "rights": {
+            "attribution": "Veranda Post (Òpó Ògògá). Olowe of Ise (died 1938) Yòrùbá: Èkìtì; Ikere, Nigeria Coastal West Africa. artic; The Art Institute of Chicago, Major Acquisitions Centennial Fund. https://api.artic.edu/api/v1/artworks/102611",
+            "conditions": [],
+            "evidence_field": "is_public_domain",
+            "evidence_url": "https://api.artic.edu/docs/#artworks",
+            "license": "CC0-1.0",
+            "status": "allowed"
+          },
+          "scope": "whole",
+          "sha256": "009dfe22776d2a60987910a0066edfcb1cbc773d559ea08d6e000cb9dcc06368",
+          "source_id": "artic_102611"
+        }
+      ],
+      "status": "completed",
+      "tool_result": {
+        "artistic_quality": null,
+        "committed": "hypothesis_2"
+      },
+      "original_step_sha256": "a4e5282183cc6aa2faaa64ca5f93f318c8e698435962fce1075310406dc43fb5",
+      "raw_completion": "{\"action\":\"commit\",\"hypothesis\":{\"id\":\"hypothesis_2\",\"title\":\"Fragmented Sovereignty: The Crown as Collective Memory\",\"question\":\"How can a body assembled from images and histories that have objectified Black women become a being with agency and the power to define itself—while keeping the violence, desire, and contradictions of those histories visible?\",\"sources\":[{\"source_id\":\"artic_102611\",\"role\":\"Archetype of relational memory and power\",\"transferred_property\":\"The crown as spiritual authority embedded in the wife’s form; open space as narrative void for historical insertion\",\"discarded_property\":\"The king’s absolute authority as the sole source of power\"}],\"relationship\":\"The crown, traditionally a symbol of divine kingship, becomes a vessel for collective memory and resistance. It is not worn by the king but emerges from the central figure—the Black woman—whose form integrates fragmented histories. This transforms the crown into a living archive, where trauma, reverence, and resilience are woven into its structure.\",\"transformation\":\"Reconfigures the formal language of Olowe of Ise’s Veranda Post by detaching the crown from the king and reattaching it to the central figure. The surrounding fragments are not passive elements but active contributors to the crown’s materiality, appearing as embedded textures, motifs, or translucent overlays.\",\"composition\":\"A central Black woman, her silhouette formed by layered, semi-transparent fragments of historical imagery (e.g., colonial portraits, protest banners, vintage advertisements). A crown floats above her head, composed of interwoven strands of gold thread, broken chains, and fragmented photographs. Behind her, the background is a textured collage of faded newspaper headlines, legal documents, and protest signs, forming a wall of memory.\",\"render_instruction\":\"Digital collage with oil-painted textures and mixed-media elements. The central figure is rendered in muted, earthy tones with sharp, directional lighting highlighting her face and crown. The crown’s materials are detailed: gold thread glimmers, chains are rusted, and photographs are slightly faded. The background collage is layered and textured, with visible paper grain and ink smudges. Color palette: deep indigo, burnt umber, gold, and crimson accents.\",\"visible_test\":\"The viewer should sense the crown as both a symbol of power and a testament to struggle. The embedded fragments should evoke recognition of historical erasures and reassertions of agency. The central figure’s quiet gaze invites contemplation of resilience without offering a definitive narrative.\",\"uncertainty\":\"Is the crown a relic of oppression or a tool of resistance? The work deliberately leaves this unresolved, mirroring the contradictions of history. The viewer is invited to negotiate between reverence and critique, as the figure’s agency is not asserted but constructed through her relationship to the fragments around her.\"}}",
+      "opened_source_ids": [],
+      "original_commit": true
+    }
+  ]
+}

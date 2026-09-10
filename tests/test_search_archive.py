@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image
 import pytest
 
-from kusama.evaluation import digest, file_hash, immutable_json
+from kusama.evidence import digest, file_hash, immutable_json
 from kusama.search_archive import Archive, fit_archive
 
 

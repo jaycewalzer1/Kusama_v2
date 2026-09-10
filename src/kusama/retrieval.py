@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from contextlib import closing
 from datetime import datetime, timezone
 import gc
 import hashlib
@@ -50,7 +51,6 @@ class ClipEncoder:
                          'role': 'retrieval descriptor; not artistic quality', 'frozen': True}
 
     def prepare(self):
-        import torch
         from transformers import CLIPModel, CLIPProcessor
         if self.model is not None:
             return self.metadata
@@ -270,7 +270,7 @@ def build_index(corpus_root, output_root, *, config=None, device='cpu', encoder=
         (directory / 'embeddings.npy.tmp').replace(directory / 'embeddings.npy')
         write_json(directory / 'documents.json', {'documents': documents, 'claims': claims})
         if audit_bytes is not None:(directory/'source_visual_audit.json').write_bytes(audit_bytes)
-        with sqlite3.connect(directory / 'lexical.sqlite3') as db:
+        with closing(sqlite3.connect(directory / 'lexical.sqlite3')) as db, db:
             db.execute('CREATE VIRTUAL TABLE IF NOT EXISTS documents USING fts5(id UNINDEXED, documented, interpretations)')
             db.execute('DELETE FROM documents')
             db.executemany('INSERT INTO documents VALUES(?,?,?)', [(d['id'], d['documented_text'], d['interpretation_text']) for d in documents])
@@ -345,7 +345,7 @@ class RetrievalIndex:
         lexical = []
         if tokens:
             expression = ' OR '.join('"' + t.replace('"', '""') + '"' for t in dict.fromkeys(tokens))
-            with sqlite3.connect((self.directory / 'lexical.sqlite3').as_uri() + '?mode=ro', uri=True) as db:
+            with closing(sqlite3.connect((self.directory / 'lexical.sqlite3').as_uri() + '?mode=ro', uri=True)) as db:
                 lexical = [r[0] for r in db.execute('SELECT id FROM documents WHERE documents MATCH ? ORDER BY bm25(documents,0,1,0.35),id', (expression,)) if r[0] in eligible]
         visual, similarities = [], {}
         if query_vector is not None:

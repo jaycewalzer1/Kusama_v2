@@ -1,16 +1,14 @@
 """Small frozen CVT archive; descriptors measure coverage, never artistic quality."""
 from __future__ import annotations
 
-from collections import Counter
 from contextlib import closing
-from datetime import datetime, timezone
 import json
 from pathlib import Path
 import sqlite3
 
 import numpy as np
 
-from .evaluation import digest, file_hash, immutable_json
+from .evidence import digest, file_hash, immutable_json
 from .retrieval import RetrievalIndex, normalized
 
 ARCHIVE_VERSION = 'spherical-cvt-map-elites-v1'

@@ -95,14 +95,13 @@ def invoke(setup, **kwargs):
                backend_factory=FakeFlux, **kwargs)
 
 
-def test_brief_to_six_images_references_observer_review_and_no_training(setup):
+def test_brief_to_six_images_references_observer_and_no_training(setup):
     directory = invoke(setup)
     manifest = json.loads((directory / 'manifest.json').read_text())
     assert manifest['status'] == 'needs_human_review'
     assert len(manifest['directions']) == 3
     assert len(manifest['images']) == 6
     assert len(manifest['observations']) == 3
-    assert manifest['human_review']['pair_count'] == 15
     assert manifest['model_calls'] == 10  # one director, six FLUX, three observer
     assert manifest['training_enabled'] is False
     assert all(image['parent_image_id'] is None for image in manifest['images'])
@@ -110,7 +109,7 @@ def test_brief_to_six_images_references_observer_review_and_no_training(setup):
     assert LIFETIMES == ['qwen open', 'qwen close', 'flux open', 'flux close', 'qwen open', 'qwen close']
     assert FakeDirector.calls == 4 and FakeFlux.calls == 6
     assert (directory / 'references/source.jpg').read_bytes() == (setup[0].parent / 'reference.jpg').read_bytes()
-    assert (setup[1].output_dir / 'reviews.sqlite3').exists()
+    assert not (setup[1].output_dir / 'reviews.sqlite3').exists()
     assert manifest['cost_accounting']['run_id'] == directory.name
     assert manifest['costs']
 
@@ -295,40 +294,15 @@ def test_revalidation_cannot_repair_bad_json_or_invade_flux_prompt_bound(setup):
     assert StillInvalidDirector.calls == 1
 
 
-def test_twelve_by_two_registers_balanced_216_question_plan(setup):
+def test_twelve_by_two_preserves_batches_and_call_budget(setup):
     source, config = setup
     directory = run(source, config, directions=12, observe=True,
                     director_factory=FakeDirector, backend_factory=FakeFlux)
     manifest = json.loads((directory / 'manifest.json').read_text())
-    review = manifest['human_review']
-    assert review['pair_count'] == 108
-    assert review['planned_dimension_questions'] == 216
-    assert review['design_metadata']['design'] == 'balanced_108_v1'
-    assert set(review['design_metadata']['comparisons_per_candidate'].values()) == {9}
     assert manifest['batch_size'] == 1
     assert manifest['planned_calls'] == 48 and manifest['model_calls'] == 48
     assert len(manifest['direction_batches']) == 12
     assert all(len(batch['direction_ids']) == 1 for batch in manifest['direction_batches'])
-    from kusama.reviews import ReviewStore
-    collection = ReviewStore(config.output_dir).collection(directory.name)
-    assert len(collection['pairs']) == 108 and len(collection['candidates']) == 24
-
-
-def test_existing_review_schedule_preserved_on_resume(setup, monkeypatch):
-    import kusama.creative as creative
-    original = creative.diagnostic_pairs
-    monkeypatch.setattr(creative, 'diagnostic_pairs', lambda ids: original(ids)[:1])
-    directory = invoke(setup)
-    from kusama.reviews import ReviewStore
-    store = ReviewStore(setup[1].output_dir)
-    original_collection = store.collection(directory.name)
-    assert len(original_collection['pairs']) == 1
-    monkeypatch.setattr(creative, 'diagnostic_pairs', original)
-    run(resume_dir=directory, director_factory=FakeDirector, backend_factory=FakeFlux)
-    assert store.collection(directory.name) == original_collection
-    manifest = json.loads((directory / 'manifest.json').read_text())
-    assert manifest['human_review']['design_metadata']['design'] == 'existing_immutable_collection'
-    assert manifest['human_review']['planned_dimension_questions'] == 2
 
 
 @pytest.mark.parametrize('batch_size', [0, 4, True, 1.5])

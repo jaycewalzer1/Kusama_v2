@@ -6,6 +6,15 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
+class TargetExistence(BaseModel):
+    """Attributed observation of the saved parent, never inferred from a box."""
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    status: Literal['present', 'absent', 'uncertain']
+    author: str = Field(min_length=1, max_length=200)
+    origin: Literal['operator', 'model_observation', 'development_example']
+    reason: str = Field(min_length=1, max_length=4000)
+
+
 class IntentionElement(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
     id: str = Field(pattern=r'^[A-Za-z0-9_-]{1,64}$')
@@ -16,6 +25,7 @@ class IntentionElement(BaseModel):
     must_survive: str = Field(min_length=1, max_length=2000)
     status: Literal['unresolved', 'resolved', 'leave_alone'] = 'unresolved'
     protect_pixels: bool = False
+    existence: TargetExistence | None = None
 
     @model_validator(mode='after')
     def valid_region(self):
@@ -34,6 +44,7 @@ class IntentionMap(BaseModel):
     whole: str = Field(min_length=1, max_length=4000)
     elements: list[IntentionElement] = Field(min_length=1, max_length=32)
     target_ids: list[str] = Field(min_length=1, max_length=32)
+    required_support_ids: list[str] = Field(default_factory=list, max_length=32)
     operation: Literal['add', 'remove', 'exaggerate', 'conceal', 'move', 'simplify', 'revise']
     attention_reason: str = Field(min_length=1, max_length=4000)
     expected_reading: str = Field(min_length=1, max_length=4000)
@@ -47,6 +58,9 @@ class IntentionMap(BaseModel):
             raise ValueError('Intention and target IDs must be unique')
         if set(self.target_ids) - set(ids):
             raise ValueError('Every attention target must resolve to an intention element')
+        if (len(self.required_support_ids) != len(set(self.required_support_ids))
+                or set(self.required_support_ids) - set(ids)):
+            raise ValueError('Required edit supports must be unique known intention elements')
         if any(set(element.relationships) - set(ids) for element in self.elements):
             raise ValueError('Every intention relationship must resolve to an element')
         if self.revisit_reasons and not self.previous_continuation_id:
@@ -68,7 +82,11 @@ def overlaps(a, b):
     return max(a[0], b[0]) < min(a[2], b[2]) and max(a[1], b[1]) < min(a[3], b[3])
 
 
-def validate_intention_edit(intentions, revision, parent_sha256, size):
+def contains(outer, inner):
+    return outer[0] <= inner[0] and outer[1] <= inner[1] and outer[2] >= inner[2] and outer[3] >= inner[3]
+
+
+def validate_intention_edit(intentions, revision, parent_sha256, size, *, full_coverage=True):
     if intentions.parent_sha256 != parent_sha256:
         raise ValueError('Intention map must describe the exact selected parent hash')
     edit = pixel_bounds(revision.region or (0, 0, 1, 1), size)
@@ -81,3 +99,13 @@ def validate_intention_edit(intentions, revision, parent_sha256, size):
                 raise ValueError('Attention targets must be explicitly reopened as unresolved')
             if not overlaps(bounds, edit):
                 raise ValueError('Edit does not intersect attention target: ' + element.id)
+            if full_coverage and not contains(edit, bounds):
+                raise ValueError('Edit must contain the entire declared attention target: ' + element.id)
+            if (full_coverage and intentions.operation != 'add' and element.existence
+                    and element.existence.status == 'absent'):
+                raise ValueError('Existing-object operation has an explicitly absent target: ' + element.id)
+        if full_coverage and element.id in intentions.required_support_ids:
+            if not contains(edit, bounds):
+                raise ValueError('Edit must contain the entire required support: ' + element.id)
+            if element.existence and element.existence.status == 'absent':
+                raise ValueError('Required support is explicitly absent: ' + element.id)

@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from functools import lru_cache
 from typing import Any, Callable
 
 MODEL_ID = "black-forest-labs/FLUX.2-klein-base-4B"
@@ -23,6 +24,27 @@ MODEL_REVISION = "a3b4f4849157f664bdbc776fd7453c2783562f4d"
 
 class BackendError(RuntimeError):
     """An actionable model, dependency, hardware, or inference failure."""
+
+
+def count_prompt_tokens(tokenizer, prompt: str) -> int:
+    if not isinstance(prompt, str) or not prompt.strip():
+        raise BackendError('A non-empty text prompt is required.')
+    formatted = tokenizer.apply_chat_template(
+        [{'role': 'user', 'content': prompt}], tokenize=False,
+        add_generation_prompt=True, enable_thinking=False)
+    return len(tokenizer(formatted, truncation=False, padding=False)['input_ids'])
+
+
+@lru_cache(maxsize=2)
+def _cached_prompt_tokenizer(cache_dir: str, revision: str):
+    from transformers import Qwen2TokenizerFast
+    return Qwen2TokenizerFast.from_pretrained(MODEL_ID, subfolder='tokenizer', revision=revision,
+        cache_dir=cache_dir, local_files_only=True)
+
+
+def cached_prompt_token_count(prompt: str, *, cache_dir: str, revision: str) -> int:
+    """Pinned, local tokenizer only; no FLUX weights or inference."""
+    return count_prompt_tokens(_cached_prompt_tokenizer(cache_dir, revision), prompt)
 
 
 def _run_json(command: list[str]) -> Any | None:
@@ -356,19 +378,12 @@ class FluxBackend:
     def prompt_token_count(self, prompt: str) -> int:
         if self.pipeline is None:
             raise BackendError("Call prepare() before tokenizing prompts.")
-        if not isinstance(prompt, str) or not prompt.strip():
-            raise BackendError("A non-empty text prompt is required.")
-        tokenizer = self.pipeline.tokenizer
-        formatted = tokenizer.apply_chat_template(
-            [{"role": "user", "content": prompt}], tokenize=False,
-            add_generation_prompt=True, enable_thinking=False,
-        )
         # These are the same template and special-token settings used by the
         # pipeline, but without its automatic truncation or padding.
-        return len(tokenizer(formatted, truncation=False, padding=False)["input_ids"])
+        return count_prompt_tokens(self.pipeline.tokenizer, prompt)
 
     def generate(self, prompt: str, seed: int, parent_path: Path | None = None,
-                 mask_path: Path | None = None) -> Any:
+                 mask_path: Path | None = None, *, reference_images: list[dict] | None = None) -> Any:
         self.last_pipeline_invoked = False
         if self.pipeline is None or self.execution_settings.get("status") != "ready":
             raise BackendError("The FLUX backend is not ready; call prepare() first.")
@@ -408,6 +423,24 @@ class FluxBackend:
             arguments.update(mask_image=mask, strength=1.0)
         elif getattr(self, "use_inpainting", False):
             raise BackendError("The inpainting backend requires a mask.")
+        if reference_images:
+            from PIL import Image
+            from .image_prompt import validate_assets
+            try:
+                assets = validate_assets(reference_images,
+                    max_images=1 if getattr(self, 'use_inpainting', False) else 2)
+                references = []
+                for asset in assets:
+                    with Image.open(asset['path']) as reference:
+                        references.append(reference.convert('RGB'))
+            except (ValueError, OSError) as exc:
+                raise BackendError(f'Invalid image prompt reference: {exc}') from exc
+            if getattr(self, 'use_inpainting', False):
+                # The inpaint pipeline has a separate single-reference input;
+                # a list there means a batch, not multiple reference slots.
+                arguments['image_reference'] = references[0]
+            else:
+                arguments['image'] = ([arguments['image']] if 'image' in arguments else []) + references
         try:
             with torch.inference_mode():
                 if self.on_inference_start is not None:

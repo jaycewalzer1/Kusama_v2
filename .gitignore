@@ -20,6 +20,10 @@ artifacts/
 outputs/
 runs/
 models/
+# Keep model documentation visible while still ignoring model files.
+!docs/models/
+docs/models/*
+!docs/models/*.md
 weights/
 *.safetensors
 *.ckpt

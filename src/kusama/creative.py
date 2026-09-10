@@ -13,13 +13,11 @@ import json
 import math
 from pathlib import Path
 import re
-import time
 import uuid
 
 from .artifacts import image_record, save_image, sha256, write_json
 from .backend import FluxBackend
 from .config import Config, MODEL_ID as FLUX_MODEL_ID
-from .comparison_design import diagnostic_pairs, design_metadata
 from .costs import CostJournal, tracked_local_call
 from .director import (DirectorConfig, QwenDirector, MODEL_ID as QWEN_MODEL_ID,
                        DirectorOutputError, validate_directions, validate_observation, _unique_object,
@@ -28,7 +26,6 @@ from .execution import canonical_config, restore_config
 from .experiment import Measurement, code_provenance, handle_termination, utc_now
 from .ledger import Ledger
 from .references import ReferencePacket, load_packet, snapshot_packet, selected_challenges
-from .reviews import ReviewStore, ReviewNotFound
 
 
 class UncertainInvocation(RuntimeError):
@@ -213,7 +210,6 @@ def run(packet_path=None, config=None, director_config=None, *, directions=12, r
                 # the current projection should reflect this successful stage.
                 manifest.pop('error', None)
                 if len(manifest['images']) == spec['direction_count'] * 2:
-                    _register_review(directory, ledger.path.parent, job_id, packet, manifest)
                     persist('needs_human_review')
                 else:
                     persist('directions_ready')
@@ -435,7 +431,6 @@ def _direct(ledger, job_id, directory, spec, packet, manifest, persist, config, 
 
 
 def _render(ledger, job_id, directory, spec, packet, manifest, persist, config, factory):
-    from PIL import Image
     start = math.ceil(spec['direction_count'] / spec['batch_size'])
     backend, images = None, []
     try:
@@ -497,7 +492,6 @@ def _render(ledger, job_id, directory, spec, packet, manifest, persist, config, 
                 manifest['images'] = list(images)
                 persist()
         _save_json_evidence(ledger, job_id, directory, 'candidates.json', {'candidates': images})
-        _register_review(directory, ledger.path.parent, job_id, packet, manifest)
         persist('needs_human_review')
     finally:
         if backend is not None:
@@ -716,32 +710,6 @@ def _observe(ledger, job_id, directory, spec, packet, manifest, persist, config,
     finally:
         if director is not None:
             director.close()
-
-
-def _register_review(directory, root, job_id, packet, manifest):
-    candidates = [{'id': r['id'], 'path': str(directory / r['path']), 'label': r['label'],
-                   'direction_id': r['direction_id'], 'parent_candidate_id': None} for r in manifest['images']]
-    ids = [d['id'] for d in manifest['directions']]
-    pairs, design = diagnostic_pairs(ids), design_metadata(ids)
-    store = ReviewStore(root)
-    try:
-        existing = store.collection(job_id)
-    except ReviewNotFound:
-        existing = None
-    if existing is not None and existing['pairs'] != pairs:
-        # A code update may change the default schedule. Never migrate an
-        # already registered collection, even if it has no votes yet.
-        from collections import Counter
-        pairs = existing['pairs']
-        design = {'schema_version': 1, 'design': 'existing_immutable_collection',
-            'pair_count': len(pairs), 'planned_dimension_questions': len(pairs) * 2,
-            'comparisons_per_candidate': dict(Counter(c for p in pairs for c in p['candidate_ids'])),
-            'note': 'The previously registered comparison plan is preserved; no collection or votes were migrated.'}
-    store.register_collection(job_id, title=packet['title'], brief=packet['brief'],
-                              candidates=candidates, pairs=pairs)
-    manifest['human_review'].update(collection_id=job_id, pair_count=len(pairs),
-        design_metadata=design, planned_dimension_questions=design['planned_dimension_questions'],
-        sampling_note=design['note'])
 
 
 def main(argv=None):

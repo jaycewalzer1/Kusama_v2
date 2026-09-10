@@ -305,7 +305,7 @@ def test_legacy_completed_without_raw_retains_history_and_discloses_discrepancy(
     assert store.reconcile_session('study')['discrepancies'][0]['session_status_after'] == 'completed'
 
 
-def test_dashboard_neutral_assignment_and_gallery_reads(setup):
+def test_dashboard_continuation_and_gallery_reads(setup):
     from kusama.dashboard import create_app
     store, request, config = setup
     store.prepare('study', request, config)
@@ -316,12 +316,10 @@ def test_dashboard_neutral_assignment_and_gallery_reads(setup):
     gallery = client.get('/api/continuations/study/gallery')
     assert gallery.status_code == 200 and '/api/projects/cont_study/artifacts/root' in gallery.text
     assert 'Human follow-up reviews: 0' in gallery.text
-    collection_id = result['reviews']['collection_id']
-    comparison = ReviewStore(store.root).comparison(collection_id, 'comparison-001', 'Viewer')
-    response = client.get(f'/api/reviews/collections/{collection_id}/pairs/comparison-001/images/A', params={'reviewer': 'Viewer'})
+    response = client.get('/api/projects/cont_study/artifacts/root')
     import hashlib
-    assert hashlib.sha256(response.content).hexdigest() == comparison['candidates']['A']['sha256']
-    assert 'content-disposition' not in response.headers
+    assert hashlib.sha256(response.content).hexdigest() == result['parent']['sha256']
+    assert '<body class="gallery-page">' in gallery.text
     assert client.get('/api/sources').json() == {'sources': []}
     assert not (store.root / 'corpus').exists()
 

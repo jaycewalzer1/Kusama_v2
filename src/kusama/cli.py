@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import closing
 from datetime import datetime, timezone
+from importlib import import_module
 import importlib.metadata
 import json
 from pathlib import Path
@@ -13,13 +15,31 @@ import subprocess
 import sys
 import zipfile
 
-from .artifacts import sha256, write_json
-from .resources import SessionBudget, load_config
+# Keep help and command discovery independent of model/application imports.
+COMMAND_MODULES = {
+    'ingest': '.corpus',
+    'index': '.retrieval',
+    'inspire': '.inspiration',
+    'research': '.research',
+    'research-sources': '.research_sources',
+    'run': '.episodes',
+    'resume': '.episodes',
+    'review': '.dashboard',
+    'dataset': '.datasets',
+    'train': '.learning',
+    'edit-benchmark': '.edit_benchmark',
+    'develop': '.autonomous',
+    'finish': '.finishing',
+    'memory': '.memory',
+    'verify': '.audit',
+}
 
 
 def doctor(root=Path('artifacts/overnight'), config_path=Path('configs/overnight.yaml')):
     import psutil
     import torch
+    from .artifacts import write_json
+    from .resources import SessionBudget
     from .config import MODEL_ID as FLUX_MODEL, MODEL_REVISION as FLUX_REVISION
     from .director import MODEL_ID as QWEN_MODEL, MODEL_REVISION as QWEN_REVISION
     from .retrieval import CLIP_MODEL
@@ -43,14 +63,10 @@ def doctor(root=Path('artifacts/overnight'), config_path=Path('configs/overnight
             'disk':{'total_bytes':disk.total,'free_bytes':disk.free,'required_free_floor':max(config.minimum_free_bytes,int(config.minimum_free_fraction*disk.total))},
             'models':models,'budget':budget.summary(),'config':config.model_dump(),
             'packages':{name:importlib.metadata.version(name) for name in ('torch','transformers','diffusers','pydantic','fastapi','numpy','pillow')},
-            'training_optional_dependencies':{},
             'capabilities':{'reference_ingestion':True,'whole_detail_clip_retrieval':True,'connection_proposals':True,
-                            'generation_and_masked_continuation':True,'blinded_review_and_none_pool':True,
+                            'generation_and_masked_continuation':True,'development_panel':True,
                             'human_preference_learning_evidence':False,'weight_updates_performed':False},
             'accounting_boundary':'Instrumented local Qwen/FLUX calls are counted. Coding-agent service token usage and human time are not available to this ledger.'}
-        for name in ('peft','trl','bitsandbytes'):
-            try:report['training_optional_dependencies'][name]=importlib.metadata.version(name)
-            except importlib.metadata.PackageNotFoundError:report['training_optional_dependencies'][name]=None
         try:report['git_commit']=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
         except subprocess.CalledProcessError:report['git_commit']=None
         write_json(root/'doctor.json',report)
@@ -64,6 +80,8 @@ Never alters frozen manifests to disguise original absolute paths. path_map
 allows a consumer to resolve originals after relocation; execution on a new
 host still requires explicit path reconciliation and cached model checkpoints.
 """
+    from .artifacts import sha256, write_json
+
     root,output=Path(root).resolve(),Path(output).resolve()
     if not root.is_dir() or output.exists():
         raise ValueError('Export requires an existing artifact root and a fresh output directory')
@@ -82,7 +100,8 @@ host still requires explicit path reconciliation and cached model checkpoints.
                 relative=str(path.relative_to(root));source=path;kind='exact_bytes'
                 if path.suffix in ('.sqlite3','.sqlite'):
                     source=database_dir/relative;source.parent.mkdir(parents=True,exist_ok=True)
-                    with sqlite3.connect(path.as_uri()+'?mode=ro',uri=True) as original,sqlite3.connect(source) as copy:
+                    with (closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as original,
+                          closing(sqlite3.connect(source)) as copy):
                         original.backup(copy)
                     kind='consistent_sqlite_backup'
                 before=sha256(source)
@@ -109,7 +128,8 @@ host still requires explicit path reconciliation and cached model checkpoints.
 def main(argv=None):
     argv=list(sys.argv[1:] if argv is None else argv)
     if not argv or argv[0] in ('--help','-h'):
-        print('Kusama frozen source-connected studio\n\nCommands: doctor, ingest, index, inspire, run, resume, review, dataset, train, evaluate, e0, compare, finish, memory, verify, export\nUse COMMAND --help for exact arguments. No command fabricates human feedback or training evidence.')
+        commands = ', '.join(('doctor', *COMMAND_MODULES, 'export'))
+        print(f'Kusama frozen source-connected studio\n\nCommands: {commands}\nUse COMMAND --help for exact arguments. No command fabricates human feedback or training evidence.')
         return 0
     command,args=argv[0],argv[1:]
     if command=='doctor':
@@ -118,45 +138,8 @@ def main(argv=None):
         result=doctor(a.root,a.config)
         print(json.dumps({'report':str(a.root/'doctor.json'),'device':result['runtime']['assigned_device'],
                           'models':result['models'],'budget':result['budget']},indent=2));return 0
-    if command=='ingest':
-        from .corpus import main as call
-        return call(args)
-    if command=='index':
-        from .retrieval import main as call
-        return call(args)
-    if command=='inspire':
-        from .inspiration import main as call
-        return call(args)
-    if command in ('run','resume'):
-        from .episodes import main as call
-        return call(args)
-    if command=='review':
-        from .dashboard import main as call
-        return call(args)
-    if command=='dataset':
-        from .datasets import main as call
-        return call(args)
-    if command=='train':
-        from .learning import main as call
-        return call(args)
-    if command=='evaluate':
-        from .evaluation import main as call
-        return call(args)
-    if command=='e0':
-        from .e0_runner import main as call
-        return call(args)
-    if command=='compare':
-        from .comparison_modes import main as call
-        return call(args)
-    if command=='finish':
-        from .finishing import main as call
-        return call(args)
-    if command=='memory':
-        from .memory import main as call
-        return call(args)
-    if command=='verify':
-        from .audit import main as call
-        return call(args)
+    if command in COMMAND_MODULES:
+        return import_module(COMMAND_MODULES[command], package=__package__).main(args)
     if command=='export':
         p=argparse.ArgumentParser(prog='kusama export');p.add_argument('--root',type=Path,default=Path('artifacts/overnight'))
         p.add_argument('--output',type=Path,required=True);a=p.parse_args(args)

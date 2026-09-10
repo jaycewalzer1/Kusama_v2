@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "allow_network": false,
+  "providers": ["met", "artic", "cleveland"],
+  "max_requests": 48,
+  "max_network_bytes": 67108864,
+  "max_response_bytes": 2097152,
+  "max_image_bytes": 12582912,
+  "max_storage_bytes": 268435456,
+  "max_acquisitions": 12,
+  "max_candidates": 300,
+  "max_text_chars": 20000,
+  "long_edge": 1024,
+  "enable_clip_text": false,
+  "clip_cache_dir": ".cache/huggingface",
+  "excluded_source_ids": [],
+  "excluded_source_families": [],
+  "catalog_path": null,
+  "catalog_limit": 64,
+  "context_policies": [],
+  "context_seeds": [],
+  "coverage": {
+    "regions": ["Africa", "Americas", "Asia", "Europe", "Oceania"],
+    "periods": ["ancient", "medieval", "early modern", "modern", "contemporary"],
+    "materials": ["oil painting", "ink painting", "watercolor", "textile", "collage", "sculpture", "photography", "scientific diagram"],
+    "queries": ["African textile", "Japanese ink painting", "Mesoamerican vessel", "European preparatory drawing", "Islamic calligraphy", "Indian miniature painting", "Oceanic sculpture", "Chinese landscape", "American portrait", "scientific instrument", "anatomical illustration", "architecture plan", "body armor", "mourning", "ritual procession", "repair", "industrial design", "photographic study"]
+  },
+  "authorship": "operator_supplied_policy"
+}

@@ -9,7 +9,7 @@ import pytest
 
 from kusama.dataset_lineage import ADAPTER_VERSION, ReviewLineageResolver
 from kusama.datasets import LearningEvent, build_snapshot, grouped_assignments, review_events
-from kusama.evaluation import digest, file_hash
+from kusama.evidence import digest, file_hash
 from kusama.ledger import Ledger
 from kusama.reviews import ReviewStore
 

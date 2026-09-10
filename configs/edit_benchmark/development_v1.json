@@ -1,0 +1,222 @@
+{
+  "schema_version": 1,
+  "suite_id": "edit_tasks_development_v1",
+  "split": "development",
+  "description": "Five explicit edit tasks on hash-bound saved artworks. No inference has run for this prospective schedule.",
+  "cases": [
+    {
+      "case_id": "connect_supports",
+      "brief_id": "care_control",
+      "operation": "connect",
+      "instruction": "Add a thin horizontal bar that visibly touches both outer vertical supports gripped by the bat. Preserve the top ornament and overall framing.",
+      "parent": {
+        "path": "artifacts/overnight/studio_action_7f28c8c2e0f2812321895653/parent.png",
+        "sha256": "4d1a2308b1d51693b89e1425593ba5c7bb0b69bb597988c03f5a8360d54778f6"
+      },
+      "regions": [
+        {
+          "id": "left_endpoint",
+          "box": [
+            110,
+            243,
+            130,
+            275
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        },
+        {
+          "id": "right_endpoint",
+          "box": [
+            390,
+            243,
+            410,
+            275
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        },
+        {
+          "id": "connection_span",
+          "box": [
+            110,
+            243,
+            410,
+            275
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        }
+      ],
+      "evidence_kind": "prospective",
+      "method": "unexecuted",
+      "render_profile": "flux_base4b_study_512_v1",
+      "authorship": "Codex operator scaffolding based on saved development parents",
+      "limitations": [
+        "Operator-authored tasks on familiar development parents, not fresh generalization evidence.",
+        "A fresh bounded resource contract and supported independent measurement are required before interpreting prospective outcomes.",
+        "Unexecuted task: no child image, model claim or quality label exists."
+      ]
+    },
+    {
+      "case_id": "remove_person",
+      "brief_id": "mountain_person",
+      "operation": "remove",
+      "instruction": "Remove the solitary person completely, fill the exposed background, and preserve the distant mountain.",
+      "parent": {
+        "path": "artifacts/20260907T212453_controlled_776bcf57/parent.png",
+        "sha256": "f23302736be704e039b860f2ba717a9951816ba07b024e60dfbcbb233b6912e8"
+      },
+      "regions": [
+        {
+          "id": "person",
+          "box": [
+            322,
+            681,
+            382,
+            873
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        }
+      ],
+      "evidence_kind": "prospective",
+      "method": "unexecuted",
+      "render_profile": "flux_base4b_1024_v1",
+      "authorship": "Codex operator scaffolding based on saved development parents",
+      "limitations": [
+        "Operator-authored tasks on familiar development parents, not fresh generalization evidence.",
+        "A fresh bounded resource contract and supported independent measurement are required before interpreting prospective outcomes.",
+        "Unexecuted task: no child image, model claim or quality label exists."
+      ]
+    },
+    {
+      "case_id": "resize_person",
+      "brief_id": "mountain_person",
+      "operation": "resize",
+      "instruction": "Reduce the solitary person uniformly to one-third size while anchoring their feet and preserving the mountain.",
+      "parent": {
+        "path": "artifacts/20260907T212453_controlled_776bcf57/parent.png",
+        "sha256": "f23302736be704e039b860f2ba717a9951816ba07b024e60dfbcbb233b6912e8"
+      },
+      "regions": [
+        {
+          "id": "person",
+          "box": [
+            322,
+            681,
+            382,
+            873
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        }
+      ],
+      "evidence_kind": "prospective",
+      "method": "unexecuted",
+      "render_profile": "flux_base4b_1024_v1",
+      "authorship": "Codex operator scaffolding based on saved development parents",
+      "limitations": [
+        "Operator-authored tasks on familiar development parents, not fresh generalization evidence.",
+        "A fresh bounded resource contract and supported independent measurement are required before interpreting prospective outcomes.",
+        "Unexecuted task: no child image, model claim or quality label exists."
+      ]
+    },
+    {
+      "case_id": "preserve_ornament",
+      "brief_id": "care_control",
+      "operation": "preserve_detail",
+      "instruction": "Alter the head-height support connection while preserving every pixel in the declared top ornament detail.",
+      "parent": {
+        "path": "artifacts/overnight/studio_action_7f28c8c2e0f2812321895653/parent.png",
+        "sha256": "4d1a2308b1d51693b89e1425593ba5c7bb0b69bb597988c03f5a8360d54778f6"
+      },
+      "regions": [
+        {
+          "id": "ornament",
+          "box": [
+            25,
+            0,
+            490,
+            35
+          ],
+          "role": "protected",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        },
+        {
+          "id": "head",
+          "box": [
+            211,
+            220,
+            292,
+            306
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        }
+      ],
+      "evidence_kind": "prospective",
+      "method": "unexecuted",
+      "render_profile": "flux_base4b_study_512_v1",
+      "authorship": "Codex operator scaffolding based on saved development parents",
+      "limitations": [
+        "Operator-authored tasks on familiar development parents, not fresh generalization evidence.",
+        "A fresh bounded resource contract and supported independent measurement are required before interpreting prospective outcomes.",
+        "Unexecuted task: no child image, model claim or quality label exists."
+      ]
+    },
+    {
+      "case_id": "change_relationship",
+      "brief_id": "care_control",
+      "operation": "change_relationship",
+      "instruction": "Change the left wing/support relationship so the wing appears to support the vertical bar; retain the right wing and top ornament.",
+      "parent": {
+        "path": "artifacts/overnight/studio_action_7f28c8c2e0f2812321895653/parent.png",
+        "sha256": "4d1a2308b1d51693b89e1425593ba5c7bb0b69bb597988c03f5a8360d54778f6"
+      },
+      "regions": [
+        {
+          "id": "left_wing",
+          "box": [
+            60,
+            215,
+            213,
+            495
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        },
+        {
+          "id": "left_support",
+          "box": [
+            110,
+            215,
+            130,
+            495
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        }
+      ],
+      "evidence_kind": "prospective",
+      "method": "unexecuted",
+      "render_profile": "flux_base4b_study_512_v1",
+      "authorship": "Codex operator scaffolding based on saved development parents",
+      "limitations": [
+        "Operator-authored tasks on familiar development parents, not fresh generalization evidence.",
+        "A fresh bounded resource contract and supported independent measurement are required before interpreting prospective outcomes.",
+        "Unexecuted task: no child image, model claim or quality label exists."
+      ]
+    }
+  ],
+  "attribution": "Codex assistant-authored selection and scope annotation; original operator/model instructions preserved."
+}

@@ -21,7 +21,9 @@ from .backend import BackendError, FluxBackend, _torch, _versions
 
 MODEL_ID = "Qwen/Qwen3-VL-8B-Instruct"
 MODEL_REVISION = "0c351dd01ed87e9c1b53cbc748cba10e6187ff3b"
+# Missing limits in historical director configs retain their original allowance.
 MAX_INPUT_TOKENS = 8192
+RESEARCH_TOTAL_TOKENS = 16384
 MAX_RESPONSE_CHARACTERS = 16384
 PROPOSAL_STRING_LIMITS = {
     "specific_change": 1000,
@@ -54,6 +56,7 @@ class DirectorConfig:
     local_files_only: bool = False
     max_new_tokens: int = 512
     max_image_pixels: int = 1048576
+    max_input_tokens: int = MAX_INPUT_TOKENS
 
 
 class DirectorOutputError(BackendError):
@@ -121,6 +124,8 @@ class QwenDirector:
             raise BackendError("Director precision must be auto, bf16, fp16, or fp32.")
         if type(self.config.max_new_tokens) is not int or not 1 <= self.config.max_new_tokens <= 2048:
             raise BackendError("Director max_new_tokens must be an integer between 1 and 2048.")
+        if type(self.config.max_input_tokens) is not int or not 1 <= self.config.max_input_tokens <= RESEARCH_TOTAL_TOKENS:
+            raise BackendError(f"Director max_input_tokens must be an integer between 1 and {RESEARCH_TOTAL_TOKENS}.")
         if type(self.config.max_image_pixels) is not int or not 4096 <= self.config.max_image_pixels <= 4194304:
             raise BackendError("Director max_image_pixels must be an integer between 4096 and 4194304.")
 
@@ -145,7 +150,7 @@ class QwenDirector:
             "local_files_only": self.config.local_files_only,
             "max_new_tokens": self.config.max_new_tokens,
             "max_image_pixels": self.config.max_image_pixels,
-            "max_input_tokens": MAX_INPUT_TOKENS,
+            "max_input_tokens": self.config.max_input_tokens,
             "do_sample": False, "num_beams": 1,
             "training_enabled": False, "inference_mode": True,
             "attention_backend": "sdpa", "processor_use_fast": False,
@@ -263,8 +268,8 @@ class QwenDirector:
                 raise BackendError("Qwen processor did not include image tensors; no text-only fallback is permitted.")
             input_tokens = int(inputs["input_ids"].shape[-1])
             result["metadata"]["input_tokens"] = input_tokens
-            if input_tokens > MAX_INPUT_TOKENS:
-                raise BackendError(f"Qwen input requires {input_tokens} tokens, exceeding the {MAX_INPUT_TOKENS} token limit; no truncation was performed.")
+            if input_tokens > self.config.max_input_tokens:
+                raise BackendError(f"Qwen input requires {input_tokens} tokens, exceeding the {self.config.max_input_tokens} token limit; no truncation was performed.")
             inputs = inputs.to(self.execution_settings["device"])
             torch = _torch()
             with torch.inference_mode():
@@ -410,21 +415,11 @@ def validate_observation(value: Any, candidate_ids: list[str]) -> dict:
     return value
 
 
-def _multimodal_json(director: QwenDirector, system: str, request: dict,
-                     image_entries: list[tuple[str, Path]], validator: Callable, *,
-                     sampling: dict | None = None, total_token_limit: int | None = None,
-                     generation_seed: int | None = None) -> dict:
-    """Common bounded multimodal inference retaining exact prompt, pixels and output."""
+def _prepare_multimodal_inputs(director, system, request, image_entries, *,
+                               allow_text_only=False, compact_json=False):
+    """Prepare CPU inputs without loading weights or dispatching generation."""
     from PIL import Image, ImageOps
-    if director.model is None or director.processor is None or director.execution_settings.get('status') != 'ready':
-        raise BackendError('Call prepare() before requesting Qwen inference')
-    if sampling is not None and (set(sampling) != {'temperature', 'top_p'}
-            or not 0 < sampling['temperature'] <= 2 or not 0 < sampling['top_p'] <= 1):
-        raise ValueError('Sampling requires bounded temperature and top_p only')
-    if total_token_limit is not None and not director.config.max_new_tokens < total_token_limit <= MAX_INPUT_TOKENS:
-        raise ValueError('Invalid combined input/output token limit')
-    if generation_seed is not None and (type(generation_seed) is not int or not 0 <= generation_seed < 2**63):
-        raise ValueError('Invalid generation seed')
+    director.last_result = None
     images, metadata, content = [], [], []
     for image_id, path in image_entries:
         raw = Path(path).read_bytes()
@@ -440,37 +435,81 @@ def _multimodal_json(director: QwenDirector, system: str, request: dict,
                          'sha256': hashlib.sha256(raw).hexdigest(), 'original_size': original_size,
                          'director_image_size': list(image.size)})
         content.extend([{'type': 'text', 'text': f'Image ID: {image_id}'}, {'type': 'image'}])
-    if not images:
+    if not images and not allow_text_only:
         raise BackendError('Reference-conditioned inference requires saved images')
-    content.append({'type': 'text', 'text': json.dumps(request, ensure_ascii=False)})
+    content.append({'type': 'text', 'text': json.dumps(request, ensure_ascii=False, separators=(',', ':') if compact_json else None)})
     messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': content}]
     result = {'raw_response': None, 'output': None, 'prompt': None, 'messages': messages,
               'metadata': {'settings': dict(director.execution_settings), 'input_images': metadata,
                            'request': request}}
     director.last_result = result
-    try:
-        prompt = director.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        result['prompt'] = prompt
+    prompt = director.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    result['prompt'] = prompt
+    if images:
         inputs = director.processor(text=[prompt], images=images, return_tensors='pt',
             images_kwargs={'size': {'shortest_edge': 4096, 'longest_edge': director.config.max_image_pixels}}, truncation=False)
-        if 'pixel_values' not in inputs or 'image_grid_thw' not in inputs:
-            raise BackendError('Qwen processor did not include image tensors; no text-only fallback is permitted')
-        input_tokens = int(inputs['input_ids'].shape[-1])
-        result['metadata']['input_tokens'] = input_tokens
-        admitted_limit = MAX_INPUT_TOKENS if total_token_limit is None else total_token_limit - director.config.max_new_tokens
+    else:
+        # Explicit research planning before any source has been opened. This
+        # is never a fallback for missing/broken visual input in old workflows.
+        inputs = director.processor(text=[prompt], return_tensors='pt', truncation=False)
+        result['metadata']['input_mode'] = 'explicit_text_only_research'
+    if images and ('pixel_values' not in inputs or 'image_grid_thw' not in inputs):
+        raise BackendError('Qwen processor did not include image tensors; no text-only fallback is permitted')
+    if images:
+        result['metadata'].update(input_mode='vision_language',
+            image_tensor_shapes={k: list(inputs[k].shape) for k in ('pixel_values', 'image_grid_thw')})
+    input_tokens = int(inputs['input_ids'].shape[-1])
+    result['metadata']['input_tokens'] = input_tokens
+    result['metadata']['json_serialization'] = 'compact' if compact_json else 'default'
+    return result, inputs
+
+
+def _multimodal_json(director: QwenDirector, system: str, request: dict,
+                     image_entries: list[tuple[str, Path]], validator: Callable, *,
+                     sampling: dict | None = None, total_token_limit: int | None = None,
+                     generation_seed: int | None = None, allow_text_only: bool = False, compact_json: bool = False,
+                     response_format: dict | None = None) -> dict:
+    """Common bounded multimodal inference retaining exact prompt, pixels and output."""
+    if director.model is None or director.processor is None or director.execution_settings.get('status') != 'ready':
+        raise BackendError('Call prepare() before requesting Qwen inference')
+    if sampling is not None and (set(sampling) != {'temperature', 'top_p'}
+            or not 0 < sampling['temperature'] <= 2 or not 0 < sampling['top_p'] <= 1):
+        raise ValueError('Sampling requires bounded temperature and top_p only')
+    if total_token_limit is not None and not director.config.max_new_tokens < total_token_limit <= director.config.max_input_tokens:
+        raise ValueError('Invalid combined input/output token limit')
+    if generation_seed is not None and (type(generation_seed) is not int or not 0 <= generation_seed < 2**63):
+        raise ValueError('Invalid generation seed')
+    result = {}
+    try:
+        result, inputs = _prepare_multimodal_inputs(director, system, request, image_entries,
+            allow_text_only=allow_text_only, compact_json=compact_json)
+        input_tokens = result['metadata']['input_tokens']
+        admitted_limit = director.config.max_input_tokens if total_token_limit is None else total_token_limit - director.config.max_new_tokens
+        result['metadata'].update(input_token_limit=admitted_limit,
+            reserved_output_tokens=director.config.max_new_tokens, combined_token_limit=total_token_limit)
         if input_tokens > admitted_limit:
-            raise BackendError(f'Qwen input requires {input_tokens} tokens, exceeding {MAX_INPUT_TOKENS}; no truncation was performed')
+            raise BackendError(f'Qwen input requires {input_tokens} tokens, exceeding the {admitted_limit} input-token limit '
+                f'({director.config.max_new_tokens} output tokens reserved; combined limit {total_token_limit or "not set"}); '
+                'no truncation was performed')
         inputs = inputs.to(director.execution_settings['device'])
         settings = {'do_sample': sampling is not None, 'num_beams': 1, 'use_cache': True,
                     'temperature': sampling['temperature'] if sampling else None,
                     'top_p': sampling['top_p'] if sampling else None, 'top_k': None}
         result['metadata'].update(generation_settings=settings, generation_seed=generation_seed,
                                   combined_token_limit=total_token_limit)
+        generation_options = {}
+        if response_format is not None:
+            from .json_generation import json_prefix_constraint, generation_schema
+            schema = generation_schema(request)
+            generation_options['prefix_allowed_tokens_fn'] = json_prefix_constraint(
+                director.processor.tokenizer, response_format, schema)
+            result['metadata']['response_format'] = dict(response_format)
+            result['metadata']['generation_schema'] = schema
         if generation_seed is not None:
             _torch().manual_seed(generation_seed)
         with _torch().inference_mode():
             generated = director.model.generate(**inputs, max_new_tokens=director.config.max_new_tokens,
-                **settings)
+                **settings, **generation_options)
         if len(generated) != 1:
             raise BackendError('Expected one Qwen response')
         continuation = generated[:, input_tokens:]
@@ -479,6 +518,7 @@ def _multimodal_json(director: QwenDirector, system: str, request: dict,
         count = int(continuation.shape[-1])
         result['metadata'].update(generated_tokens=count, reached_token_limit=count >= director.config.max_new_tokens)
     except Exception as exc:
+        result = result or getattr(director, 'last_result', None) or {}
         result['inference_error'] = f'{type(exc).__name__}: {exc}'
         error = BackendError(f'Qwen multimodal inference failed without retry: {exc}')
         error.result = result

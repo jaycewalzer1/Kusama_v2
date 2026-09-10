@@ -5,7 +5,7 @@ import pytest
 
 from kusama.dataset_lineage import ReviewLineageResolver
 from kusama.datasets import review_events
-from kusama.evaluation import digest, file_hash
+from kusama.evidence import digest, file_hash
 from kusama.ledger import Ledger
 from test_dataset_lineage import assignments, collection, png
 

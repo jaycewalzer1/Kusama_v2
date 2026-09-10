@@ -5,7 +5,7 @@ import math
 from numbers import Real
 import time
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import ImageDraw
 
 DETECTOR_ID = 'IDEA-Research/grounding-dino-tiny'
 DETECTOR_REVISION = 'a2bb814dd30d776dcf7e30523b00659f4f141c71'

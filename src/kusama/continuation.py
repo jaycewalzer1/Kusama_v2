@@ -12,7 +12,7 @@ import html
 import json
 from pathlib import Path
 import sqlite3
-from typing import Literal
+from typing import Annotated, Literal
 
 from PIL import Image, ImageChops, ImageDraw
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -21,8 +21,9 @@ from .artifacts import sha256, write_json
 from .backend import FluxBackend
 from .config import Config
 from .controlled import load_plan
-from .execution import canonical_config, restore_config
+from .execution import canonical_config, restore_config, _copy_snapshot_file
 from .intentions import IntentionMap, pixel_bounds, validate_intention_edit
+from .image_prompt import ImagePromptAsset, validate_assets
 from .reviews import ReviewConflict, ReviewNotFound, ReviewStore
 from .studio import Inquiry, Reference, Studio, encoded, fingerprint, now
 
@@ -54,19 +55,51 @@ class ParentSelection(StrictModel):
         return self
 
 
+class RepairPolicy(StrictModel):
+    padding: int = Field(ge=0, le=16, strict=True)
+    feather: int = Field(ge=0, le=16, strict=True)
+
+    @model_validator(mode='after')
+    def contained_feather(self):
+        if self.feather > self.padding:
+            raise ValueError('Repair feather cannot exceed padding')
+        return self
+
+
+class GeometryControl(StrictModel):
+    object_mask: Path
+    object_mask_sha256: str = Field(pattern=r'^[0-9a-f]{64}$')
+    scale: float = Field(gt=0, le=4, allow_inf_nan=False)
+    anchor: tuple[float, float]
+    repair_prompt: str = Field(min_length=1, max_length=8000)
+    repair_policy: RepairPolicy | None = None
+    secondary_mask: Path | None = None
+    secondary_mask_sha256: str | None = Field(default=None, pattern=r'^[0-9a-f]{64}$')
+
+    @model_validator(mode='after')
+    def paired_secondary(self):
+        if (self.secondary_mask is None) != (self.secondary_mask_sha256 is None):
+            raise ValueError('Secondary mask requires both a path and exact hash')
+        return self
+
+
 class Revision(StrictModel):
     author: str = Field(min_length=1, max_length=200)
     origin: Literal['operator', 'model_proposal', 'development_example']
     instruction: str = Field(min_length=1, max_length=8000)
     intended_change: str = Field(min_length=1, max_length=4000)
     target: str = Field(min_length=1, max_length=1000)
-    method: Literal['whole', 'masked']
+    method: Literal['whole', 'masked', 'geometric']
     region: tuple[float, float, float, float] | None = None
+    crop: tuple[Annotated[int, Field(strict=True)], Annotated[int, Field(strict=True)],
+                Annotated[int, Field(strict=True)], Annotated[int, Field(strict=True)]] | None = None
+    geometric: GeometryControl | None = None
     target_region_id: str | None = Field(default=None, max_length=200)
     seeds: tuple[int, int] = (23, 41)
     preservation_constraints: list[str] = Field(min_length=1, max_length=32)
     visual_checks: list[str] = Field(min_length=1, max_length=32)
     source_ids: list[str] = Field(default_factory=list, max_length=32)
+    reference_images: list[ImagePromptAsset] = Field(default_factory=list, max_length=2)
     connection_id: str | None = Field(default=None, max_length=200)
     relationship: str = Field(default='', max_length=8000)
     relationship_kind: Literal['proposed_analogy', 'documented_relationship'] = 'proposed_analogy'
@@ -74,18 +107,22 @@ class Revision(StrictModel):
 
     @model_validator(mode='after')
     def supported_operation(self):
+        if self.method != 'whole' and len(self.reference_images) > 1:
+            raise ValueError('Masked/geometric edits accept at most one reference image')
         if len(set(self.seeds)) != 2 or any(type(s) is not int or not 0 <= s < 2**63 for s in self.seeds):
             raise ValueError('Two distinct nonnegative 63-bit seeds are required')
         if any(not item.strip() for item in self.preservation_constraints + self.visual_checks):
             raise ValueError('Preservation and visual checks cannot contain blank text')
-        if self.method == 'masked':
+        if self.method in ('masked', 'geometric'):
             if self.region is None:
-                raise ValueError('Masked edits require explicit normalized region bounds')
+                raise ValueError('Masked/geometric edits require explicit normalized region bounds')
             l, t, r, b = self.region
             if not 0 <= l < r <= 1 or not 0 <= t < b <= 1:
                 raise ValueError('Region bounds must satisfy 0 <= left < right <= 1 and 0 <= top < bottom <= 1')
-        elif self.region is not None or self.target_region_id is not None:
+        elif self.region is not None or self.target_region_id is not None or self.crop is not None:
             raise ValueError('Whole-image edits do not support claimed region isolation')
+        if (self.method == 'geometric') != (self.geometric is not None):
+            raise ValueError('Geometric method requires explicit geometric controls, and only that method accepts them')
         if self.source_ids and not self.relationship:
             raise ValueError('Source references require an attributed relationship')
         return self
@@ -106,7 +143,28 @@ class ContinuationRequest(StrictModel):
         ids = [r.id for r in self.references]
         if len(ids) != len(set(ids)) or set(self.revision.source_ids) - set(ids):
             raise ValueError('Reference IDs must be unique and every action source must resolve')
+        if any(a.source_id not in ids for a in self.revision.reference_images):
+            raise ValueError('Image prompt source must resolve to a supplied reference')
         return self
+
+
+def request_snapshot(request):
+    """Preserve old frozen request shape when the new controls are omitted."""
+    data = ContinuationRequest.model_validate(request).model_dump(mode='json')
+    if not data['revision']['reference_images']:
+        data['revision'].pop('reference_images')
+    for key in ('crop', 'geometric'):
+        if data['revision'][key] is None:
+            data['revision'].pop(key)
+    if data['intention_map'] is None:
+        data.pop('intention_map')
+    else:
+        if not data['intention_map']['required_support_ids']:
+            data['intention_map'].pop('required_support_ids')
+        for element in data['intention_map']['elements']:
+            if element['existence'] is None:
+                element.pop('existence')
+    return data
 
 
 class DevelopmentDecision(StrictModel):
@@ -147,6 +205,91 @@ def _atomic_text(path, value):
         os.fsync(stream.fileno())
     temporary.replace(path)
     sync_directory(path.parent)
+
+
+def _allowed_mask(revision, size):
+    mask = Image.new('L', size, 255 if revision.method == 'whole' else 0)
+    if revision.region is not None:
+        bounds = pixel_bounds(revision.region, size)
+        ImageDraw.Draw(mask).rectangle((bounds[0], bounds[1], bounds[2] - 1, bounds[3] - 1), fill=255)
+    return mask
+
+
+def _control_plan(revision, *, directory=None):
+    controls = {}
+    if revision.reference_images:
+        assets = [a.model_dump(mode='json') for a in revision.reference_images]
+        if directory is not None:
+            for index, asset in enumerate(assets):
+                source = Path(asset['path']).resolve()
+                frozen = directory / f'reference-{index:02}{source.suffix.lower()}'
+                if not frozen.exists():
+                    _copy_snapshot_file(source, frozen, asset['sha256'])
+                asset['path'] = str(frozen)
+        controls['reference_images'] = validate_assets(assets, max_images=2 if revision.method == 'whole' else 1)
+    if revision.crop is not None:
+        controls['crop'] = list(revision.crop)
+    if revision.geometric is not None:
+        geometry = revision.geometric
+        controls.update(scale=geometry.scale, anchor=list(geometry.anchor), repair_prompt=geometry.repair_prompt)
+        if geometry.repair_policy is not None:
+            controls['repair_policy'] = geometry.repair_policy.model_dump()
+        for key in ('object_mask', 'secondary_mask'):
+            source = getattr(geometry, key)
+            if source is None:
+                continue
+            expected = getattr(geometry, key + '_sha256')
+            if directory is None:
+                source = source.resolve()
+                if sha256(source) != expected:
+                    raise ValueError('Declared geometric control hash changed: ' + key)
+                controls[key] = str(source)
+            else:
+                frozen = directory / (key + '.png')
+                if frozen.exists():
+                    if sha256(frozen) != expected:
+                        raise ValueError('Frozen geometric control hash changed: ' + key)
+                else:
+                    _copy_snapshot_file(source.resolve(), frozen, expected)
+                controls[key] = str(frozen)
+    return controls
+
+
+def _preflight(request, selected):
+    """Validate real controls before registering work, retaining uncertain semantics."""
+    import tempfile
+    revision = request.revision
+    controls = _control_plan(revision)
+    with tempfile.TemporaryDirectory(prefix='kusama-continuation-preflight-') as temporary:
+        directory = Path(temporary)
+        mask = _allowed_mask(revision, tuple(selected['size']))
+        mask.save(directory / 'allowed_mask.png')
+        plan = {'parent': selected['path'], 'parent_sha256': selected['image_sha256'],
+                'instruction': revision.instruction, 'target': revision.target,
+                'allowed_mask': 'allowed_mask.png', 'method': revision.method,
+                'seed': revision.seeds[0], 'max_calls': 1, 'visual_checks': revision.visual_checks,
+                'author': revision.author, **controls}
+        write_json(directory / 'plan.json', plan)
+        loaded = load_plan(directory / 'plan.json')
+        crop = loaded[5]
+        report = {'policy': 'continuation_control_preflight_v2', 'parent_sha256': selected['image_sha256'],
+                  'status': 'passed', 'method': revision.method, 'edit_bounds': list(mask.getbbox()),
+                  'inference_crop': crop, 'inference_dimensions': [crop[2] - crop[0], crop[3] - crop[1]],
+                  'allowed_mask_sha256': sha256(directory / 'allowed_mask.png'),
+                  'protected_pixels': mask.histogram()[0], 'target_existence': [],
+                  'scope': 'Declared geometry and attributed parent observations only; no semantic fulfillment or artistic quality verdict.'}
+    if request.intention_map:
+        intentions = request.intention_map
+        for element in intentions.elements:
+            if element.id in intentions.target_ids + intentions.required_support_ids:
+                report['target_existence'].append({'element_id': element.id,
+                    'status': element.existence.status if element.existence else 'uncertain',
+                    'evidence': element.existence.model_dump(mode='json') if element.existence else None,
+                    'reason': 'Attributed parent observation' if element.existence else 'No existence evidence supplied'})
+    if revision.geometric:
+        report['control_hashes'] = {key: getattr(revision.geometric, key + '_sha256')
+                                   for key in ('object_mask', 'secondary_mask') if getattr(revision.geometric, key)}
+    return report
 
 
 def read_continuations(root: Path, continuation_id=None):
@@ -198,17 +341,23 @@ class ContinuationStore:
         """Freeze an explicit selection and two seed plans. No model inference."""
         continuation_id = _identifier(continuation_id)
         request = ContinuationRequest.model_validate(request)
+        if request.revision.geometric is not None:
+            request = request.model_copy(deep=True)
+            for key in ('object_mask', 'secondary_mask'):
+                source = getattr(request.revision.geometric, key)
+                if source is not None:
+                    setattr(request.revision.geometric, key, source.resolve())
         config = canonical_config(config)
         if config.output_dir != self.root:
             raise ValueError('Configuration output_dir must match the continuation artifact root')
         selected = self._selection(request)
         if (config.width, config.height) != tuple(selected['size']):
             raise ValueError('Declared renderer width/height must match the saved parent')
-        self._validate_intentions(continuation_id, request, selected)
-        request_data = request.model_dump(mode='json')
-        # Preserve legacy frozen request bytes when the opt-in map is absent.
-        if request.intention_map is None:
-            request_data.pop('intention_map')
+        previous = read_continuations(self.root, continuation_id)
+        legacy = bool(previous and 'preflight' not in previous[0])
+        self._validate_intentions(continuation_id, request, selected, full_coverage=not legacy)
+        preflight = None if legacy else _preflight(request, selected)
+        request_data = request_snapshot(request)
         spec = {'schema_version': 1, 'kind': 'selected_parent_continuation', 'id': continuation_id,
                 'project_id': 'cont_' + continuation_id, 'episode_id': 'revision',
                 'request': request_data, 'selection': selected,
@@ -216,6 +365,8 @@ class ContinuationStore:
                 'resource_root': str(Path(resource_root or self.root).resolve()),
                 'invocation_keys': {str(seed): f'continuation:{continuation_id}:seed:{seed}'
                                     for seed in request.revision.seeds}}
+        if preflight is not None:
+            spec['preflight'] = preflight
         spec = json.loads(encoded(spec))
         with Studio(self.root) as studio, studio.ledger.lock('continuation_' + continuation_id):
             studio.db.executescript('''
@@ -235,11 +386,12 @@ class ContinuationStore:
             self._materialize(studio, spec)
         return self.get(continuation_id)
 
-    def _validate_intentions(self, continuation_id, request, selected):
+    def _validate_intentions(self, continuation_id, request, selected, *, full_coverage=True):
         intentions = request.intention_map
         if intentions is None:
             return
-        validate_intention_edit(intentions, request.revision, selected['image_sha256'], selected['size'])
+        validate_intention_edit(intentions, request.revision, selected['image_sha256'], selected['size'],
+                                full_coverage=full_coverage)
         previous_id = intentions.previous_continuation_id
         if previous_id is None:
             return
@@ -254,7 +406,7 @@ class ContinuationStore:
         if candidate is None or sha256(Path(candidate['path'])) != candidate['sha256']:
             raise ValueError('Intention history must follow an intact previous parent or child')
         before = {element['id']: element for element in previous_map['elements']}
-        after = {element.id: element.model_dump(mode='json') for element in intentions.elements}
+        after = {element['id']: element for element in request_snapshot(request)['intention_map']['elements']}
         if set(intentions.revisit_reasons) - set(before):
             raise ValueError('Revisit reasons must name previous intention elements')
         for identifier, element in before.items():
@@ -266,12 +418,15 @@ class ContinuationStore:
         request = ContinuationRequest.model_validate(spec['request'])
         if request.intention_map is not None:
             validate_intention_edit(request.intention_map, request.revision,
-                                    spec['selection']['image_sha256'], spec['selection']['size'])
+                                    spec['selection']['image_sha256'], spec['selection']['size'],
+                                    full_coverage='preflight' in spec)
         revision = request.revision
         project_id, episode_id = spec['project_id'], spec['episode_id']
         directory = self.root / 'continuations' / spec['id']
         directory.mkdir(parents=True, exist_ok=True)
         _ensure_json(directory / 'inputs.json', spec)
+        if 'preflight' in spec:
+            _ensure_json(directory / 'preflight.json', spec['preflight'])
         if studio.db.execute('SELECT 1 FROM studio_projects WHERE id=?', (project_id,)).fetchone():
             project = studio.get(project_id)
             studio._artifact(project, 'root')
@@ -284,10 +439,7 @@ class ContinuationStore:
         parent = project['artifacts']['root']
         with Image.open(parent['path']) as image:
             size = image.size
-        mask = Image.new('L', size, 255 if revision.method == 'whole' else 0)
-        if revision.region is not None:
-            bounds = pixel_bounds(revision.region, size)
-            ImageDraw.Draw(mask).rectangle((bounds[0], bounds[1], bounds[2] - 1, bounds[3] - 1), fill=255)
+        mask = _allowed_mask(revision, size)
         mask_path = directory / 'allowed_mask.png'
         if mask_path.exists():
             with Image.open(mask_path) as existing:
@@ -295,12 +447,16 @@ class ContinuationStore:
                     raise ValueError('Frozen continuation mask changed')
         else:
             mask.save(mask_path)
+        if 'preflight' in spec and sha256(mask_path) != spec['preflight']['allowed_mask_sha256']:
+            raise ValueError('Frozen continuation mask bytes differ from preflight')
+        controls = _control_plan(revision, directory=directory)
         directions = []
         for index, seed in enumerate(revision.seeds):
             action_id = f'variant_{index + 1}'
             plan = {'parent': parent['path'], 'parent_sha256': parent['sha256'], 'instruction': revision.instruction,
                     'target': revision.target, 'allowed_mask': str(mask_path), 'method': revision.method,
-                    'seed': seed, 'max_calls': 1, 'visual_checks': revision.visual_checks, 'author': revision.author}
+                    'seed': seed, 'max_calls': 1, 'visual_checks': revision.visual_checks, 'author': revision.author,
+                    **controls}
             path = directory / f'{action_id}.json'
             _ensure_json(path, plan)
             load_plan(path)
@@ -343,10 +499,15 @@ class ContinuationStore:
             'selected_artifact_id': episode['current_artifact_id'] if episode else None,
             'method_note': ('FLUX edits the full saved parent. Prompt requests do not guarantee local preservation.'
                 if spec['request']['revision']['method'] == 'whole' else
-                'FLUX proposes an edit from the full parent; a hard rectangular compositor preserves decoded pixels outside the declared mask. Meaning and boundaries inside it remain uncontrolled. Raw spillover is retained in each attempt.'),
+                ('A frozen object mask and scale/anchor transform copy actual parent pixels; FLUX repairs the vacated region. '
+                 if spec['request']['revision']['method'] == 'geometric' else 'FLUX proposes an edit. ')
+                + ('Inference uses the explicitly saved parent-pixel crop, at its native dimensions. '
+                   if spec['request']['revision'].get('crop') else 'Inference sees the full saved parent. ')
+                + 'A hard rectangular compositor preserves decoded pixels outside the declared mask. Meaning and boundaries inside it remain uncontrolled. Raw spillover is retained in each attempt.'),
             'artistic_effectiveness': None}
 
-    def execute(self, continuation_id, backend_factory=FluxBackend, *, resource_root=None, resource_config=None):
+    def execute(self, continuation_id, backend_factory=FluxBackend, *, resource_root=None, resource_config=None,
+                before_dispatch=None):
         """Execute only saved actions; uncertain charged calls follow ledger recovery."""
         spec = self._spec(continuation_id)
         immutable = {k: v for k, v in spec.items() if k != 'created_at'}
@@ -361,11 +522,15 @@ class ContinuationStore:
                 from .ledger import BudgetExceeded, LedgerError
                 with SessionBudget(frozen_resource_root, resource_config) as budget, budget.workload_lock():
                     def budgeted_factory(config):
+                        if before_dispatch is not None:
+                            before_dispatch()
                         if budget.summary()['renderer_remaining'] < 1:
                             raise BudgetExceeded('Session renderer cap exhausted before model loading')
                         backend = backend_factory(config)
                         generate = backend.generate
                         def budgeted_generate(prompt, seed, *args, **kwargs):
+                            if before_dispatch is not None:
+                                before_dispatch()
                             key = spec['invocation_keys'][str(seed)]
                             if not budget.reserve(key, 'renderer'):
                                 raise LedgerError('Existing session reservation cannot authorize repeat inference: ' + key)
@@ -382,7 +547,17 @@ class ContinuationStore:
             else:
                 # Custom factories are controlled substitutes or already budgeted
                 # workers. Production CLI always uses the session wrapper above.
-                studio.run(spec['project_id'], spec['episode_id'], backend_factory)
+                def guarded_factory(config):
+                    before_dispatch()
+                    backend = backend_factory(config)
+                    generate = backend.generate
+                    def guarded_generate(*args, **kwargs):
+                        before_dispatch()
+                        return generate(*args, **kwargs)
+                    backend.generate = guarded_generate
+                    return backend
+                studio.run(spec['project_id'], spec['episode_id'],
+                           guarded_factory if before_dispatch is not None else backend_factory)
             project = studio.get(spec['project_id'])
             self._register_followup(project, spec)
         manifest = self.get(continuation_id)
@@ -568,6 +743,12 @@ class ContinuationStore:
 <h3>Exact saved edit instruction</h3><pre class="continuation-instruction">{esc(manifest['request']['revision']['instruction'])}</pre>
 <p class="continuation-mask-hash">Prepared mask SHA-256: {region['sha256']}</p></div></div></section>'''
         selection = manifest['selection']
+        preflight_section = ''
+        if manifest.get('preflight'):
+            preflight_section = ('<div><h2>Control preflight</h2><p>Declared geometry passed; '
+                'target existence remains an attributed observation or uncertainty. The inference crop uses '
+                'native parent pixels; it is not an upscaled render profile.</p><pre>'
+                + esc(json.dumps(manifest['preflight'], indent=2, ensure_ascii=False)) + '</pre></div>')
         intentions = manifest['request'].get('intention_map')
         intention_section = ''
         if intentions:
@@ -584,6 +765,7 @@ class ContinuationStore:
 <p>Requested change by {esc(manifest['request']['revision']['author'])}: {esc(manifest['request']['revision']['intended_change'])}</p>
 <p>{esc(manifest['method_note'])}</p><p>Execution: {esc(manifest['status'])}. Charged model calls: {manifest['model_calls']}/2. Human follow-up reviews: {manifest['reviews']['votes']}. Artistic effectiveness remains unassessed until actual observations and situated review.</p>
 {preview}
+{preflight_section}
 {intention_section}
 <h2>Whole painting</h2><section>{''.join(cards)}</section>
 <h2>Local inspection</h2><p>These are enlarged views of the saved pixels, not higher-resolution render passes. Judge readability and relationships in the whole painting above as well as seams and details here.</p><section>{''.join(detail_cards)}</section>

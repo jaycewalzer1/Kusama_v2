@@ -6,10 +6,10 @@ import json
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
-from .artifacts import sha256, write_json, save_image
+from .artifacts import save_image
 from .config import parse_args
 from .controlled import load_plan, run
-from .experiment import handle_termination, code_provenance
+from .experiment import handle_termination
 from .ledger import LedgerError
 
 

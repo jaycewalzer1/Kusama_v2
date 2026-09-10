@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 from contextlib import nullcontext
-from dataclasses import asdict
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -15,8 +14,8 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .artifacts import sha256, write_json
-from .costs import CostJournal, tracked_local_call
-from .director import DirectorConfig, QwenDirector, _multimodal_json, MODEL_ID, DirectorOutputError
+from .costs import tracked_local_call
+from .director import DirectorConfig, QwenDirector, _multimodal_json, MODEL_ID
 from .experiment import Measurement, code_provenance, handle_termination
 from .ledger import Ledger, SpecMismatch
 from .resources import SessionBudget, canonical
@@ -202,7 +201,7 @@ def validate_wire_connection(value, identifier, documents, prior=()):
     return validate_connection(compiled, identifier, documents, prior)
 
 
-def require_charged_invocation(ledger, job_id, index, budget=None, key=None, kind=None):
+def require_charged_invocation(ledger, job_id, index, budget=None, key=None, kind=None, *, max_tokens=None):
     """An opened attempt alone is not evidence that inference was reserved."""
     attempt_id = f'{job_id}:{index}'
     row = ledger.connection.execute(
@@ -212,11 +211,12 @@ def require_charged_invocation(ledger, job_id, index, budget=None, key=None, kin
         raise SpecMismatch('Uncharged saved invocation cannot be execution evidence: ' + attempt_id)
     if budget is not None:
         global_row = budget.db.execute('SELECT * FROM calls WHERE key=?', (key,)).fetchone()
-        if global_row is None or global_row['kind'] != kind:
+        if (global_row is None or global_row['kind'] != kind
+                or (max_tokens is not None and global_row['token_reservation'] != max_tokens)):
             raise SpecMismatch('Saved invocation lacks its matching global reservation: ' + str(key))
 
 
-def preflight_model_load(budget, kind, *, estimated_seconds):
+def preflight_model_load(budget, kind, *, estimated_seconds, max_tokens=8192):
     """Read-only admission before expensive model loading; reserve still decides."""
     from datetime import timedelta
     from .ledger import BudgetExceeded
@@ -227,7 +227,9 @@ def preflight_model_load(budget, kind, *, estimated_seconds):
         raise BudgetExceeded('Session execution window exhausted before model load')
     if kind == 'renderer' and state['renderer_remaining'] < 1:
         raise BudgetExceeded('Session renderer cap exhausted before model load')
-    if kind == 'reasoning' and state['reasoning_tokens_remaining'] < 8192:
+    if kind == 'reasoning' and max_tokens > budget.config.per_call_total_tokens:
+        raise BudgetExceeded('Planned reasoning call exceeds the frozen session per-call token limit')
+    if kind == 'reasoning' and state['reasoning_tokens_remaining'] < max_tokens:
         raise BudgetExceeded('Session reasoning cap exhausted before model load')
 
 
@@ -377,13 +379,13 @@ def source_filename(doc):
     return doc['id'] + Path(doc['path']).suffix.lower()
 
 
-def model_call(ledger, job_id, directory, budget, index, name, function, *, device):
+def model_call(ledger, job_id, directory, budget, index, name, function, *, device, max_tokens=8192):
     """One actual bounded call, durable failure, byte recovery, no silent retry."""
     path = directory / name
     key = f'{job_id}:reasoning:{index}'
     attempt = ledger.get_attempt(job_id, index)
     if attempt is not None and path.exists():
-        require_charged_invocation(ledger, job_id, index, budget, key, 'reasoning')
+        require_charged_invocation(ledger, job_id, index, budget, key, 'reasoning', max_tokens=max_tokens)
         result = json.loads(path.read_text())
         ledger.register_artifact(job_id, name, attempt_index=index, kind='response')
         if result.get('inference_error') or result.get('parse_error'):
@@ -401,7 +403,7 @@ def model_call(ledger, job_id, directory, budget, index, name, function, *, devi
         raise ValueError('Uncharged model response cannot authorize execution')
     # Global first: a crash between independent ledgers conservatively consumes
     # quota and stops retry rather than allowing duplicate dispatch.
-    if not budget.reserve(key, 'reasoning', max_tokens=8192, estimated_seconds=90):
+    if not budget.reserve(key, 'reasoning', max_tokens=max_tokens, estimated_seconds=90):
         raise RuntimeError('Existing global reservation has no job evidence; reconcile before dispatch')
     ledger.open_attempt(job_id, index, payload={'kind': 'reasoning', 'response': name})
     if not ledger.reserve_call(job_id, index):

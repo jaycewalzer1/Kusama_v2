@@ -141,49 +141,8 @@ def test_inspiration_images_are_registered_and_hash_checked(tmp_path):
         assert app.get('/api/inspirations/episode/images/one').status_code == 409
 
 
-def test_review_api_requires_local_json_and_preserves_independent_answers(tmp_path):
-    from kusama.reviews import ReviewStore
-    directory = saved_run(tmp_path)
-    Image.new('RGB', (32, 32), 'blue').save(directory / 'result.png')
-    store = ReviewStore(tmp_path)
-    store.register_collection('study', title='Study', brief='Explore scale.', candidates=[
-        {'id': 'parent', 'path': directory / 'parent.png'}, {'id': 'result', 'path': directory / 'result.png'}])
-    headers = {'X-Kusama-Review': '1'}
-    with client(tmp_path) as app:
-        assert app.get('/').status_code == 200
-        assert 'Which is better finished work?' in app.get('/').text
-        assert 'Which idea deserves further development?' in app.get('/').text
-        assert app.get('/api/reviews/collections').json()['collections'][0]['id'] == 'study'
-        comparison = app.get('/api/reviews/collections/study/pairs/pair-001?reviewer=Jayce').json()
-        body = {'reviewer': 'Jayce', 'assignment_id': comparison['assignment_id'], 'submission_id': 'first',
-                'finished_quality': {'choice': 'tie'}, 'development_potential': {'choice': 'unsure'}}
-        url = '/api/reviews/collections/study/pairs/pair-001/votes'
-        assert app.post(url, json=body).status_code == 403
-        assert app.post(url, json=body, headers=headers | {'Origin': 'https://example.org'}).status_code == 403
-        assert app.post(url, json=body, headers=headers | {'Sec-Fetch-Site': 'cross-site'}).status_code == 403
-        response = app.post(url, json=body, headers=headers)
-        assert response.status_code == 200
-        assert response.json()['finished_quality']['choice'] == 'tie'
-        assert response.json()['development_potential']['choice'] == 'unsure'
-        assert app.post(url, json=body, headers=headers).json() == response.json()
-        assert len(store.history('study')['votes']) == 1
-        assert not store.history('study')['advancements']
-        choice = app.post('/api/reviews/collections/study/advance', headers=headers, json={
-            'reviewer': 'Jayce', 'candidate_id': 'result', 'reason': 'Follow this idea.', 'submission_id': 'choice1'})
-        assert choice.status_code == 200
-        assert choice.json()['candidate_id'] == 'result'
-        assert app.get('/api/reviews/collections/study/candidates/result').content == (directory / 'result.png').read_bytes()
-        Image.new('RGB', (32, 32), 'green').save(directory / 'result.png')
-        assert app.get('/api/reviews/collections/study/candidates/result').status_code == 409
-        assert app.get('/api/reviews/collections/study/candidates/unknown').status_code == 404
-        assert app.get('/api/reviews/collections/unknown').status_code == 404
-    assert not (tmp_path / 'jobs.sqlite3').exists()
 
 
-def test_no_review_database_created_by_reading_empty_dashboard(tmp_path):
-    with client(tmp_path) as app:
-        assert app.get('/api/reviews/collections').json() == {'collections': []}
-    assert not (tmp_path / 'reviews.sqlite3').exists()
 
 
 def test_run_cost_summary_keeps_unknown_total_and_reads_only_contained_root(tmp_path):
@@ -348,7 +307,6 @@ def test_partial_observer_status_is_explicit_when_images_are_ready_for_human_rev
         assert detail['observer_status']['rejected_pairs'] == 4
         assert detail['observer_status']['rejected_response_count'] == 5
         assert len(detail['data']['observations']) == 8
-        assert app.get('/api/reviews/collections').json() == {'collections': []}
     assert not (tmp_path / 'reviews.sqlite3').exists()
 
 
@@ -379,3 +337,80 @@ def test_creative_saved_technical_verification_matches_its_run_and_scope(tmp_pat
         external.write_text(json.dumps(report))
         report_path.symlink_to(external)
         assert app.get('/api/runs').json()['runs'][0]['verification'] is None
+
+
+def test_nested_workspaces_are_read_only_and_keep_mutations_scoped(tmp_path):
+    workspace = tmp_path / 'studio'
+    saved_run(workspace, 'run')
+    with Ledger(workspace / 'jobs.sqlite3') as ledger:
+        ledger.create_job('nested', {}, 2, workspace / 'run')
+        ledger.update_job('nested', status='completed')
+    before = {str(path.relative_to(tmp_path)): path.read_bytes() for path in tmp_path.rglob('*') if path.is_file() and not path.name.endswith(('-shm', '-wal'))}
+    outside = tmp_path.parent / (tmp_path.name + '-outside')
+    outside.mkdir()
+    (outside / 'jobs.sqlite3').touch()
+    (tmp_path / 'linked').symlink_to(outside, target_is_directory=True)
+    with client(tmp_path) as app:
+        workspaces = app.get('/api/workspaces').json()['workspaces']
+        assert all(item['directory'] != 'linked' for item in workspaces)
+        prefix = next(item['url'].rstrip('/') for item in workspaces if item['directory'] == 'studio')
+        rows = app.get(prefix + '/api/runs').json()['runs']
+        assert len(rows) == 1 and rows[0]['status'] == 'completed'
+        assert app.get(prefix + '/api/projects').json() == {'projects': []}
+        assert app.post(prefix + '/api/projects/example/select', json={}).status_code == 403
+        assert app.post(prefix + '/api/plans', json={}).status_code == 403
+        assert app.get(prefix + '/api/system').json()['artifact_root'] == str(workspace.resolve())
+        assert app.get(prefix + '/api/reviews/collections').status_code == 404
+    after = {str(path.relative_to(tmp_path)): path.read_bytes() for path in tmp_path.rglob('*') if path.is_file() and not path.name.endswith(('-shm', '-wal'))}
+    assert before == after
+
+
+def test_tools_and_schema_inventory_cover_development_without_starting_jobs(tmp_path):
+    from kusama.cli import COMMAND_MODULES
+    with client(tmp_path) as app:
+        tools = app.get('/api/tools').json()['tools']
+        ids = {tool['id'] for tool in tools}
+        assert set(COMMAND_MODULES) - {'review'} <= ids
+        contracts = app.get('/api/contracts').json()
+        assert {'LoopRequest', 'ResearchRequest', 'ResearchRenderRequest', 'ContinuationCreate', 'DevelopmentDecision'} <= contracts.keys()
+        for tool in tools:
+            assert app.get(tool['guide']).status_code == 200
+        assert app.get('/api/guides/../../.env').status_code == 404
+        assert app.get('/api/system').json()['resource_sessions'] == []
+    assert not list(tmp_path.iterdir())
+
+
+def test_workflow_preparation_uses_explicit_request_without_dispatch(tmp_path, monkeypatch):
+    prepared = []
+    def plan(output, request):
+        prepared.append((output, request))
+        return {'frozen_request': request}
+    monkeypatch.setattr('kusama.research.plan_research', plan)
+    with client(tmp_path) as app:
+        body = {'workflow': 'research', 'id': 'inquiry', 'request': {'problem': 'An unresolved artistic inquiry'}}
+        assert app.post('/api/plans', json=body).status_code == 403
+        assert prepared == []
+        response = app.post('/api/plans', json=body, headers={'X-Kusama-Review': '1'})
+        assert response.status_code == 201
+        assert prepared == [(tmp_path.resolve() / 'research/inquiry', body['request'])]
+        assert not list(tmp_path.iterdir())
+        assert app.post('/api/plans', json=body | {'id': '../escape'}, headers={'X-Kusama-Review': '1'}).status_code == 422
+        (tmp_path / 'research').symlink_to(tmp_path.parent, target_is_directory=True)
+        assert app.post('/api/plans', json=body, headers={'X-Kusama-Review': '1'}).status_code == 422
+        assert len(prepared) == 1
+
+
+def test_backup_ledgers_cannot_override_live_job_status(tmp_path):
+    import shutil
+    directory = saved_run(tmp_path)
+    with Ledger(tmp_path / 'jobs.sqlite3') as ledger:
+        ledger.create_job('job', {}, 2, directory)
+    backup = tmp_path / 'exports/snapshot'
+    backup.mkdir(parents=True)
+    shutil.copyfile(tmp_path / 'jobs.sqlite3', backup / 'jobs.sqlite3')
+    with Ledger(tmp_path / 'jobs.sqlite3') as ledger:
+        ledger.update_job('job', status='completed')
+    with client(tmp_path) as app:
+        rows = app.get('/api/runs').json()['runs']
+        assert len(rows) == 1
+        assert rows[0]['status'] == 'completed'

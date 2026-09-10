@@ -11,9 +11,12 @@ from PIL import Image, ImageChops
 from .artifacts import sha256
 from .backend import FluxBackend
 from .config import parse_args
-from .verification import validate_spec, verify, repair_metrics
+from .verification import validate_spec
+# The execution adapter uses these public hooks through this module.
+from .verification import verify as verify, repair_metrics as repair_metrics
 from .experiment import handle_termination
 from .ledger import LedgerError
+from .image_prompt import validate_assets
 
 METHODS = ("whole", "masked", "geometric")
 
@@ -45,7 +48,7 @@ def load_plan(path: Path):
     plan = json.loads(path.read_text())
     required = {"parent", "parent_sha256", "instruction", "target", "allowed_mask",
                 "method", "seed", "max_calls", "visual_checks"}
-    optional = {"object_mask", "scale", "anchor", "repair_prompt", "fallbacks", "crop", "author", "repair_policy", "secondary_mask", "verification"}
+    optional = {"object_mask", "scale", "anchor", "repair_prompt", "fallbacks", "crop", "author", "repair_policy", "secondary_mask", "verification", "reference_images"}
     if not isinstance(plan, dict) or required - plan.keys() or plan.keys() - required - optional:
         raise ValueError(f"Plan needs {sorted(required)}; optional fields: {sorted(optional)}")
     for field in ("parent", "instruction", "target", "allowed_mask"):
@@ -129,6 +132,8 @@ def load_plan(path: Path):
             "whole" if allowed.getextrema() == (255, 255) else "masked")
     if "whole" in [method, *fallbacks] and any(v < 64 or v % 16 for v in parent.size):
         raise ValueError("Whole-image inference requires parent dimensions divisible by 16 and at least 64")
+    validate_assets(plan.get('reference_images', []), base=path.parent,
+                    max_images=2 if all(m == 'whole' for m in [method, *fallbacks]) else 1)
     return plan, parent, allowed, obj, cutout, crop, [method, *fallbacks]
 
 

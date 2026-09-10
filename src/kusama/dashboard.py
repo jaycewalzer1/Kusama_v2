@@ -1,11 +1,13 @@
-"""Local development runs and explicit, append-only human comparisons."""
+"""Local development panel for runs, research and controlled continuations."""
 from __future__ import annotations
 
 import argparse
 from dataclasses import fields
 from contextlib import closing
+from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import sqlite3
@@ -17,12 +19,15 @@ from pydantic import BaseModel, ConfigDict, Field, create_model
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from .studio import Studio, read_projects
-from .reviews import Advancement, PoolChoice, ReviewConflict, ReviewError, ReviewNotFound, ReviewStore, Vote
+from .reviews import ReviewConflict, ReviewError, ReviewNotFound
 from .artifacts import sha256
 from .config import Config
 from .continuation import ContinuationRequest, ContinuationStore, DevelopmentDecision
 from .continuation_dispatch import DispatchRequest, DispatchStore
-from .ledger import BudgetExceeded, JobLocked
+from .ledger import BudgetExceeded, JobLocked, LedgerError
+from .devtools import DOCS, artifact_directories, tools_catalog, system_inventory
+from .panel_runs import PanelRuns, StartRun, options as start_options
+from .run_inspection import inspect_run
 
 
 STATIC = Path(__file__).with_name('dashboard_static')
@@ -41,6 +46,13 @@ class ContinuationCreate(BaseModel):
     renderer: RendererConfiguration
 
 
+class WorkflowPlan(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    workflow: Literal['research', 'development', 'research_render']
+    id: str = Field(pattern=r'^[A-Za-z0-9_-]{1,40}$')
+    request: dict
+
+
 class ContinuationObservation(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
     artifact_id: str = Field(min_length=1, max_length=100)
@@ -54,30 +66,32 @@ class Runs:
         self.root = Path(root).resolve()
 
     def ledger_jobs(self):
-        database = self.root / 'jobs.sqlite3'
-        if not database.is_file():
-            return {}
-        try:
-            # Never instantiate the writing ledger from a dashboard request.
-            with closing(sqlite3.connect(database.as_uri() + '?mode=ro', uri=True, timeout=2)) as db:
-                db.row_factory = sqlite3.Row
-                rows = db.execute('''SELECT j.directory,j.status,j.payload_json,j.max_calls,
-                    (SELECT count(*) FROM reservation_charges r WHERE r.job_id=j.job_id) AS calls
-                    FROM jobs j''').fetchall()
-                return {row['directory']: dict(row) for row in rows}
-        except sqlite3.Error:
-            return {}
+        jobs = {}
+        for directory, files in artifact_directories(self.root):
+            if 'jobs.sqlite3' not in files:
+                continue
+            try:
+                with closing(sqlite3.connect((directory / 'jobs.sqlite3').as_uri() + '?mode=ro', uri=True, timeout=2)) as db:
+                    db.row_factory = sqlite3.Row
+                    rows = db.execute("""SELECT j.directory,j.status,j.payload_json,j.max_calls,
+                        (SELECT count(*) FROM reservation_charges r WHERE r.job_id=j.job_id) AS calls
+                        FROM jobs j ORDER BY j.rowid""").fetchall()
+                    for row in rows:
+                        path = Path(row['directory']).resolve()
+                        if path.is_relative_to(self.root) and path.is_relative_to(directory):
+                            jobs[str(path)] = dict(row)
+            except sqlite3.Error:
+                continue
+        return jobs
 
     def entries(self):
         jobs = self.ledger_jobs()
         entries = []
         if not self.root.is_dir():
             return entries
-        directories = set(self.root.iterdir())
-        nested = self.root / 'runs'
-        if nested.is_dir() and not nested.is_symlink():
-            directories.update(nested.iterdir())
-        directories.update(Path(path) for path in jobs if Path(path).is_relative_to(self.root))
+        directories = {directory for directory, files in artifact_directories(self.root)
+                       if files & {'manifest.json', 'benchmark.json', 'plan.json', 'report.json', 'render_plan.json'}}
+        directories.update(Path(path) for path in jobs)
         for directory in directories:
             if (not directory.is_dir() or directory.name.startswith('.') or
                     any(p.is_symlink() for p in [directory, *directory.parents] if p.is_relative_to(self.root))):
@@ -87,6 +101,13 @@ class Runs:
             kind = 'benchmark'
             if not manifest.is_file():
                 manifest, kind = directory / 'manifest.json', 'edit'
+            if not manifest.is_file():
+                for filename in ('report.json', 'render_plan.json', 'plan.json'):
+                    candidate = directory / filename
+                    if candidate.is_file() and not candidate.is_symlink():
+                        manifest = candidate
+                        kind = 'development'
+                        break
             if not manifest.is_file() and job is None:
                 continue
             error = None
@@ -107,13 +128,29 @@ class Runs:
                         kind = 'benchmark'
                 except (ValueError, TypeError, AttributeError):
                     pass
+            if data.get('kind') == 'artistic_studio_run':
+                try:
+                    data = PanelRuns(directory.parent.parent).get(directory.name)
+                    resource = directory / 'resources.sqlite3'
+                    if resource.is_file() and not resource.is_symlink():
+                        with closing(sqlite3.connect(resource.as_uri() + '?mode=ro', uri=True)) as db:
+                            data['model_calls'] = db.execute('SELECT count(*) FROM calls').fetchone()[0]
+                except (OSError, ValueError, sqlite3.Error) as exc:
+                    data['error'] = str(exc)
+            if data.get('kind'):
+                kind = data['kind']
+            elif str(data.get('version', '')).startswith('bounded-development'):
+                kind = 'bounded_development'
+            if manifest.name == 'plan.json':
+                data.setdefault('status', 'prepared')
             if data.get('kind') == 'reference_creative_experiment':
                 kind = 'reference_creative_experiment'
             elif data.get('kind') in ('connection_inspiration', 'connection_generation'):
                 kind = data['kind']
             if 'calls' in data and isinstance(data.get('calls'), list):
                 kind = 'first_edit'
-            budget = data.get('budget') or {}
+            budget = data.get('budget') if isinstance(data.get('budget'), dict) else {}
+            request_data = data.get('request') if isinstance(data.get('request'), dict) else {}
             attempts = data.get('attempts') or []
             last = attempts[-1] if attempts and isinstance(attempts[-1], dict) else {}
             verification = last.get('verification', {}).get('status') if isinstance(last.get('verification'), dict) else None
@@ -146,7 +183,7 @@ class Runs:
                 run_time = data['costs'].get('runtime_seconds_measured')
                 runtime_scope = 'recorded_operations' if run_time is not None else None
             creative = kind == 'reference_creative_experiment'
-            model_calls = data.get('model_calls', budget.get('actual_image_attempts'))
+            model_calls = data.get('model_calls', data.get('reasoning_calls', budget.get('actual_image_attempts')))
             if creative:
                 if type(data.get('total_model_calls')) is int and data['total_model_calls'] >= 0:
                     model_calls = data['total_model_calls']
@@ -156,10 +193,11 @@ class Runs:
             if creative and isinstance(data.get('direction_count'), int) and isinstance(data.get('realizations'), int):
                 planned_images = data['direction_count'] * data['realizations']
             entries.append({'id': hashlib.sha256(str(directory.relative_to(self.root)).encode()).hexdigest()[:20],
-                'name': directory.name, 'title': data.get('title') if creative else None,
-                'brief': data.get('brief') if creative else None,
+                'name': directory.name, 'directory': str(directory.relative_to(self.root)),
+                'title': data.get('title') or request_data.get('title'),
+                'brief': data.get('brief') or request_data.get('problem'),
                 'image_count': len(data.get('images') or []) if creative else None, 'planned_images': planned_images,
-                'kind': kind, 'status': data.get('status', 'unreadable'),
+                'kind': kind, 'status': data.get('status', 'unreadable' if error else 'saved'),
                 'observer_status': data.get('observer_status') if creative and isinstance(data.get('observer_status'), dict) else None,
                 'planned_observations': data.get('direction_count') if creative and isinstance(data.get('observer_status'), dict) else None,
                 'model_calls': model_calls,
@@ -178,16 +216,22 @@ class Runs:
                 return row
         raise HTTPException(404, 'Unknown run')
 
-    def files(self, row):
+    def files(self, row, recursive=False):
         result = []
         images = {}
         if row['kind'] == 'reference_creative_experiment':
             for record in row['_data'].get('images') or []:
                 if isinstance(record, dict) and isinstance(record.get('path'), str):
                     images[record['path']] = record
-        for path in sorted(row['_directory'].iterdir()):
+        root = row['_directory']
+        paths = (folder / name for folder, names in artifact_directories(root) for name in sorted(names)) if recursive else sorted(root.iterdir())
+        for path in paths:
             if path.is_file() and not path.is_symlink() and not path.name.startswith('.') and path.suffix in FILE_TYPES:
-                result.append({'name': path.name, 'url': f"/api/runs/{row['id']}/files/{quote(path.name, safe='')}",
+                relative = str(path.relative_to(root))
+                stat = path.stat()
+                result.append({'name': relative, 'bytes': stat.st_size,
+                               'modified_at': datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
+                               'url': f"/api/runs/{row['id']}/files/{quote(relative, safe='/')}",
                                'type': FILE_TYPES[path.suffix], 'preview': path.name in images,
                                'label': images.get(path.name, {}).get('label'),
                                'sha256': images.get(path.name, {}).get('sha256')})
@@ -202,9 +246,100 @@ class StudioSelection(BaseModel):
     reason: str = Field(min_length=1, max_length=8000)
 
 
-def create_app(artifacts: Path = Path('artifacts')):
+class ResearchRuns:
+    """Read-only research evidence, addressed by contained directory identities.
+
+    Sessions can live in the research directory or inside a development run. No
+    request opens the writing corpus or initializes a research/resource ledger.
+    """
+
+    def __init__(self, root: Path):
+        self.root = Path(root).resolve()
+
+    def directories(self):
+        if not self.root.is_dir():
+            return
+        for parent, children, files in os.walk(self.root, followlinks=False):
+            directory = Path(parent)
+            children[:] = [name for name in children
+                           if not name.startswith('.') and not (directory / name).is_symlink()]
+            plan = directory / 'plan.json'
+            if 'plan.json' not in files or plan.is_symlink():
+                continue
+            try:
+                data = json.loads(plan.read_text())
+            except (OSError, ValueError):
+                continue
+            if isinstance(data, dict) and data.get('kind') == 'autonomous_research':
+                yield directory, data
+
+    def identifier(self, directory):
+        return hashlib.sha256(str(directory.relative_to(self.root)).encode()).hexdigest()[:20]
+
+    def get(self, identifier):
+        if re.fullmatch('[a-f0-9]{20}', identifier):
+            for directory, plan in self.directories():
+                if self.identifier(directory) == identifier:
+                    return directory, plan
+        raise HTTPException(404, 'Unknown research session')
+
+    @staticmethod
+    def report(directory, *, include_transcripts=True):
+        from .research import read_report
+        try:
+            if any((directory / name).is_symlink() for name in
+                   ('plan.json', 'plan_identity.json', 'jobs.sqlite3')):
+                raise ValueError('Research evidence cannot use symbolic links')
+            report = read_report(directory)
+            if include_transcripts:
+                from .run_inspection import research_transcripts
+                report['transcripts'] = research_transcripts(directory, report)
+            return report
+        except (OSError, ValueError, KeyError, TypeError, sqlite3.Error, LedgerError) as exc:
+            raise HTTPException(409, 'Research evidence cannot be verified: ' + str(exc)) from exc
+
+    def entries(self):
+        result = []
+        for directory, plan in self.directories():
+            request = plan.get('request') if isinstance(plan.get('request'), dict) else {}
+            row = {'directory_id': self.identifier(directory),
+                   'directory': str(directory.relative_to(self.root)),
+                   'id': request.get('id'), 'problem': request.get('problem'),
+                   'authorship': request.get('authorship'), 'status': 'unreadable'}
+            try:
+                report = self.report(directory, include_transcripts=False)
+                row.update({key: report.get(key) for key in
+                            ('id', 'problem', 'authorship', 'status', 'fixture', 'reasoning_calls')})
+                row['steps'] = len(report.get('steps') or [])
+                row['hypotheses'] = len(report.get('hypotheses') or [])
+            except HTTPException as exc:
+                row['error'] = exc.detail
+            result.append(row)
+        return sorted(result, key=lambda item: item['directory'])
+
+
+def workspace_choices(root):
+    choices = [{'directory': '.', 'label': 'All artifacts', 'url': '/'}]
+    for directory, files in artifact_directories(root):
+        if (directory == root or 'exports' in directory.relative_to(root).parts
+                or any(part.startswith('studio-') for part in directory.relative_to(root).parts)
+                or not files.intersection({'jobs.sqlite3', 'resources.sqlite3', 'corpus.sqlite3'})):
+            continue
+        if directory.name == 'corpus':
+            directory = directory.parent
+        if directory == root:
+            continue
+        relative = str(directory.relative_to(root))
+        if any(row['directory'] == relative for row in choices):
+            continue
+        identifier = hashlib.sha256(relative.encode()).hexdigest()[:20]
+        choices.append({'directory': relative, 'label': relative, 'url': f'/workspaces/{identifier}/'})
+    return choices
+
+
+def create_app(artifacts: Path = Path('artifacts'), *, _workspace_base=None, _prefix=''):
     runs = Runs(artifacts)
-    reviews = ReviewStore(runs.root)
+    workspace_base = Path(_workspace_base or artifacts).resolve()
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1', 'localhost'])
 
@@ -213,9 +348,9 @@ def create_app(artifacts: Path = Path('artifacts')):
         origin = request.headers.get('origin')
         if request.headers.get('sec-fetch-site') == 'cross-site' or (origin and origin != f"http://{request.headers.get('host')}"):
             return Response('Local access only', status_code=403)
-        if request.method not in ('GET', 'HEAD', 'OPTIONS') and (request.url.path.startswith(('/api/reviews/', '/api/continuations')) or re.fullmatch(r'/api/projects/[^/]+/select', request.url.path)):
+        if request.method not in ('GET', 'HEAD', 'OPTIONS') and (request.url.path.removeprefix(_prefix).startswith(('/api/continuations', '/api/plans', '/api/start-run')) or re.fullmatch(r'/api/(?:projects/[^/]+/select|runs/[^/]+/stop)', request.url.path.removeprefix(_prefix))):
             if request.headers.get('x-kusama-review') != '1' or request.headers.get('content-type', '').split(';')[0] != 'application/json':
-                return Response('Local JSON review requests require X-Kusama-Review: 1', status_code=403)
+                return Response('Local JSON development requests require X-Kusama-Review: 1', status_code=403)
         response = await call_next(request)
         response.headers['Cache-Control'] = 'no-store'
         response.headers['X-Content-Type-Options'] = 'nosniff'
@@ -229,7 +364,7 @@ def create_app(artifacts: Path = Path('artifacts')):
 
     @app.get('/static/{name}')
     def static(name: str):
-        if name not in ('dashboard.js', 'dashboard.css'):
+        if name not in ('dashboard.js', 'dashboard_cycle.js', 'dashboard_feed.js', 'dashboard.css'):
             raise HTTPException(404)
         return FileResponse(STATIC / name)
 
@@ -239,64 +374,73 @@ def create_app(artifacts: Path = Path('artifacts')):
         status = 404 if isinstance(exc, ReviewNotFound) else 409 if isinstance(exc, ReviewConflict) else 422
         return JSONResponse({'detail': str(exc)}, status_code=status)
 
-    @app.get('/api/reviews/collections')
-    def review_collections(reviewer: str | None = None):
-        return {'collections': reviews.collections(reviewer)}
-
-    @app.get('/api/reviews/collections/{collection_id}')
-    def review_collection(collection_id: str):
-        return reviews.collection(collection_id)
-
-    @app.get('/api/reviews/collections/{collection_id}/history')
-    def review_history(collection_id: str):
-        return reviews.history(collection_id)
-
-    @app.get('/api/reviews/collections/{collection_id}/candidates/{candidate_id}')
-    def review_image(collection_id: str, candidate_id: str):
-        return FileResponse(reviews.candidate_path(collection_id, candidate_id))
-
-    @app.get('/api/reviews/collections/{collection_id}/pairs/{pair_id}')
-    def review_comparison(collection_id: str, pair_id: str, reviewer: str):
-        return reviews.comparison(collection_id, pair_id, reviewer)
-
-    @app.get('/api/reviews/collections/{collection_id}/pairs/{pair_id}/images/{position}')
-    def assigned_image(collection_id: str, pair_id: str, position: str, reviewer: str):
-        if position not in ('A', 'B'):
-            raise HTTPException(404)
-        assignment = reviews.comparison(collection_id, pair_id, reviewer)
-        return FileResponse(reviews.candidate_path(collection_id, assignment['candidates'][position]['id']))
-
-    @app.post('/api/reviews/collections/{collection_id}/pairs/{pair_id}/votes')
-    def review_vote(collection_id: str, pair_id: str, vote: Vote):
-        return reviews.submit_vote(collection_id, pair_id, vote)
-
-    @app.post('/api/reviews/collections/{collection_id}/advance')
-    def review_advance(collection_id: str, advancement: Advancement):
-        return reviews.advance(collection_id, advancement)
-
-    @app.get('/api/reviews/collections/{collection_id}/pool')
-    def pool_assignment(collection_id: str, reviewer: str):
-        return reviews.pool_assignment(collection_id, reviewer)
-
-    @app.get('/api/reviews/collections/{collection_id}/pool/history')
-    def pool_history(collection_id: str):
-        return {'selections': reviews.pool_history(collection_id)}
-
-    @app.get('/api/reviews/collections/{collection_id}/pool/images/{position}')
-    def pool_image(collection_id: str, position: str, reviewer: str):
-        assignment = reviews.pool_assignment(collection_id, reviewer)
-        candidate = assignment['candidates'].get(position)
-        if not candidate:
-            raise HTTPException(404)
-        return FileResponse(reviews.candidate_path(collection_id, candidate['id']))
-
-    @app.post('/api/reviews/collections/{collection_id}/pool/votes')
-    def pool_vote(collection_id: str, choice: PoolChoice):
-        return reviews.submit_pool_choice(collection_id, choice)
-
     @app.get('/api/runs')
     def listing():
         return {'runs': [runs.summary(row) for row in runs.entries()]}
+
+    @app.get('/api/workspaces')
+    def workspaces():
+        return {'selected': _prefix or '/', 'workspaces': workspace_choices(workspace_base)}
+
+    @app.get('/api/start-options')
+    def run_options():
+        return start_options()
+
+    @app.post('/api/start-run', status_code=202)
+    def start_run(request: StartRun):
+        try:
+            if request.study_development and not {'development_steps', 'development_research_steps', 'total_token_limit'} <= request.model_fields_set:
+                raise ValueError('Refresh the panel to load the current token and development limits before starting. API requests must explicitly supply development_steps, development_research_steps and total_token_limit.')
+            result = PanelRuns(runs.root, workspace_base).start(request)
+            relative = 'runs/' + result['run_id']
+            return result | {'id': hashlib.sha256(relative.encode()).hexdigest()[:20]}
+        except (ValueError, OSError) as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @app.post('/api/runs/{run_id}/stop')
+    def stop_run(run_id: str):
+        try:
+            row = runs.get(run_id)
+            if row['kind'] != 'artistic_studio_run':
+                raise ValueError('Only question-led studio runs support this stop control')
+            directory = row['_directory']
+            return PanelRuns(directory.parent.parent, workspace_base).stop(directory.name)
+        except (ValueError, OSError) as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @app.get('/api/tools')
+    def workflow_tools():
+        return {'tools': tools_catalog()}
+
+    @app.post('/api/plans', status_code=201)
+    def workflow_plan(proposal: WorkflowPlan):
+        from .autonomous import plan_loop
+        from .research import plan_research
+        from .research_render import plan_render
+        planners = {'research': plan_research, 'development': plan_loop, 'research_render': plan_render}
+        directory = runs.root / proposal.workflow / proposal.id
+        if (not directory.resolve().is_relative_to(runs.root)
+                or any(path.is_symlink() for path in (directory, directory.parent))):
+            raise HTTPException(422, 'Plan directory must stay inside the workspace')
+        if directory.exists():
+            raise HTTPException(409, 'Plan ID already exists; use a new ID to preserve frozen inputs')
+        try:
+            result = planners[proposal.workflow](directory, proposal.request)
+            return {'directory': str(directory), 'plan': result, 'status': 'prepared'}
+        except (ValueError, OSError, TypeError, LedgerError) as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @app.get('/api/system')
+    def system():
+        return system_inventory(runs.root)
+
+    @app.get('/api/guides/{name:path}')
+    def guide(name: str):
+        allowed = {tool['guide'].removeprefix('/api/guides/') for tool in tools_catalog()}
+        path = DOCS / name
+        if name not in allowed or not path.is_file() or path.is_symlink() or not path.resolve().is_relative_to(DOCS):
+            raise HTTPException(404, 'Unknown workflow guide')
+        return FileResponse(path, media_type='text/plain')
 
     @app.get('/api/projects')
     def projects():
@@ -310,8 +454,14 @@ def create_app(artifacts: Path = Path('artifacts')):
 
     @app.get('/api/contracts')
     def contracts():
+        from .research import ResearchAction, ResearchHypothesis, ResearchRequest
+        from .autonomous import LoopRequest
+        from .research_render import ResearchRenderRequest
+        from .research_sources import ResearchSourceConfig
+        from .study_cycle import DevelopmentCycle, CycleChoice
         return {model.__name__: model.model_json_schema() for model in (
-            ContinuationCreate, ContinuationRequest, ContinuationObservation, DevelopmentDecision, DispatchRequest, Vote, PoolChoice)}
+            ContinuationCreate, ContinuationRequest, ContinuationObservation, DevelopmentDecision, DispatchRequest, WorkflowPlan, StartRun,
+            ResearchRequest, ResearchAction, ResearchHypothesis, ResearchSourceConfig, ResearchRenderRequest, LoopRequest, DevelopmentCycle, CycleChoice)}
 
     @app.post('/api/continuations', status_code=201)
     def continuation_prepare(proposal: ContinuationCreate):
@@ -371,7 +521,11 @@ def create_app(artifacts: Path = Path('artifacts')):
     @app.get('/api/continuations/{continuation_id}/gallery')
     def continuation_gallery(continuation_id: str):
         from .continuation import ContinuationStore
-        return HTMLResponse(ContinuationStore(runs.root).gallery_html(continuation_id, web=True))
+        html = ContinuationStore(runs.root).gallery_html(continuation_id, web=True)
+        html = html.replace('<h1>', '<body class="gallery-page"><h1>', 1).replace('</html>', '</body></html>')
+        if _prefix:
+            html = html.replace('"/api/', '"' + _prefix + '/api/').replace("'/api/", "'" + _prefix + '/api/')
+        return HTMLResponse(html)
 
     def corpus_rows(table, identifier=None):
         database = runs.root / 'corpus' / 'corpus.sqlite3'
@@ -406,6 +560,41 @@ def create_app(artifacts: Path = Path('artifacts')):
         if sha256(path) != asset['sha256']:
             raise HTTPException(409, 'Registered image bytes changed')
         return FileResponse(path)
+
+    research_runs = ResearchRuns(runs.root)
+
+    @app.get('/api/research')
+    def research_listing():
+        return {'research': research_runs.entries()}
+
+    @app.get('/api/research/{research_id}')
+    def research_detail(research_id: str):
+        directory, plan = research_runs.get(research_id)
+        report = research_runs.report(directory)
+        images = []
+        for asset in report.get('evidence_images') or []:
+            image_id = hashlib.sha256(json.dumps(asset, sort_keys=True).encode()).hexdigest()[:20]
+            images.append(asset | {'id': image_id,
+                                  'url': f'/api/research/{research_id}/images/{image_id}'})
+        return report | {'directory_id': research_id, 'directory': str(directory.relative_to(runs.root)),
+                         'frozen_plan': plan, 'evidence_images': images}
+
+    @app.get('/api/research/{research_id}/images/{image_id}')
+    def research_image(research_id: str, image_id: str):
+        directory, _ = research_runs.get(research_id)
+        report = research_detail(research_id)
+        asset = next((row for row in report['evidence_images'] if row['id'] == image_id), None)
+        if asset is None:
+            raise HTTPException(404, 'Unknown research evidence image')
+        rights = asset.get('rights') or {}
+        permission = rights.get('image_display', rights)
+        if permission.get('status') not in ('allowed', 'conditional'):
+            raise HTTPException(403, 'Research source display rights do not permit this use')
+        if not isinstance(asset.get('path'), str) or not isinstance(asset.get('sha256'), str):
+            raise HTTPException(409, 'Research evidence image registration is incomplete')
+        if Path(asset['path']).suffix.lower() not in ('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tif', '.tiff'):
+            raise HTTPException(403, 'Research evidence is not a supported raster image')
+        return registered_image(directory, asset)
 
     @app.get('/api/sources/{reference_id}/image')
     def source_image(reference_id: str):
@@ -530,25 +719,35 @@ def create_app(artifacts: Path = Path('artifacts')):
             summary.update(runtime_seconds=monetary['runtime_seconds_measured'], runtime_scope='recorded_operations')
         return summary | {'artifacts': runs.files(row), 'data': row['_data'], 'monetary_cost': monetary}
 
-    @app.get('/api/runs/{run_id}/files/{name}')
+    @app.get('/api/runs/{run_id}/inspect')
+    def inspect(run_id: str):
+        return inspect_run(runs.get(run_id), runs)
+
+    @app.get('/api/runs/{run_id}/files/{name:path}')
     def artifact(run_id: str, name: str):
         row = runs.get(run_id)
-        file_record = next((item for item in runs.files(row) if item['name'] == name), None)
+        file_record = next((item for item in runs.files(row, recursive=True) if item['name'] == name), None)
         if file_record is None:
             raise HTTPException(404, 'Unknown artifact')
         path = row['_directory'] / name
-        if path.is_symlink() or path.resolve().parent != row['_directory'].resolve():
+        if path.is_symlink() or not path.resolve().is_relative_to(row['_directory'].resolve()):
             raise HTTPException(404)
         if file_record.get('sha256') and sha256(path) != file_record['sha256']:
             raise HTTPException(409, 'Artifact changed since generation')
         media = None if FILE_TYPES[path.suffix] == 'image' else 'application/json' if path.suffix == '.json' else 'text/plain'
         return FileResponse(path, media_type=media)
 
+    if _workspace_base is None:
+        for choice in workspace_choices(workspace_base):
+            if choice['url'] == '/':
+                continue
+            app.mount(choice['url'].rstrip('/'), create_app(workspace_base / choice['directory'],
+                _workspace_base=workspace_base, _prefix=choice['url'].rstrip('/')))
     return app
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description='Local dashboard for Kusama runs and human review')
+    parser = argparse.ArgumentParser(description='Local development panel for Kusama')
     parser.add_argument('--artifacts', type=Path, default=Path('artifacts'))
     parser.add_argument('--port', type=int, default=8765)
     args = parser.parse_args(argv)

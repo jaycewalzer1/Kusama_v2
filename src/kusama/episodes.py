@@ -7,7 +7,6 @@ exploration until genuine human feedback or a validated judge is available.
 from __future__ import annotations
 
 import argparse
-from contextlib import nullcontext
 from datetime import datetime, timezone
 import html
 import json
@@ -22,11 +21,11 @@ from .artifacts import image_record, save_image, sha256, write_json
 from .backend import FluxBackend
 from .config import Config
 from .continuation import ContinuationStore
-from .costs import CostJournal, tracked_local_call
+from .costs import tracked_local_call
 from .director import DirectorConfig, QwenDirector, _multimodal_json, MODEL_ID
 from .execution import restore_config
 from .experiment import Measurement, code_provenance, handle_termination
-from .inspiration import (Contract, ConnectionHypothesis, compile_connection, model_call,
+from .inspiration import (Contract, compile_connection, model_call,
                           source_filename, validate_connection, _save_evidence,
                           require_charged_invocation, load_metadata_sidecar, preflight_model_load)
 from .ledger import Ledger, SpecMismatch

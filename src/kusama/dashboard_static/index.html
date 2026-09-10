@@ -1,112 +1,86 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Kusama studio</title>
-  <link rel="stylesheet" href="/static/dashboard.css">
-  <script src="/static/dashboard.js" defer></script>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kusama · Dev panel</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/dashboard.css"><script src="/static/dashboard_cycle.js" defer></script><script src="/static/dashboard_feed.js" defer></script><script src="/static/dashboard.js" defer></script>
 </head>
 <body>
-  <header>
-    <div><h1>Kusama studio</h1><p class="subtitle">Make, compare, and choose what develops next</p></div>
-    <button id="refresh" type="button">Refresh</button>
-  </header>
+  <aside class="sidebar">
+    <a class="brand" href="#new">kusama<span>Development studio</span></a>
+    <label class="workspace-picker">Workspace<select id="workspace"><option value="/">All artifacts</option></select></label>
+    <nav aria-label="Workspace">
+      <a href="#new" data-panel="new" class="new-run-link">＋ New run</a>
+      <a href="#runs" data-panel="runs" aria-current="page">Runs <span id="run-count">0</span></a>
+      <a href="#development" data-panel="development">Development</a>
+      <a href="#research" data-panel="research">Research</a>
+      <a href="#tools" data-panel="tools">Tools &amp; system</a>
+    </nav>
+    <div class="sidebar-foot"><span class="live-dot"></span> Local workspace<p>Qwen + FLUX · frozen models</p></div>
+  </aside>
   <main>
+    <header><div><p class="eyebrow">DEV PANEL</p><h1 id="page-title">Runs</h1></div><div class="header-actions"><span class="muted"><span id="active-count">0</span> in progress</span><button id="refresh" type="button">Refresh</button></div></header>
     <p id="error" role="alert" hidden></p>
-    <section id="review" aria-labelledby="review-heading">
-      <div class="review-heading"><div><p class="eyebrow">Human review</p><h2 id="review-heading">Two images. Two separate judgments.</h2></div><p id="review-progress" role="status"></p></div>
-      <p class="review-intro">A finished piece and an idea worth developing can be different choices. Tie means equally good; unsure means you cannot confidently tell.</p>
-      <div class="review-controls">
-        <div id="reviewer-name-field" class="reviewer-control"><label for="reviewer">Your reviewer name</label><input id="reviewer" type="text" maxlength="200" autocomplete="nickname" placeholder="Enter your name" aria-describedby="reviewer-guidance"></div>
-        <div id="reviewer-slot-field" class="reviewer-control" hidden><label for="reviewer-slot">Your allocated reviewer slot</label><select id="reviewer-slot" aria-describedby="reviewer-guidance"><option value="">Choose your allocated slot</option></select></div>
-        <label>Experiment<select id="review-collection"><option value="">No comparisons registered yet</option></select></label>
-        <button type="button" id="start-review">Open comparison</button>
-      </div>
-      <p id="reviewer-guidance" class="reviewer-guidance" role="status">Enter your own reviewer name. Some experiments require an allocated reviewer slot instead.</p>
-      <p id="review-status" role="status">Saved experiments will appear here when their images are ready.</p>
-      <div id="review-workspace" hidden>
-        <p id="review-brief"></p>
-        <details id="collection-overview"><summary>All images in this experiment</summary><p>Browse every direction and realization, or prepare a development choice from any candidate.</p><div id="collection-images"></div></details>
-        <div class="comparison-navigation"><button id="previous-pair" type="button">Previous</button><label>Comparison<select id="review-pair"></select></label><button id="next-pair" type="button">Next</button></div>
-        <p id="comparison-kind" class="muted"></p>
-        <div id="review-images"></div>
-        <form id="vote-form">
-          <label class="review-notes">What do you see or read in these images? (optional, before the judgments)<textarea name="open_reading" rows="2" maxlength="8000"></textarea></label>
-          <label class="review-notes">What, if anything, do you feel? (optional)<textarea name="felt_response" rows="2" maxlength="8000"></textarea></label>
-          <div class="judgment-grid">
-            <fieldset><legend>Which is better finished work?</legend><p>Judge the image as it stands: coherence, resolution, and execution.</p>
-              <div class="choices"><label><input type="radio" name="finished_quality" value="A" required>A</label><label><input type="radio" name="finished_quality" value="B">B</label><label><input type="radio" name="finished_quality" value="tie">Tie</label><label><input type="radio" name="finished_quality" value="unsure">Unsure</label><label><input type="radio" name="finished_quality" value="incomparable">Incomparable</label><label><input type="radio" name="finished_quality" value="decline">Decline</label></div>
-              <label class="confidence">Confidence (optional)<select name="finished_quality_confidence"><option value="">Not specified</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
-            </fieldset>
-            <fieldset><legend>Which idea deserves further development?</legend><p>Judge what could become compelling after more work.</p>
-              <div class="choices"><label><input type="radio" name="development_potential" value="A" required>A</label><label><input type="radio" name="development_potential" value="B">B</label><label><input type="radio" name="development_potential" value="tie">Tie</label><label><input type="radio" name="development_potential" value="unsure">Unsure</label><label><input type="radio" name="development_potential" value="incomparable">Incomparable</label><label><input type="radio" name="development_potential" value="decline">Decline</label></div>
-              <label class="confidence">Confidence (optional)<select name="development_potential_confidence"><option value="">Not specified</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
-            </fieldset>
-          </div>
-          <details><summary>Readiness, willingness and viewing context (optional)</summary>
-            <div class="judgment-grid">
-              <label>Image A ready to show?<select name="readiness_A"><option value="">No response</option><option value="Y">Yes</option><option value="N">No</option><option value="U">Uncertain</option><option value="decline">Decline to judge</option></select></label>
-              <label>Image B ready to show?<select name="readiness_B"><option value="">No response</option><option value="Y">Yes</option><option value="N">No</option><option value="U">Uncertain</option><option value="decline">Decline to judge</option></select></label>
-              <label>Willing to develop image A?<select name="development_willingness_A"><option value="">No response</option><option value="Y">Yes</option><option value="N">No</option><option value="U">Uncertain</option><option value="decline">Decline to judge</option></select></label>
-              <label>Willing to develop image B?<select name="development_willingness_B"><option value="">No response</option><option value="Y">Yes</option><option value="N">No</option><option value="U">Uncertain</option><option value="decline">Decline to judge</option></select></label>
-            </div>
-            <label class="review-notes">Prior exposure before this comparison<select name="prior_exposure"><option value="unknown">Not specified / unknown</option><option value="none">Neither images nor statement</option><option value="images">Images only</option><option value="statement">Statement only</option><option value="images_and_statement">Images and statement</option></select></label>
-          </details>
-          <label class="review-notes">What led to your choices? (optional)<textarea id="review-notes" name="notes" rows="3" maxlength="8000" placeholder="What works, what feels unresolved, or what you would try next"></textarea></label>
-          <div class="review-submit"><button id="save-review" type="submit">Save both judgments</button><p id="vote-status" role="status"></p></div>
-        </form>
-        <details id="advance-details"><summary>Choose a candidate to develop next</summary>
-          <p>This is a separate decision. Saving a judgment does not advance a candidate or start generation.</p>
-          <form id="advance-form"><label>Candidate<select name="candidate_id" id="advance-candidate" required><option value="">Choose an image</option></select></label><label>Why advance it?<textarea name="reason" rows="2" maxlength="8000" required></textarea></label><button type="submit">Record development choice</button><p id="advance-status" role="status"></p></form>
-        </details>
-        <details id="pool-details"><summary>Choose from the complete pool, including none</summary>
-          <p>This records a separate selection from the entire saved pool. It does not advance work or start generation.</p>
-          <button type="button" id="load-pool">Load neutral pool</button><p id="pool-status" role="status"></p>
-          <div id="pool-images" class="explorer-images"></div>
-          <form id="pool-form" hidden>
-            <label>Selection criterion<select name="criterion"><option value="finished_quality">Best finished work</option><option value="development_potential">Most worth developing</option></select></label>
-            <label>Your choice<select id="pool-choice" name="choice" required><option value="">Choose an image or response</option></select></label>
-            <label>Reason (optional)<textarea name="notes" rows="2" maxlength="8000"></textarea></label>
-            <button type="submit">Save pool selection</button>
-          </form>
-        </details>
-        <details id="review-provenance-details"><summary>Image provenance and your review history</summary><pre id="review-provenance"></pre><div id="review-history"></div></details>
-      </div>
+    <p id="stop-status" role="status" aria-live="polite"></p>
+    <section id="panel-new" data-view="new" aria-label="New run" hidden>
+      <div class="question-heading"><p class="eyebrow">BEGIN AN INQUIRY</p><h2>What do you want to explore?</h2><p>Research opens possibilities. Making reveals new questions. Develop the work by moving between them.</p></div>
+      <form id="start-run-form" class="question-form">
+        <label for="run-question">Your open-ended question</label>
+        <textarea id="run-question" required maxlength="8000" rows="5" placeholder="What does it mean to belong to a place that no longer remembers you?"></textarea>
+        <p class="question-hint">Give the inquiry room to develop. What matters, what feels unresolved, and what could take more than one form?</p>
+        <details><summary>Add context or a working title <span class="muted">optional</span></summary><label>Working title<input id="new-run-title" maxlength="180" placeholder="A name for this inquiry"></label><label>Context, stakes, tensions, or things to investigate<textarea id="new-run-context" rows="4" maxlength="4000" placeholder="Why this question matters to you, the context behind it, or something you want the work to wrestle with."></textarea></label></details>
+        <details id="run-settings"><summary>Run settings <span id="run-settings-summary"></span></summary><div class="settings-grid"><label>Seed artists (optional; separate with semicolons)<input id="new-run-seed-artists" maxlength="1000"></label>
+<label>Seed works (optional; separate with semicolons)<input id="new-run-seed-works" maxlength="1000"></label>
+<label>Medium constraint (optional)<input id="new-run-medium" maxlength="300"></label>
+<label>Chance leads per research session<select id="new-run-chance"><option value="2">Up to 2</option><option value="1">Up to 1</option><option value="0">Off</option></select></label>
+<label>Distinct studies<input type="number" id="new-run-directions" min="3" max="6" value="3" required></label><label>Seed variants per study<select id="new-run-images"><option value="1">1 image</option><option value="2">2 images</option></select></label><label>Maximum initial research actions<input type="number" id="new-run-steps" min="4" max="48" value="24" required></label><label>Development actions after inspection<input type="number" id="new-run-development-steps" min="1" max="6" value="3" required></label><label>Actions in optional new research session<input type="number" id="new-run-development-research" min="4" max="24" value="8" required></label><label>Time limit (minutes)<input type="number" id="new-run-minutes" min="15" max="480" value="120" required></label><label class="wide-field">Render profile<select id="new-run-profile"></select></label></div><p class="muted">After seeing the studies, the model may revise, revisit or combine saved branches, reopen research once, or pause for human review. Initial images plus development actions must total at most 12. Research uses official online collections: the Met, Art Institute of Chicago and Cleveland Museum of Art. Your original question remains preserved.</p></details>
+        <div class="start-footer"><div><p id="run-authorization"></p><p class="muted">Local frozen models. No paid API calls. Five minutes are reserved for finishing the session.</p></div><button id="start-run" type="submit" class="primary-button">Start run <span aria-hidden="true">↗</span></button></div>
+        <p id="start-run-status" role="status"></p>
+      </form>
+      <div class="section-heading"><h2>Recent inquiries</h2><a href="#runs">View all runs →</a></div><div id="recent-inquiries" class="recent-inquiries"></div>
     </section>
-    <section id="development-explorer" aria-label="Inspiration and development">
-      <details><summary>Inspiration explorer and development gallery · context and provenance visible</summary>
-        <p>Browsing sources, statements or lineage can affect later judgments. Report that prior exposure when reviewing.</p>
-        <h2>Saved continuations</h2><div id="continuation-gallery"></div>
-        <h2>Connection proposals</h2><div id="inspiration-list"></div>
-        <h2>Source detail</h2><label>Source<select id="source-select"><option value="">Choose a source</option></select></label>
-        <div id="source-detail"></div><p id="explorer-status" role="status"></p>
-      </details>
+    <section id="panel-runs" data-view="runs" aria-label="Runs">
+      <div class="toolbar"><label class="search-label"><span class="sr-only">Search runs</span><input id="run-search" type="search" placeholder="Search runs…"></label><label><span class="sr-only">Filter status</span><select id="run-status-filter"><option value="">All statuses</option><option value="active">Active</option><option value="completed">Completed</option><option value="needs_review">Needs review</option><option value="needs_human_review">Needs human review</option><option value="failed">Failed</option><option value="uncertain">Uncertain</option></select></label><p id="list-status" role="status">Loading runs…</p></div>
+      <div class="table-scroll"><table aria-label="Saved runs"><thead><tr><th>Run</th><th>Type</th><th>Status</th><th>Calls</th><th>Verification</th><th>Actions</th></tr></thead><tbody id="runs"></tbody></table><p id="run-empty" class="empty" hidden>No runs match this view.</p></div>
+      <section id="detail" aria-label="Selected run" hidden>
+        <div class="section-heading run-heading"><div><p class="eyebrow">RUN WORKSPACE</p><h2 id="run-name"></h2></div><button id="stop-run" type="button" class="stop-run-button" hidden>Stop run</button></div>
+        <p id="run-progress" role="status"></p><p id="detail-status" role="status"></p><pre id="run-error" class="error" hidden></pre>
+        <div id="run-metrics" class="run-metrics" aria-label="Run summary"></div>
+        <div class="run-workspace">
+          <section class="run-stream" aria-label="Combined run updates">
+            <div class="stream-heading"><div><h3>Run updates</h3><p>Research, images and execution, together.</p></div><span class="newest-label">↓ Newest first</span></div>
+            <div class="stream-controls"><label><span class="sr-only">Search updates</span><input id="run-update-search" type="search" placeholder="Search this run’s updates…"></label><label><span class="sr-only">Update type</span><select id="run-update-type"><option value="">All updates</option><option value="research">Research</option><option value="image">Images</option><option value="development">Development</option><option value="activity">Execution</option><option value="file">Files &amp; logs</option></select></label></div>
+            <p id="run-update-count" class="muted" role="status"></p>
+            <div id="run-updates" class="run-updates"></div>
+            <button id="run-updates-more" type="button" hidden>Show earlier updates</button>
+          </section>
+          <aside class="run-library" aria-label="Run evidence">
+            <details id="run-evidence" open><summary class="evidence-heading">In this run <span>Question, images &amp; saved evidence</span></summary>
+            <details id="run-context" class="run-disclosure"><summary>Question &amp; run details</summary><p id="run-brief" hidden></p><dl id="run-facts"></dl><div id="run-cycle-summary" hidden></div><div id="run-stage-list" class="stage-list"></div><details><summary>Workflow &amp; limits</summary><div id="run-cycle-map" class="workflow-map" hidden></div></details><details id="raw-details"><summary>Manifest &amp; frozen inputs</summary><pre id="raw"></pre></details></details>
+            <details id="run-images-section" class="run-disclosure"><summary>Saved images <span id="run-image-count"></span></summary><p class="muted">Open an image at its saved resolution or inspect its prompt.</p><div id="images" class="image-grid"></div><div id="generations-without-images"></div></details>
+            <details id="run-development-section" class="run-disclosure" hidden><summary>Branches &amp; decisions <span id="development-step-count"></span></summary><div id="development-status" role="status"></div><section aria-label="Saved artwork branches"><h3>Saved branches</h3><p id="branch-count" class="muted"></p><p class="muted">A model selection is provisional; it is not a human assessment.</p><div id="development-branches" class="branch-grid"></div></section><section aria-label="Development decisions"><h3>Research &amp; making</h3><div id="development-history" class="cycle-history"></div></section></details>
+            <details id="run-research-section" class="run-disclosure"><summary>Research &amp; sources <span id="research-step-count"></span></summary><div id="run-directions" class="direction-list"></div><div id="run-research"></div></details>
+            <details id="run-files-section" class="run-disclosure"><summary>All files &amp; logs <span id="run-file-count"></span></summary><label class="file-search"><span class="sr-only">Search run files</span><input type="search" id="run-file-search" placeholder="Find a saved file…"></label><div class="file-browser"><ul id="files"></ul><section id="file-preview" hidden><div class="section-heading"><h3 id="file-preview-name"></h3><button id="file-preview-refresh" type="button">Reload file</button><a id="file-preview-link" target="_blank" rel="noopener">Open full file ↗</a></div><pre id="file-preview-content"></pre></section></div></details>
+            </details>
+          </aside>
+        </div>
+      </section>
     </section>
-    <section aria-label="Studio projects">
-      <h2>Projects</h2>
-      <div id="projects">No studio projects yet.</div>
+    <section id="panel-development" data-view="development" aria-label="Development" hidden>
+      <div class="toolbar"><p class="muted">Continue a saved parent, inspect interventions, and record the next action.</p><label>Operator<input id="operator" autocomplete="name" placeholder="Your name" maxlength="200"></label></div>
+      <div class="section-heading"><h2>Continuations</h2><button id="prepare-toggle">Prepare continuation</button></div>
+      <form id="prepare-form" hidden><p class="muted">Paste a ContinuationCreate request. Preparation freezes the parent, revision, seeds and renderer settings.</p><label>Request JSON<textarea id="prepare-json" rows="12" required spellcheck="false" placeholder='{"id": "new-revision", "request": {...}, "renderer": {...}}'></textarea></label><details><summary>Request schema</summary><pre id="prepare-schema"></pre></details><button type="submit">Prepare</button><p id="prepare-status" role="status"></p></form>
+      <div id="continuation-gallery" class="record-list"></div>
+      <section id="continuation-controls" hidden><div class="section-heading"><h2 id="continuation-title"></h2><button id="continuation-refresh">Refresh status</button></div><p id="continuation-status" role="status"></p><div id="continuation-summary"></div><div class="toolbar"><button id="execute-continuation">Execute frozen continuation</button><a id="continuation-gallery-link" target="_blank" rel="noopener">Open image gallery ↗</a></div><p class="muted">Execution uses the existing resource session and its frozen limits.</p>
+        <details><summary>Add an observation</summary><form id="observation-form"><label>Artifact ID<input name="artifact_id" required></label><label>Origin<select name="origin"><option value="operator">Operator</option><option value="model_observation">Model observation</option><option value="development_example">Development example</option></select></label><label>Observation<textarea name="note" required maxlength="8000" rows="3"></textarea></label><button type="submit">Save observation</button></form></details>
+        <details><summary>Record a development decision</summary><form id="decision-form"><label>DevelopmentDecision JSON<textarea id="decision-json" required rows="8" spellcheck="false"></textarea></label><details><summary>Decision schema</summary><pre id="decision-schema"></pre></details><button type="submit">Save decision</button></form></details><details><summary>Frozen inputs, lineage &amp; dispatch</summary><pre id="continuation-raw"></pre></details><p id="continuation-action-status" role="status"></p>
+      </section>
+      <div class="section-heading"><h2>Projects</h2></div><div id="projects"></div>
     </section>
-    <div class="section-heading"><h2>Runs</h2><p id="list-status" role="status">Loading runs…</p></div>
-    <div class="table-scroll">
-      <table aria-label="Runs">
-        <thead><tr><th scope="col">Run</th><th scope="col">Kind</th><th scope="col">Status</th><th scope="col">Calls</th><th scope="col">Verification</th></tr></thead>
-        <tbody id="runs"></tbody>
-      </table>
-    </div>
-    <section id="detail" aria-label="Selected run" hidden>
-      <h2 id="run-name"></h2>
-      <p id="run-brief" hidden></p>
-      <p id="detail-status" role="status"></p>
-      <dl id="run-facts"></dl>
-      <pre id="run-error" class="error" hidden></pre>
-      <div id="images"></div>
-      <details><summary>Files</summary><ul id="files"></ul></details>
-      <details id="raw-details">
-        <summary>Raw JSON</summary>
-        <pre id="raw"></pre>
-      </details>
-    </section>
+    <section id="panel-research" data-view="research" aria-label="Research" hidden><p class="section-intro">Questions, source encounters, rejected leads, and proposed artistic directions.</p><div class="section-heading"><h2>Research sessions</h2></div><p id="research-status" role="status"></p><div id="research-list"></div><div class="section-heading"><h2>Connection proposals</h2></div><div id="inspiration-list"></div></section>
+    <section id="panel-sources" data-view="sources" aria-label="Sources" hidden><p class="section-intro">Saved references, whole images, detail crops, and source context.</p><label class="source-picker">Reference<select id="source-select"><option value="">Choose a source</option></select></label><div id="source-detail"><p class="empty">Choose a reference to inspect its images and provenance.</p></div><p id="explorer-status" role="status"></p></section>
+    <section id="panel-tools" data-view="tools" aria-label="Tools and system" hidden><p class="section-intro">Existing workflows, resource sessions, saved evidence, and API contracts.</p><div id="system-status"></div><details id="workflow-plan-details"><summary>Prepare a research or development plan</summary><form id="workflow-plan-form"><div class="toolbar"><label>Workflow<select id="plan-workflow"><option value="research">Independent research</option><option value="development">Autonomous development</option><option value="research_render">Research to render</option></select></label><label>New plan ID<input id="plan-id" required pattern="[A-Za-z0-9_-]{1,40}" maxlength="40" placeholder="new-study"></label></div><p id="plan-directory" class="muted"></p><label>Request JSON<textarea id="workflow-plan-json" required rows="12" spellcheck="false"></textarea></label><details><summary>Request schema</summary><pre id="workflow-plan-schema"></pre></details><button type="submit">Prepare plan</button><p id="workflow-plan-status" role="status"></p></form></details><div class="section-heading"><h2>Workflow tools</h2></div><p class="muted">Commands use the existing CLI and its execution gates. Copy a help command to see the exact arguments.</p><div id="workflow-tools" class="tool-grid"></div><details><summary>API contracts</summary><pre id="contracts"></pre></details></section>
   </main>
 </body>
 </html>

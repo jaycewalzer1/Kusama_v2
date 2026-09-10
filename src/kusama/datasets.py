@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from contextlib import closing
 from datetime import datetime
 import hashlib
 import json
@@ -12,7 +13,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .evaluation import digest, file_hash, immutable_json
+from .evidence import digest, file_hash, immutable_json
 from .dataset_lineage import ADAPTER_VERSION, ReviewLineageResolver
 
 KINDS = ('selector', 'judge_sft', 'director_sft', 'retrieval', 'action_preferences', 'continuations', 'practice_critique')
@@ -261,7 +262,7 @@ def review_events(artifact_root, *, kind='judge_sft', lineage_declarations=None)
     path = root / 'reviews.sqlite3'
     if not path.exists():
         return []
-    with sqlite3.connect(path.as_uri() + '?mode=ro', uri=True) as db:
+    with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True)) as db:
         db.execute('BEGIN')
         db.create_function('lineage_sha256', 1, lambda value: hashlib.sha256(value.encode()).hexdigest())
         votes = [json.loads(row[0]) for row in db.execute('SELECT record FROM review_votes ORDER BY sequence')]
@@ -276,7 +277,7 @@ def review_events(artifact_root, *, kind='judge_sft', lineage_declarations=None)
         return []
     with ReviewLineageResolver(root, declarations=lineage_declarations) as resolver:
         lineage = {cid: resolver.resolve(collection, collection_sha256=records[cid][1]) for cid, collection in specs.items()}
-    with sqlite3.connect(path.as_uri() + '?mode=ro', uri=True) as db:
+    with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True)) as db:
         db.create_function('lineage_sha256', 1, lambda value: hashlib.sha256(value.encode()).hexdigest())
         briefs = {}
         for cid, ancestry in lineage.items():

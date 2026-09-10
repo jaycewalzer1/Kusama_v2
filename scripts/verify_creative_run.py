@@ -19,7 +19,6 @@ import tempfile
 from PIL import Image, ImageOps
 
 from kusama.artifacts import sha256, sync_directory
-from kusama.comparison_design import diagnostic_pairs, design_metadata
 from kusama.costs import CostJournal
 from kusama.creative import _parse_revalidation_response
 from kusama.director import validate_directions, validate_observation, _unique_object
@@ -503,12 +502,12 @@ def verify(run_directory):
         require(succeeded_calls == 36 + len(observations) and failed_calls == len(rejected_observers)
                 and sum(map(len, attempts_by_job.values())) == succeeded_calls + failed_calls,
                 'Successful and rejected invocation counts differ from actual work results')
-        review = manifest['human_review']
-        design = design_metadata(ids, seed=review['design_metadata']['seed'])
-        require(review['collection_id'] == job_id and review['design_metadata'] == design
-                and review['pair_count'] == 108 and review['planned_dimension_questions'] == 216, 'Review design metadata differs')
-        human = review_counts(ReviewStore(database.parent), job_id, indexed_images,
-                              diagnostic_pairs(ids, seed=design['seed']), directory)
+        review = manifest.get('human_review') or {}
+        human = {'votes': 0, 'advancements': 0}
+        if review.get('collection_id'):
+            store = ReviewStore(database.parent)
+            collection = store.collection(review['collection_id'])
+            human = review_counts(store, review['collection_id'], indexed_images, collection['pairs'], directory)
         pilots = [*EARLIER_PILOTS, *jobs]
         require(len(set(pilots)) == len(pilots) == 2 + len(jobs),
                 'Expected both earlier pilots and every current execution job, exactly once')
@@ -578,7 +577,7 @@ def verify(run_directory):
                 'RGB image dimensions, unique seeds, exact prompts and absent initial parents',
                 'All 12 original observer attempts; separate accepted/rejected schema evidence and input-image byte hashes',
                 'Bounded observer recovery, superseded raw responses and unchanged primary call budget',
-                'Immutable 108-pair review design and actual human history bindings',
+                'Preserved historical review schedule and actual human history bindings',
                 'Both diagnostic pilots and all current execution/recovery cost records; no open cost operations'],
             'limitation': 'Qwen input hashes bind the original source-image bytes and recorded rendition dimensions. Processor tensors were not retained; this script does not reconstruct or re-execute model inference.',
             'verification_script_sha256': sha256(Path(__file__).resolve()), 'cost_snapshot': 'cost-summary.json'}

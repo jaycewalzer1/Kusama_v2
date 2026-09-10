@@ -1,0 +1,403 @@
+{
+  "schema_version": 1,
+  "suite_id": "saved_edit_failures_v1",
+  "split": "development",
+  "description": "Retrospective real-image diagnostics from mountain scaling and care/control connections. Sidecar measurements preserve failures and original attribution.",
+  "cases": [
+    {
+      "case_id": "mountain_geometric_broad",
+      "brief_id": "mountain_person",
+      "operation": "resize",
+      "instruction": "Reduce the person to one-third height, feet fixed at the same ground location.",
+      "parent": {
+        "path": "artifacts/20260907T212453_controlled_776bcf57/parent.png",
+        "sha256": "f23302736be704e039b860f2ba717a9951816ba07b024e60dfbcbb233b6912e8"
+      },
+      "child": {
+        "path": "artifacts/20260907T212453_controlled_776bcf57/attempt_0_result.png",
+        "sha256": "cf63dab4784cd6c86bc9fbcdeb48e24b7fefac274b2323b9058b6fe7c9f4f4aa"
+      },
+      "allowed_mask": {
+        "path": "artifacts/20260907T212453_controlled_776bcf57/allowed_mask.png",
+        "sha256": "09e94b3084c1d244e6ce2c708cb00d2374dd44597a787af165f17a7426180f36"
+      },
+      "regions": [
+        {
+          "id": "person",
+          "box": [
+            322,
+            681,
+            382,
+            873
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        },
+        {
+          "id": "mountain_detail",
+          "box": [
+            100,
+            100,
+            190,
+            200
+          ],
+          "role": "protected",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        }
+      ],
+      "cached_boxes": {
+        "observation": {
+          "path": "artifacts/20260907T212453_controlled_776bcf57/attempt_0_verification.json",
+          "sha256": "3eb591eccf61de81cd76a7da1dfc2e0dfedaed287b3116d3f0cce8ec88e5ebfa"
+        },
+        "parent_binding": {
+          "path": "artifacts/20260907T212453_controlled_776bcf57/plan.json",
+          "sha256": "620d6e989f2c57aa6af5c0d118689ff61889c8766065746de1e7f4374c63b796"
+        },
+        "scale": 0.3333333333333333,
+        "anchor": [
+          351,
+          871
+        ]
+      },
+      "evidence_kind": "historical_diagnostic",
+      "method": "geometric",
+      "render_profile": "historical_explicit_1024x1024_50steps_guidance4",
+      "authorship": "Original operator scale task, saved FLUX output and pinned Grounding DINO observations; assistant retrospective suite selection",
+      "limitations": [
+        "Known development cases selected after outcomes; not fresh or heldout evidence.",
+        "Current detector revalidation adds width tolerance; original measurement files retain original outcomes.",
+        "Bounding rectangles approximate silhouettes and can overestimate required edit support."
+      ]
+    },
+    {
+      "case_id": "mountain_geometric_tight",
+      "brief_id": "mountain_person",
+      "operation": "resize",
+      "instruction": "Reduce the person to one-third height, feet fixed at the same ground location.",
+      "parent": {
+        "path": "artifacts/20260907T212638_controlled_e3e9af4c/parent.png",
+        "sha256": "f23302736be704e039b860f2ba717a9951816ba07b024e60dfbcbb233b6912e8"
+      },
+      "child": {
+        "path": "artifacts/20260907T212638_controlled_e3e9af4c/attempt_0_result.png",
+        "sha256": "582dc3251c185cea1d3bf266eb6c61487c28e9a45990ad5c3e32fe22d86991f0"
+      },
+      "allowed_mask": {
+        "path": "artifacts/20260907T212638_controlled_e3e9af4c/allowed_mask.png",
+        "sha256": "09e94b3084c1d244e6ce2c708cb00d2374dd44597a787af165f17a7426180f36"
+      },
+      "regions": [
+        {
+          "id": "person",
+          "box": [
+            322,
+            681,
+            382,
+            873
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        },
+        {
+          "id": "mountain_detail",
+          "box": [
+            100,
+            100,
+            190,
+            200
+          ],
+          "role": "protected",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        }
+      ],
+      "cached_boxes": {
+        "observation": {
+          "path": "artifacts/20260907T212638_controlled_e3e9af4c/attempt_0_verification.json",
+          "sha256": "19823038baca0a5feba2223e157efb5eb5678282a823cee124f010317244b055"
+        },
+        "parent_binding": {
+          "path": "artifacts/20260907T212638_controlled_e3e9af4c/plan.json",
+          "sha256": "2efec8ca6c81a209238c4f80545f3a49c14752de642147d4bc1d667de0cbd2ab"
+        },
+        "scale": 0.3333333333333333,
+        "anchor": [
+          351,
+          871
+        ]
+      },
+      "evidence_kind": "historical_diagnostic",
+      "method": "geometric",
+      "render_profile": "historical_explicit_1024x1024_50steps_guidance4",
+      "authorship": "Original operator scale task, saved FLUX output and pinned Grounding DINO observations; assistant retrospective suite selection",
+      "limitations": [
+        "Known development cases selected after outcomes; not fresh or heldout evidence.",
+        "Current detector revalidation adds width tolerance; original measurement files retain original outcomes.",
+        "Bounding rectangles approximate silhouettes and can overestimate required edit support."
+      ]
+    },
+    {
+      "case_id": "mountain_masked",
+      "brief_id": "mountain_person",
+      "operation": "resize",
+      "instruction": "Reduce the person to one-third height, feet fixed at the same ground location.",
+      "parent": {
+        "path": "artifacts/20260907T212841_controlled_3bd1b73c/parent.png",
+        "sha256": "f23302736be704e039b860f2ba717a9951816ba07b024e60dfbcbb233b6912e8"
+      },
+      "child": {
+        "path": "artifacts/20260907T212841_controlled_3bd1b73c/attempt_0_result.png",
+        "sha256": "30bb446a311b10b11787b906c5ec1abe07b822d2cdb66366d754e5bfd9d37e0f"
+      },
+      "allowed_mask": {
+        "path": "artifacts/20260907T212841_controlled_3bd1b73c/allowed_mask.png",
+        "sha256": "09e94b3084c1d244e6ce2c708cb00d2374dd44597a787af165f17a7426180f36"
+      },
+      "regions": [
+        {
+          "id": "person",
+          "box": [
+            322,
+            681,
+            382,
+            873
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        },
+        {
+          "id": "mountain_detail",
+          "box": [
+            100,
+            100,
+            190,
+            200
+          ],
+          "role": "protected",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        }
+      ],
+      "cached_boxes": {
+        "observation": {
+          "path": "artifacts/20260907T212841_controlled_3bd1b73c/attempt_0_verification.json",
+          "sha256": "928276dbd3c21dd801a9940f1a54e99b7afdcbe2811a1e3f2a7c95be595b590a"
+        },
+        "parent_binding": {
+          "path": "artifacts/20260907T212841_controlled_3bd1b73c/plan.json",
+          "sha256": "0f1651a23282e2c8c2adf71c29a251268b5a40e5747122c741f7d2026626f6e2"
+        },
+        "scale": 0.3333333333333333,
+        "anchor": [
+          351,
+          871
+        ]
+      },
+      "evidence_kind": "historical_diagnostic",
+      "method": "masked",
+      "render_profile": "historical_explicit_1024x1024_50steps_guidance4",
+      "authorship": "Original operator scale task, saved FLUX output and pinned Grounding DINO observations; assistant retrospective suite selection",
+      "limitations": [
+        "Known development cases selected after outcomes; not fresh or heldout evidence.",
+        "Current detector revalidation adds width tolerance; original measurement files retain original outcomes.",
+        "Bounding rectangles approximate silhouettes and can overestimate required edit support."
+      ]
+    },
+    {
+      "case_id": "care_connect_s23",
+      "brief_id": "care_control",
+      "operation": "connect",
+      "instruction": "Add a thin horizontal bronze bar across the top of the bat\u2019s head, connecting the two vertical bars it grips, while leaving the bat\u2019s wings and the grille\u2019s bars unchanged.",
+      "parent": {
+        "path": "artifacts/overnight/studio_action_4bfc3d78d1166934d0ee5637/parent.png",
+        "sha256": "4d1a2308b1d51693b89e1425593ba5c7bb0b69bb597988c03f5a8360d54778f6"
+      },
+      "child": {
+        "path": "artifacts/overnight/studio_action_4bfc3d78d1166934d0ee5637/attempt_0_result.png",
+        "sha256": "461a0e22c6e14ad1f2da0782a480bb24ac76fedbc93d3d3fbc4ed0619cbfbae6"
+      },
+      "allowed_mask": {
+        "path": "artifacts/overnight/studio_action_4bfc3d78d1166934d0ee5637/allowed_mask.png",
+        "sha256": "c1860981469132dee557c9bfbcb04161faa595617c51dbd9b929de146e40e903"
+      },
+      "regions": [
+        {
+          "id": "left_endpoint",
+          "box": [
+            110,
+            243,
+            130,
+            275
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "The bat grips the left outer support near x120; joining it requires access to these endpoint pixels."
+        },
+        {
+          "id": "right_endpoint",
+          "box": [
+            390,
+            243,
+            410,
+            275
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "The bat grips the right outer support near x400; joining it requires access to these endpoint pixels."
+        },
+        {
+          "id": "connection_span",
+          "box": [
+            110,
+            243,
+            410,
+            275
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "Conservative continuous horizontal corridor between named outer supports at head height."
+        },
+        {
+          "id": "grille_ornament",
+          "box": [
+            25,
+            0,
+            490,
+            35
+          ],
+          "role": "protected",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        }
+      ],
+      "model_claim": {
+        "source": {
+          "path": "artifacts/overnight/continuations/care_control_v2_finish/assistant_visual_observation.json",
+          "sha256": "6d9186b50d6e5516c09b0279cf58d59985db81a419c1154e372bed8cebce1b8a"
+        },
+        "json_pointer": "/followup_model_observations/0/note",
+        "parent_sha256_pointer": "/parent/sha256",
+        "child_sha256_pointer": "/followup_model_observations/0/image_sha256",
+        "assertion": "uncertain",
+        "author": "frozen Qwen finishing observer",
+        "interpretation_origin": "assistant_annotation"
+      },
+      "historical_notes": [
+        {
+          "path": "artifacts/overnight/continuations/care_control_v2_finish/assistant_visual_observation.json",
+          "sha256": "6d9186b50d6e5516c09b0279cf58d59985db81a419c1154e372bed8cebce1b8a"
+        }
+      ],
+      "evidence_kind": "historical_diagnostic",
+      "method": "masked",
+      "render_profile": "flux_base4b_study_512_v1",
+      "authorship": "Frozen Qwen instruction and saved FLUX output; Codex retrospective required-region annotations from actual parent",
+      "limitations": [
+        "Endpoint and corridor rectangles are assistant-authored approximate localization, not detector labels.",
+        "The assistant historical note describes an incomplete connection; independent semantic fulfillment remains uncertain.",
+        "Two seeds of one brief are correlated."
+      ]
+    },
+    {
+      "case_id": "care_connect_s41",
+      "brief_id": "care_control",
+      "operation": "connect",
+      "instruction": "Add a thin horizontal bronze bar across the top of the bat\u2019s head, connecting the two vertical bars it grips, while leaving the bat\u2019s wings and the grille\u2019s bars unchanged.",
+      "parent": {
+        "path": "artifacts/overnight/studio_action_7f28c8c2e0f2812321895653/parent.png",
+        "sha256": "4d1a2308b1d51693b89e1425593ba5c7bb0b69bb597988c03f5a8360d54778f6"
+      },
+      "child": {
+        "path": "artifacts/overnight/studio_action_7f28c8c2e0f2812321895653/attempt_0_result.png",
+        "sha256": "8a3fec306e2c1f616beb09bd91dd48a8b2ac6e1157f17158d1b65fef8f517259"
+      },
+      "allowed_mask": {
+        "path": "artifacts/overnight/studio_action_7f28c8c2e0f2812321895653/allowed_mask.png",
+        "sha256": "c1860981469132dee557c9bfbcb04161faa595617c51dbd9b929de146e40e903"
+      },
+      "regions": [
+        {
+          "id": "left_endpoint",
+          "box": [
+            110,
+            243,
+            130,
+            275
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "The bat grips the left outer support near x120; joining it requires access to these endpoint pixels."
+        },
+        {
+          "id": "right_endpoint",
+          "box": [
+            390,
+            243,
+            410,
+            275
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "The bat grips the right outer support near x400; joining it requires access to these endpoint pixels."
+        },
+        {
+          "id": "connection_span",
+          "box": [
+            110,
+            243,
+            410,
+            275
+          ],
+          "role": "required_edit",
+          "origin": "assistant_annotation",
+          "reason": "Conservative continuous horizontal corridor between named outer supports at head height."
+        },
+        {
+          "id": "grille_ornament",
+          "box": [
+            25,
+            0,
+            490,
+            35
+          ],
+          "role": "protected",
+          "origin": "assistant_annotation",
+          "reason": "Assistant annotation of actual parent pixel region for scope validation."
+        }
+      ],
+      "model_claim": {
+        "source": {
+          "path": "artifacts/overnight/continuations/care_control_v2_finish/assistant_visual_observation.json",
+          "sha256": "6d9186b50d6e5516c09b0279cf58d59985db81a419c1154e372bed8cebce1b8a"
+        },
+        "json_pointer": "/followup_model_observations/1/note",
+        "parent_sha256_pointer": "/parent/sha256",
+        "child_sha256_pointer": "/followup_model_observations/1/image_sha256",
+        "assertion": "success",
+        "author": "frozen Qwen finishing observer",
+        "interpretation_origin": "assistant_annotation"
+      },
+      "historical_notes": [
+        {
+          "path": "artifacts/overnight/continuations/care_control_v2_finish/assistant_visual_observation.json",
+          "sha256": "6d9186b50d6e5516c09b0279cf58d59985db81a419c1154e372bed8cebce1b8a"
+        }
+      ],
+      "evidence_kind": "historical_diagnostic",
+      "method": "masked",
+      "render_profile": "flux_base4b_study_512_v1",
+      "authorship": "Frozen Qwen instruction and saved FLUX output; Codex retrospective required-region annotations from actual parent",
+      "limitations": [
+        "Endpoint and corridor rectangles are assistant-authored approximate localization, not detector labels.",
+        "The assistant historical note describes an incomplete connection; independent semantic fulfillment remains uncertain.",
+        "Two seeds of one brief are correlated."
+      ]
+    }
+  ],
+  "attribution": "Codex assistant-authored selection and scope annotation; original operator/model instructions preserved."
+}

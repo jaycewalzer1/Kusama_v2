@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 import sqlite3
 
-from .evaluation import digest, file_hash
+from .evidence import digest, file_hash
 
 ADAPTER_VERSION = 'review-original-brief-v2'
 

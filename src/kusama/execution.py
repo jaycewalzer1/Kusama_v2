@@ -100,8 +100,12 @@ def _read_source(plan_path):
     hashes = {key: sha256(plan_path.parent / plan[key])
               for key in ('parent', 'allowed_mask', 'object_mask', 'secondary_mask') if plan.get(key)}
     loaded = load_plan(plan_path)
-    if plan != loaded[0] or any(sha256(plan_path.parent / plan[key]) != value for key, value in hashes.items()):
+    for index, asset in enumerate(plan.get('reference_images', [])):
+        hashes[f'reference-{index}'] = sha256(plan_path.parent / asset['path'])
+    if plan != loaded[0] or any(sha256(plan_path.parent / plan[key]) != value for key, value in hashes.items() if not key.startswith('reference-')):
         raise ValueError('Plan or source changed during preflight')
+    if any(hashes[f'reference-{i}'] != a['sha256'] for i, a in enumerate(plan.get('reference_images', []))):
+        raise ValueError('Image prompt reference changed during preflight')
     return loaded, hashes
 
 
@@ -109,6 +113,13 @@ def _snapshot(directory, source_path, loaded):
     from .controlled import binary_mask
     plan, parent, allowed, obj, cutout, crop, methods = loaded
     execution_plan = dict(plan, parent='parent.png', allowed_mask='allowed_mask.png')
+    if plan.get('reference_images'):
+        execution_plan['reference_images'] = []
+        for index, asset in enumerate(plan['reference_images']):
+            source = source_path.parent / asset['path']
+            target = directory / f'reference-{index:02}{source.suffix.lower()}'
+            _copy_snapshot_file(source, target, asset['sha256'])
+            execution_plan['reference_images'].append({**asset, 'path': target.name})
     _copy_snapshot_file(source_path.parent / plan['parent'], directory / 'parent.png', plan['parent_sha256'])
     _save_once(allowed, directory / 'allowed_mask.png')
     if obj is not None:
@@ -249,6 +260,8 @@ def _run_job(plan_path=None, config=None, backend_factory=FluxBackend, call_guar
             for name in ('job.json', 'plan.json', 'execution_plan.json', 'parent.png', 'allowed_mask.png', 'object_mask.png', 'secondary_mask.png'):
                 if (directory / name).exists():
                     ledger.register_artifact(job_id, name)
+            for asset in json.loads((directory / 'execution_plan.json').read_text()).get('reference_images', []):
+                ledger.register_artifact(job_id, asset['path'], kind='render_reference')
             ledger.update_job(job_id, payload={'snapshot_complete': True})
         plan, parent, allowed, obj, cutout, crop, methods = load_plan(directory / 'execution_plan.json')
         secondary = binary_mask(directory / plan['secondary_mask'], parent.size) if plan.get('secondary_mask') else None
@@ -332,6 +345,12 @@ def _run_job(plan_path=None, config=None, backend_factory=FluxBackend, call_guar
                     if not raw_path.exists():
                         source_path = directory / f'attempt_{index}_input.png'
                         _save_once(parent.crop(region), source_path)
+                        if plan.get('reference_images'):
+                            from .image_prompt import conditioning_record
+                            attempt['conditioning'] = conditioning_record(
+                                [{**a, 'path': str(directory / a['path'])} for a in plan['reference_images']],
+                                parent={'path': str(source_path), 'sha256': sha256(source_path),
+                                        'source_parent_sha256': plan['parent_sha256'], 'crop': region})
                         active_mask = masks['repair'] if method == 'geometric' else masks['local']
                         mask_path = directory / f'attempt_{index}_mask.png'
                         _save_once(active_mask.crop(region), mask_path)
@@ -362,7 +381,9 @@ def _run_job(plan_path=None, config=None, backend_factory=FluxBackend, call_guar
                                 try:
                                     with measurement if measurement is not None else nullcontext():
                                         raw = backend.generate(attempt['prompt'], plan['seed'], source_path,
-                                            **({} if method == 'whole' else {'mask_path': mask_path}))
+                                            **({} if method == 'whole' else {'mask_path': mask_path}),
+                                            **({'reference_images': [{**a, 'path': str(directory / a['path'])}
+                                                for a in plan['reference_images']]} if plan.get('reference_images') else {}))
                                 finally:
                                     cost['measurements'] = {'pipeline_invoked': attempt['pipeline_invoked']}
                                     if measurement is not None:

@@ -14,14 +14,21 @@ from pathlib import Path
 from kusama.continuation import ContinuationRequest, DevelopmentDecision
 from kusama.continuation_dispatch import DispatchRequest
 from kusama.corpus import ContextClaim, CorpusReference, Device, Region
-from kusama.dashboard import ContinuationCreate, ContinuationObservation
+from kusama.dashboard import ContinuationCreate, ContinuationObservation, WorkflowPlan
 from kusama.inspiration import ConnectionHypothesis, RenderAction
-from kusama.reviews import Advancement, PoolChoice, Presentation, Vote
+from kusama.panel_runs import StartRun
+from kusama.research import ResearchAction, ResearchHypothesis, ResearchRequest
+from kusama.research_render import ResearchRenderRequest
+from kusama.research_sources import ResearchSourceConfig
+from kusama.study_development import StudyObservation, StudyChoice
+from kusama.study_cycle import DevelopmentCycle, CycleChoice
 
 
-MODELS = (ContinuationRequest, DevelopmentDecision, DispatchRequest, ContinuationCreate, ContinuationObservation,
+MODELS = (StartRun, WorkflowPlan, ContinuationRequest, DevelopmentDecision, DispatchRequest, ContinuationCreate, ContinuationObservation,
           ContextClaim, CorpusReference, Device, Region, ConnectionHypothesis,
-          RenderAction, Advancement, PoolChoice, Presentation, Vote)
+          RenderAction,
+          ResearchRequest, ResearchAction, ResearchHypothesis, ResearchSourceConfig, ResearchRenderRequest,
+          StudyObservation, StudyChoice, DevelopmentCycle, CycleChoice)
 OUTPUT = Path(__file__).resolve().parents[1] / 'src/kusama/dashboard_static/contracts.d.ts'
 
 
