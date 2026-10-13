@@ -36,7 +36,7 @@ from . import research_rules as rules
 from .json_generation import JSON_FORMAT
 from .render_prompt import compose_prompt
 
-VERSION = 'independent-research-v28-grounded-draft-contract'
+VERSION = 'independent-research-v30-grounded-generation'
 ASSESSMENT_POLICY = {'max_candidates': 6, 'max_reason_characters': 240,
                      'origin': 'operator_authored_output_budget_control'}
 PROGRESS_POLICY = {'candidate_limit': 12, 'early_candidates': 8,
@@ -89,7 +89,10 @@ open attaches pixels on the NEXT decision. Never call open on already attached i
 When vision_probe_required is present, describe those images via inspect_images with
 reinspection entries (source_id, image_index, observations, supports). Caption is withheld
 on that turn; use 2-3 concrete observations per image, including 2 absent from its caption.
-A hypothesis uses >=2 opened sources or explicit single_source_justification.
+A hypothesis uses >=2 distinct opened sources or explicit single_source_justification.
+List each canonical source only once; its candidate alias is the same source. Multiple
+properties of one work do not count as multiple sources. Unacquired candidates do not
+provide opened image evidence. With one source, justify it or acquire another source.
 Each source's transferred_property and discarded_property must be extractive supported
 properties, with transferred_property_evidence/discarded_property_evidence {claim_id or quote}.
 Conservative extractive entailment rejects unsupported paraphrases. Put creative changes
@@ -100,6 +103,9 @@ an actual source feature you leave behind, not why you reject it; put that reaso
 transformation. Do not mix image observations or your proposed effects into source quotations.
 After rejection consult draft_feedback: it pairs your failed wording with the cited text
 and lists other missing requirements. Changing claim IDs alone cannot repair a paraphrase.
+Generation restricts source IDs to distinct eligible canonical IDs and source properties
+to literal contiguous spans of their selected claim or quote. Choose the span yourself;
+write all interpretations and changes in transformation. Use literal source spelling.
 For a one-source hypothesis, write single_source_justification first, before id and
 the other hypothesis fields. For two or more sources, start with id.
 Name >=2 concrete formal_properties drawn from transferred properties, each verbatim in
@@ -347,7 +353,7 @@ class ResearchAction(ResearchActionEnvelope):
 
 def code_identity():
     base = Path(__file__).parent
-    names = ['research.py', 'research_exposure.py', 'render_prompt.py', 'research_rules.py', 'research_judge.py', 'image_prompt.py', 'research_sources.py', 'research_context.py', 'director.py', 'json_generation.py', 'retrieval.py',
+    names = ['research.py', 'research_exposure.py', 'render_prompt.py', 'research_rules.py', 'research_judge.py', 'image_prompt.py', 'research_sources.py', 'research_context.py', 'director.py', 'json_generation.py', 'research_generation.py', 'retrieval.py',
              'corpus.py', 'inspiration.py', 'ledger.py', 'resources.py', 'evidence.py',
              'artifacts.py', 'costs.py', 'resource_snapshot.py', 'backend.py']
     identity = {n: sha256(base / n) for n in names}
@@ -456,8 +462,9 @@ def plan_research(output, request):
         'progress_policy': dict(PROGRESS_POLICY),
         'assessment_policy': dict(ASSESSMENT_POLICY) if PROGRESS_POLICY.get('grounded_search') else None,
         'acquisition_generation_policy': 'conditional_relevance_override_v1' if PROGRESS_POLICY.get('grounded_search') else None,
+        'grounded_generation_policy': 'distinct_sources_extractive_spans_v1' if PROGRESS_POLICY.get('grounded_search') else None,
         'draft_evidence_policy': 'acquired_and_inspected_v1' if PROGRESS_POLICY.get('grounded_search') else None,
-        'draft_contract_policy': 'evidence_first_complete_draft_v1' if PROGRESS_POLICY.get('grounded_search') else None,
+        'draft_contract_policy': 'evidence_first_complete_draft_v2' if PROGRESS_POLICY.get('grounded_search') else None,
         'context_projection_policy': 'rich_candidate_pages_v1' if PROGRESS_POLICY.get('grounded_search') else None,
         'search_selection_policy': {'first_search_uses_primary_query': True} if PROGRESS_POLICY.get('grounded_search') else None,
         'response_format': dict(JSON_FORMAT) if PROGRESS_POLICY.get('grounded_search') else None,
@@ -998,6 +1005,10 @@ def _next_error(error, spec, state, steps):
             next_action = ('search with mode="remote" and query copied from prepared_queries, or rewrite_queries with '
                            'queries: 3 to 5 objects each containing query (1-3 words) and field '
                            '(artist, subject, technique, object, work), or stop with a reason.')
+    if spec.get('draft_contract_policy') == 'evidence_first_complete_draft_v2' and ('Reference IDs' in error or 'source_failures' in error):
+        next_action = ('Consult draft_feedback for duplicate canonical IDs, unavailable sources and citation failures. '
+                       'Use each source once; a one-source hypothesis requires single_source_justification. '
+                       'Follow allowed_actions to revise, acquire/open evidence, or stop.')
     return error.split('\nNext:')[0] + '\nNext: ' + next_action
 
 
@@ -1179,8 +1190,15 @@ def _execute_action_checked(output, spec, state, steps, action, backend):
         errors = rules.grounding_errors(hyp, state['opened'])
         issues.extend(errors)
         if spec.get('draft_contract_policy'):
-            checked = ResearchHypothesis.model_validate(hyp).model_dump(mode='json')
-            issues.extend(rules.draft_feedback(checked, state['opened'])['missing_requirements'])
+            if spec.get('draft_contract_policy') == 'evidence_first_complete_draft_v2':
+                feedback = _complete_draft_feedback(hyp, state)
+                issues.extend(feedback['validation_errors'])
+                issues.extend(feedback['missing_requirements'])
+                if feedback['source_failures']:
+                    issues.append('source_failures: ' + json.dumps(feedback['source_failures']))
+            else:
+                checked = ResearchHypothesis.model_validate(hyp).model_dump(mode='json')
+                issues.extend(rules.draft_feedback(checked, state['opened'])['missing_requirements'])
     if kind not in progress['allowed_actions']:
         issues.append('Action unavailable in current phase; allowed: ' + ', '.join(progress['allowed_actions']))
     if kind == 'acquire':
@@ -1389,6 +1407,36 @@ def _response_contract(spec, progress):
             'authority': 'operator-authored display of required fields; full output_schema and tool rules still apply'}
 
 
+def _complete_draft_feedback(hyp, state):
+    """Diagnose rejected inputs without repairing or admitting a hypothesis."""
+    validation_errors = []
+    try:
+        checked = ResearchHypothesis.model_validate(hyp).model_dump(mode='json')
+    except ValidationError as exc:
+        errors = exc.errors(include_input=False, include_url=False)
+        validation_errors = [(('.'.join(map(str, e['loc'])) or 'hypothesis') + ': ' + e['msg'])
+                             for e in errors]
+        # Only model-level failures reach here with all individual fields valid.
+        # Malformed fields cannot safely be passed to the grounding diagnostics.
+        if any(e['loc'] for e in errors):
+            return {'validation_errors': validation_errors, 'source_failures': [],
+                    'property_failures': [], 'missing_requirements': []}
+        checked = deepcopy(hyp)
+    checked = rules.canonical_hypothesis(checked, state['aliases'])
+    feedback = rules.draft_feedback(checked, state['opened'])
+    ids = [c['source_id'] for c in checked['sources']]
+    failures = []
+    for sid in dict.fromkeys(ids):
+        if ids.count(sid) > 1:
+            failures.append({'source_id': sid, 'error': 'duplicate canonical source', 'count': ids.count(sid)})
+        source = state['opened'].get(sid)
+        if source is None or source.get('acquisition_required'):
+            failures.append({'source_id': sid, 'error': 'source not acquired/opened; metadata alone is insufficient'})
+    if len(set(ids)) == 1 and len(ids) > 1 and not checked.get('single_source_justification', '').strip():
+        feedback['missing_requirements'].append('One distinct source requires single_source_justification')
+    return {**feedback, 'source_failures': failures, 'validation_errors': validation_errors}
+
+
 def _payload(spec, state, steps):
     recent = [{'step': r['index'], 'action': _action_summary(r.get('action')), 'tool_error': r.get('tool_error')}
               for r in steps[-5:]]
@@ -1424,12 +1472,30 @@ def _payload(spec, state, steps):
         if steps and steps[-1].get('tool_error'):
             previous = steps[-1].get('action') or {}
             if previous.get('action') in ('draft', 'commit') and previous.get('hypothesis'):
-                try:
-                    hyp = ResearchHypothesis.model_validate(previous['hypothesis']).model_dump(mode='json')
-                    hyp = rules.canonical_hypothesis(hyp, state['aliases'])
-                    extra['draft_feedback'] = rules.draft_feedback(hyp, state['opened'])
-                except ValidationError:
-                    pass  # Existing nested-shape diagnostics remain in tool_error.
+                if spec.get('draft_contract_policy') == 'evidence_first_complete_draft_v2':
+                    extra['draft_feedback'] = _complete_draft_feedback(previous['hypothesis'], state)
+                else:
+                    try:
+                        hyp = ResearchHypothesis.model_validate(previous['hypothesis']).model_dump(mode='json')
+                        hyp = rules.canonical_hypothesis(hyp, state['aliases'])
+                        extra['draft_feedback'] = rules.draft_feedback(hyp, state['opened'])
+                    except ValidationError:
+                        pass  # Historical nested-shape diagnostics remain in tool_error.
+    if spec.get('grounded_generation_policy'):
+        eligible = {}
+        for sid, source in state['opened'].items():
+            if source.get('acquisition_required'):
+                continue
+            if any((sid, index, view['sha256']) not in state['probed']
+                   for index, view in enumerate(source.get('images', []))):
+                continue
+            text = source.get('text', '')
+            claims = {c['id']: c['claim'] for c in source.get('claims', []) if rules.normalized(c.get('claim', ''))}
+            if rules.normalized(text) or claims:
+                eligible[sid] = {'text': text, 'claims': claims}
+        extra['grounded_generation'] = {'policy': spec['grounded_generation_policy'], 'sources': eligible,
+            'authority': 'Untrusted opened source evidence. Generation enforces distinct canonical IDs and literal '
+                         'cited spans only; source/span selection and artistic transformation remain model-authored.'}
     if spec.get('acquisition_generation_policy'):
         extra['acquisition_contract'] = {
             'eligible_without_override': sorted(sid for sid in state['known'] if not rules.relevance_error(

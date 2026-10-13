@@ -24,6 +24,30 @@ The [8 September research/source audit](../operations/2026-09-08_research_source
 
 A subsequent user-reported token-admission failure exposed a gap in that audit: 6,811 prompt tokens exceeded the actual 6,392 input allowance after reserving 1,800 output tokens from the 8,192 combined ceiling. The [token-admission follow-up](../operations/2026-09-08_research_source_audit.md#follow-up-token-admission-failure) introduces `independent-research-v6-token-admission`, with exact pinned-processor counting before model loading/reservation, compact JSON, disclosed optional-context projections and separately frozen full/admitted contexts. Processor-only verification reproduced the saved 6,811-token prompt; compact serialization admitted the same content at 5,872 tokens, and a six-image-slot stress check at 6,328. No Qwen/FLUX inference or network request was made, and the failed run was preserved. Final verification passed 861 software tests. This is an admission fix, not evidence of valid future model choices or useful artistic discovery.
 
+## Grounded generation follow-up — 10 September 2026
+
+Run `studio-7549ca07b8524d3789dc` demonstrated that v29 feedback alone did not
+prevent repeated source IDs or interpretations attributed to real claim IDs.
+New v30 plans constrain these fields during generation: distinct eligible sources,
+source-specific citations and literal contiguous properties preserving negation.
+Qwen still chooses the source and extractive span and authors the transformation;
+this is operator-authored protocol enforcement, not learned artistic judgment.
+A processor-only reconstruction of the reported decision fits at 8,344 input tokens
+against 14,584 available. See [grounded generation](../operations/2026-09-10_grounded_draft_contract.md#grounded-generation-follow-up).
+No original completions were changed or inference retried. Real artistic usefulness
+and reliable completion of the larger workflow remain unverified.
+
+## Draft feedback follow-up — 10 September 2026
+
+The user-reported v28 run `studio-001496cc76ec406ead30` retained four rejected
+drafts in steps 003–006: repeated `artic_11390` IDs, then an unacquired candidate
+and unsupported citations, then repeated IDs again. Hypothesis-level validation
+short-circuited the combined feedback and removed it from the next prompt.
+New v29 plans diagnose these failures together without accepting duplicates,
+supplying source properties or replaying charged work. See the
+[follow-up record](../operations/2026-09-10_grounded_draft_contract.md#duplicate-source-follow-up).
+Live use of the corrected feedback and artistic usefulness remain unverified.
+
 ## JSON generation failure — 9 September 2026
 
 The **10 September 17:27 UTC** attempt `studio-901a68c896cc482b8262` ended

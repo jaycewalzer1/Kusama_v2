@@ -1,4 +1,4 @@
-"""Syntax-only token filtering for newly frozen research calls; never output repair.
+"""Frozen syntax, action-schema and optional evidence filtering; never output repair.
 
 Use LM Format Enforcer's core API: its bundled Transformers adapter imports an
 obsolete tokenizer location in Transformers 5. This adapter uses the same token
@@ -75,9 +75,19 @@ def generation_schema(payload):
             citation = contribution['properties'][field]
             choices = citation.pop('anyOf')
             contribution['properties'][field] = {'anyOf': [{**deepcopy(citation), **choice} for choice in choices]}
+    grounded = payload.get('grounded_generation')
+    if grounded is not None:
+        count = len(grounded['sources'])
+        alternatives = schema['$defs']['ResearchHypothesis']['anyOf']
+        alternatives[:] = [option for option in alternatives
+                           if option['properties']['sources'].get('minItems', 1) <= count]
+        for option in alternatives:
+            option['properties']['sources']['maxItems'] = min(count, option['properties']['sources'].get('maxItems', 6))
     requirements = payload['response_contract']['required_fields_by_action']
     variants = []
     for action, required in requirements.items():
+        if grounded is not None and not grounded['sources'] and action in ('draft', 'commit'):
+            continue
         choices = payload.get('search_choices', {}).get('unused_prepared_queries')
         if action == 'search' and choices == []:
             continue
@@ -113,7 +123,10 @@ def generation_schema(payload):
             return value
         return {key: clean(item) for key, item in value.items()
                 if not (key == 'additionalProperties' and item is True)}
-    return clean({'anyOf': variants, '$defs': schema.get('$defs', {})})
+    result = clean({'anyOf': variants, '$defs': schema.get('$defs', {})})
+    if grounded is not None:
+        result['x-kusama-grounded-generation'] = deepcopy(grounded)
+    return result
 
 
 def json_prefix_constraint(tokenizer, contract, schema=None):
@@ -130,6 +143,9 @@ def json_prefix_constraint(tokenizer, contract, schema=None):
         max_consecutive_whitespaces=contract['max_consecutive_whitespaces'],
         max_json_array_length=contract['max_json_array_length'])
     parser = JsonSchemaParser(schema or {'type': 'object'}, config=config)
+    if schema and schema.get('x-kusama-grounded-generation') is not None:
+        from .research_generation import EvidenceParser
+        parser = EvidenceParser(parser, schema['x-kusama-grounded-generation'])
     class BoundaryTokenEnforcer(TokenEnforcer):
         def _collect_allowed_tokens(self, parser, tree_node, allowed_tokens, shortcut_key):
             super()._collect_allowed_tokens(parser, tree_node, allowed_tokens, shortcut_key)

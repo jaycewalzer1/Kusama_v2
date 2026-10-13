@@ -178,3 +178,63 @@ def test_pinned_qwen_tokenizer_admits_complete_draft_and_blocks_missing_requirem
     for response in INCIDENT['responses']:
         value = json.loads(response['raw_response'])['hypothesis']
         assert not accepts(tokenizer, schema, ordered_action(payload, value))
+
+
+DUPLICATES = json.loads((Path(__file__).parent / 'fixtures/research/duplicate_source_drafts.json').read_text())
+
+
+def test_saved_duplicate_drafts_keep_all_feedback_and_remain_rejected(session):
+    source = DUPLICATES['source']
+    root, spec, steps, backend = session
+    state = r._state(spec, steps)
+    state['opened'][source['source_id']] = source
+    for response in DUPLICATES['responses']:
+        raw = response['raw_response']
+        assert hashlib.sha256(raw.encode()).hexdigest() == response['raw_response_sha256']
+        action = r.ResearchActionEnvelope.model_validate(json.loads(raw))
+        before = deepcopy(action.hypothesis)
+        with pytest.raises(ValueError) as rejected:
+            r._execute_action(root, spec, state, steps, action, backend)
+        feedback = r._complete_draft_feedback(action.hypothesis, state)
+        if response['step'] in (3, 6):
+            assert any(f['error'] == 'duplicate canonical source' for f in feedback['source_failures'])
+            assert 'draft_feedback' in str(rejected.value)
+            assert feedback['validation_errors']
+        else:
+            assert any('not acquired/opened' in f['error'] for f in feedback['source_failures'])
+            assert feedback['property_failures']
+        row = {'index': 0, 'action': action.model_dump(mode='json'),
+               'tool_error': str(rejected.value), 'status': 'tool_rejected', 'opened_sources': []}
+        payload = r._payload(spec, state, [row])
+        assert payload['draft_feedback'] == feedback
+        for stage in range(16):
+            assert project_context({'payload': payload, 'system': spec['policy'], 'images': []}, stage)['payload']['draft_feedback'] == feedback
+        assert action.hypothesis == before
+
+
+def test_alias_duplicates_and_missing_justification_are_reported_together():
+    value = hyp(('artic', 'met'))
+    state = {'aliases': {'met': 'artic'}, 'opened': {}}
+    before = deepcopy(value)
+    feedback = r._complete_draft_feedback(value, state)
+    assert any(f.get('count') == 2 for f in feedback['source_failures'])
+    assert 'One distinct source requires single_source_justification' in feedback['missing_requirements']
+    assert feedback['property_failures']
+    assert value == before
+
+
+def test_malformed_draft_feedback_returns_field_errors():
+    feedback = r._complete_draft_feedback({'sources': [None]}, {'aliases': {}, 'opened': {}})
+    assert feedback['validation_errors']
+    assert feedback['source_failures'] == []
+
+
+def test_historical_v28_duplicate_feedback_behavior_is_unchanged(session):
+    _, spec, _, _ = session
+    spec = deepcopy(spec)
+    spec['draft_contract_policy'] = 'evidence_first_complete_draft_v1'
+    state = r._state(spec, [])
+    action = json.loads(DUPLICATES['responses'][0]['raw_response'])
+    row = {'index': 0, 'action': action, 'tool_error': 'Reference IDs must be distinct',
+           'status': 'tool_rejected', 'opened_sources': []}
+    assert 'draft_feedback' not in r._payload(spec, state, [row])

@@ -10,6 +10,10 @@ A full artistic run begins with a sufficiently complex artistic problem statemen
 
 ## Current implementation boundaries
 
+- New v30 research plans constrain generation to distinct acquired/inspected canonical source IDs and literal contiguous cited spans, preserving citation polarity. Qwen selects sources, citations and spans; the software supplies no artistic content or repaired completions. Earlier plans retain their policies. See [grounded generation](docs/operations/2026-09-10_grounded_draft_contract.md#grounded-generation-follow-up).
+
+- New v29 research plans preserve detailed draft feedback through duplicate-source validation failures, identify canonical duplicates and unacquired sources, and count distinct sources for justification guidance. Historical policies remain frozen; see [grounded draft contract](docs/operations/2026-09-10_grounded_draft_contract.md).
+
 - New v28 research plans expose evidence-first property citations, required formal properties/numeric predicates and conditional single-source justification during generation. Rejected drafts receive property-versus-citation feedback and missing requirements together. Extractive grounding remains strict; these controls supply no artistic content or repaired completions. See [grounded draft contract](docs/operations/2026-09-10_grounded_draft_contract.md).
 
 - New v27 research plans compile the existing acquisition relevance gate into generation: current-question eligible candidates may be acquired normally; other candidates require a model-authored nonempty relevance_override. No scores or artistic justifications are supplied. See [monitored attempts](docs/operations/2026-09-09_bounded_json_generation.md).

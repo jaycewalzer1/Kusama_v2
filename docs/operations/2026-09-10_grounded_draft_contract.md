@@ -89,3 +89,96 @@ The new pinned-tokenizer regressions ran. Local documentation links and
 
 Local artifact links require the separately preserved artifact directory and do
 not resolve in a fresh checkout.
+
+
+## Duplicate-source follow-up
+
+The later user-reported run `studio-001496cc76ec406ead30` froze v28. Saved steps
+003 and 006 each list `artic_11390` twice. Steps 004–005 replace the duplicate
+with an unacquired candidate and contain unsupported property citations. These
+four rejections are preserved in the [portable regression fixture](../../tests/fixtures/research/duplicate_source_drafts.json),
+with hashes of the original raw completions and opened source text. This is a
+snapshot of rejected steps, not a terminal execution or artistic assessment.
+
+V28's call to the hypothesis validator raised on duplicate IDs before returning
+other collected problems. Its prompt builder caught that same exception and omitted
+`draft_feedback`; synthesis also supplied only a generic next action.
+
+New `independent-research-v29-complete-draft-feedback` plans freeze
+`evidence_first_complete_draft_v2`. They retain strict validation while collecting
+hypothesis-level errors, duplicate canonical IDs, unopened/unacquired sources,
+property/citation failures and missing requirements together. Alias IDs count as
+the same source. A duplicate list does not avoid the single-source justification
+requirement. Malformed fields receive field diagnostics without being passed to
+source-grounding helpers. Instructions identify each source as a single contribution;
+no sources are merged, quotations authored, completions repaired or retries made.
+The generation grammar remains v28; uniqueness and entailment are runtime checks.
+Historical policy branches, raw evidence and run settings remain unchanged.
+
+Regression coverage replays all four completions, checks alias duplication,
+malformed-field handling, historical v28 behavior and retention of feedback through
+all context projection stages. The prior synthetic successful draft/commit check
+still applies. No Qwen/FLUX inference, network acquisition, human judgment or training
+was performed. Real model correction after feedback, meaningful alternatives and
+human assessment remain the next evidence gates.
+
+Follow-up verification: `KUSAMA_PROCESSOR_ACCEPTANCE=1 .venv/bin/python -m pytest -q`
+passed **1,108 tests**, with five live/archive-dependent skips, in 192.53 seconds.
+A focused run including the subsequently added historical-v28 regression passed
+**16 tests**, with one opt-in tokenizer skip. The full suite ran the cached-tokenizer
+checks. Documentation target checks and `git diff --check` passed. These results
+establish software behavior only, not reliable live drafting or artistic progress.
+
+
+## Grounded generation follow-up
+
+The user's next reported rejection came from v29 run `studio-7549ca07b8524d3789dc`,
+step 003. Qwen listed `artic_7634` twice and attached its interpretation of dissolution
+without resolution to source claims. All four source-property fields failed
+extractive entailment. The [exact completion and source fixture](../../tests/fixtures/research/grounded_generation_incident.json)
+retain the raw-response hash. V29 diagnosed the failure correctly but did not prevent
+its generation; clearer feedback alone did not establish compliance.
+
+New `independent-research-v30-grounded-generation` plans freeze
+`distinct_sources_extractive_spans_v1`. A stateful character parser intersects the
+existing JSON token grammar with the frozen opened evidence:
+
+- Each source ID must be an eligible canonical ID not already used. Sources with
+  images require actual saved inspection of those image hashes. Previously inspected
+  sources remain eligible even after another image becomes active.
+- Claim IDs must belong to the selected source; quoted text must be a literal
+  contiguous span of its opened text. Properties must be literal contiguous spans
+  of the selected claim, or quote when no claim is selected. Negation words required
+  by the existing validator cannot be removed. JSON escaping and Unicode are retained.
+- Qwen chooses the source, citation and span; no phrase is ranked, chosen, repaired or
+  supplied as a replacement. Its role, transformation, composition and artistic
+  interpretation remain free text under existing bounds.
+- Available source count bounds the source array. With only one source the grammar
+  requires the existing justification branch. Without eligible evidence it excludes
+  draft/commit and retains other allowed actions, including stop.
+- The complete generation evidence survives context projections and is included in
+  token admission. Irreducible overflow retains an uncharged capacity checkpoint.
+  This adds evidence-context overhead; no throughput improvement is claimed.
+
+The runtime validators remain authoritative. The new constraints address these
+specific duplicate/citation/entailment failures; they do not guarantee sufficient
+output tokens, useful interpretations, successful rendering or artistic quality.
+Historical plans, failures, charges and raw bytes remain unchanged. No inference,
+network acquisition, training or human judgment was performed by this repair.
+
+The [processor-only prospective reconstruction](../../artifacts/diagnostics/20260910-grounded-generation/admission.json)
+of step 003 admits the full new context at **8,344 input tokens** against **14,584**
+available, with no projection. This is separately attributed diagnostic evidence,
+not a replacement decision. Local artifact links require the preserved artifact tree.
+Regression tests exercise the exact failure, duplicate and unknown IDs, foreign claim
+IDs, fabricated quotes, unsupported properties, polarity, escaped quotes/Unicode,
+source-count branches and successful synthetic draft/commit execution. The real cached
+Qwen tokenizer admits a supported completion and blocks duplicates and unsupported
+properties. No frozen model weights are loaded for these tests.
+
+Verification: the processor-enabled full suite passed **1,125 tests**, with five
+live/archive-dependent skips, in 163.40 seconds. A subsequent span-boundary
+refinement (including escaped-character length) passed **51 focused tests** with
+the cached tokenizer enabled; an additional zero-evidence stop-token check passed.
+Documentation target checks and `git diff --check` passed. These checks establish
+protocol behavior and context admission, not successful live artistic research.
